@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package leveler;
+
+import "requirement.proto";
+import "util.proto";
+import "google/protobuf/empty.proto";
+
+service RoleEndpoint {
+	rpc GetRole (RoleId) returns (Role) {}
+    rpc ListRoles (Query) returns (RoleList) {}
+    rpc CreateRole (Role) returns (Role) {}
+    rpc UpdateRole (Role) returns (Role) {}
+    rpc DeleteRole (RoleId) returns (google.protobuf.Empty) {}
+}
+
+message RoleId {
+	string Name = 1;
+}
+
+message Role {
+	string Name = 1;
+	string Description = 2; 
+	repeated Requirement Requirements = 3;
+}
+
+message RoleList {
+	repeated Role Results = 1;
+}

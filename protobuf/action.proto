@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package leveler;
+
+import "google/protobuf/empty.proto";
+import "util.proto";
+
+service ActionEndpoint {
+    rpc GetAction (ActionId) returns (Action) {}
+    rpc ListActions (Query) returns (ActionList) {}
+    rpc CreateAction (Action) returns (Action) {}
+    rpc UpdateAction (Action) returns (Action) {}
+    rpc DeleteAction (ActionId) returns (google.protobuf.Empty) {}
+}
+
+message ActionId {
+    string Id = 1;
+}
+
+message Action {
+    string Id = 1;
+    string Name = 2;
+    string Description = 3;
+    string Command = 4;
+    string Shell = 5;
+}
+
+message ActionResult {
+    int32 Status = 1;
+}
+
+message ActionList {
+	repeated Action Results = 1;
+}

@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package leveler;
+
+import "action.proto";
+import "constraint.proto";
+import "util.proto";
+import "google/protobuf/empty.proto";
+
+service RequirementEndpoint {
+    rpc GetRequirement (RequirementId) returns (Requirement) {}
+    rpc ListRequirements (Query) returns (RequirementList) {}
+    rpc CreateRequirement (Requirement) returns (Requirement) {}
+    rpc UpdateRequirement (Requirement) returns (Requirement) {}
+    rpc DeleteRequirement (RequirementId) returns (google.protobuf.Empty) {}
+}
+
+message RequirementId {
+    string Name = 1;
+}
+
+message Requirement {
+    string Name = 1;
+    string Description = 2;
+    repeated Action Actions = 3;
+    repeated Action Tests = 4;
+    repeated Constraint Constraints = 5;
+    map<string, string> Environment = 6;
+}
+
+message RequirementList {
+    repeated Requirement Results = 1;
+}
+

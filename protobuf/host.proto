@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package leveler;
+
+import "requirement.proto";
+import "constraint.proto";
+import "role.proto";
+import "util.proto";
+import "google/protobuf/empty.proto";
+
+service HostEndpoint {
+    rpc GetHost (HostId) returns (Host) {}
+    rpc ListHosts (Query) returns (HostList) {}
+    rpc CreateHost (Host) returns (Host) {}
+    rpc UpdateHost (Host) returns (Host) {}
+    rpc DeleteHost (HostId) returns (google.protobuf.Empty) {}
+}
+
+message HostId {
+    string Name = 1;
+}
+
+message Host {
+    string Name = 1;
+    string Description = 2;
+    repeated Constraint Constraints = 3;
+    repeated Role Roles = 4;
+    repeated Requirement Requirements = 5;
+}
+
+message HostList {
+    repeated Host Results = 1;
+}
+
