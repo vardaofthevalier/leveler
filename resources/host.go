@@ -2,6 +2,7 @@ package leveler
 
 import (
 	"fmt"
+	"log"
 	"github.com/spf13/cobra"
 	// endpoints "leveler/endpoints"
 )
@@ -45,26 +46,3 @@ func (host *Host) UpdateRequest(cmd *cobra.Command) {
 func (host *Host) DeleteRequest(cmd *cobra.Command) {
 	fmt.Println("made it!")
 } 
-
-
-// SERVER FUNCTIONS
-
-func (host *Host) Create() {
-
-}
-
-func (host *Host) Get() {
-	
-}
-
-func (host *Host) List() {
-	
-}
-
-func (host *Host) Update() {
-	
-}
-
-func (host *Host) Delete() {
-	
-}

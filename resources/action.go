@@ -1,6 +1,7 @@
 package leveler
 
 import (
+	"log"
 	"fmt"
 	"context"
 	"github.com/spf13/cobra"
@@ -68,8 +69,7 @@ func (action *Action) CreateRequest(cmd *cobra.Command) {
 	// name is required
 	name, _ := cmd.Flags().GetString("name")
 	if len(name) == 0 {
-		fmt.Println("name is a required parameter!")
-		return
+		log.Fatal("'name' is a required parameter!")
 	}
 
 	// description is optional
@@ -78,8 +78,7 @@ func (action *Action) CreateRequest(cmd *cobra.Command) {
 	// command is required
 	command, _:= cmd.Flags().GetString("command")
 	if len(command) == 0 {
-		fmt.Println("command is a required parameter!")
-		return	
+		log.Fatal("'command' is a required parameter!")
 	}
 
 	// shell is optional (default == /bin/bash)
@@ -96,8 +95,7 @@ func (action *Action) CreateRequest(cmd *cobra.Command) {
 	actionId, err := action.Client.CreateAction(context.Background(), &a)  // TODO: grpc.CallOption
 
 	if err != nil {
-		fmt.Println("Couldn't create Action!") // TODO: use errors package here
-		return
+		log.Fatalf("Error creating action: %s", err)
 	}
 
 	// TODO: return formatted response
@@ -109,8 +107,7 @@ func (action *Action) GetRequest(cmd *cobra.Command) {
 	// id is required
 	id, _ := cmd.Flags().GetString("id")
 	if len(id) == 0 {
-		fmt.Println("id is a required parameter!")
-		return
+		log.Fatal("'id' is a required parameter!")
 	}
 
 	a := endpoints.ActionId{
@@ -120,23 +117,17 @@ func (action *Action) GetRequest(cmd *cobra.Command) {
 	fmt.Println(a)
 
 	// do get request
-	actionData, err := action.doGet(&a)
-
-	if err != nil {
-		
-	}
-	// TODO: deal with err
+	actionData := action.doGet(&a)
 
 	// TODO: return formatted response
 	fmt.Println(actionData)
 }
 
-func (action *Action) doGet(actionId *endpoints.ActionId) (endpoints.Action, error) {
+func (action *Action) doGet(actionId *endpoints.ActionId) endpoints.Action {
 	actionData, err := action.Client.GetAction(context.Background(), actionId)
 
 	if err != nil {
-		fmt.Println("Couldn't get Action!") // TODO: use errors package here
-		return *actionData, err
+		log.Fatalf("Error getting action: %s", err)
 	}
 
 	return *actionData, nil
@@ -156,7 +147,7 @@ func (action *Action) ListRequest(cmd *cobra.Command) {
 	actionList, err := action.Client.ListActions(context.Background(), &query)
 
 	if err != nil {
-
+		log.Fatalf("Error listing actions: %s", err)
 	}
 
 	// TODO: return formatted response
@@ -169,7 +160,7 @@ func (action *Action) UpdateRequest(cmd *cobra.Command) {
 	// id required
 	id, _ := cmd.Flags().GetString("id")
 	if len(id) == 0 {
-		fmt.Println("Id required!")
+		log.Fatal("'id' is a required parameter!")
 	}
 
 	// name is optional
@@ -198,9 +189,10 @@ func (action *Action) UpdateRequest(cmd *cobra.Command) {
 	actionData, err := action.doGet(&endpoints.ActionId{a.Id})
 
 	if err != nil {
-		// TODO: run update
+		actionData, err = action.Client.UpdateRequest(context.Background(), &a)
+
 	} else {
-		// TODO: error (nothing to update)
+		log.Fatal("Requested action doesn't exist -- nothing to do")
 	}
 
 	// TODO: return formatted response
@@ -213,8 +205,7 @@ func (action *Action) DeleteRequest(cmd *cobra.Command) {
 	// id is required
 	id, _ := cmd.Flags().GetString("id")
 	if len(id) == 0 {
-		fmt.Println("id is a required parameter!")
-		return
+		log.Fatal("'id' is a required parameter!")
 	}
 
 	a := endpoints.ActionId{
@@ -227,9 +218,13 @@ func (action *Action) DeleteRequest(cmd *cobra.Command) {
 	actionData, err := action.doGet(&a)
 
 	if err != nil {
-		// TODO: run delete
+		_, err = action.Client.DeleteRequest(context.Background(), &a)
+		if err != nil {
+			log.Fatalf("Error deleting action: %s", err)
+		}
+
 	} else {
-		// TODO: error (nothing to delete)
+		log.Fatal("Requested action doesn't exist -- nothing to do")
 	}
 
 	// TODO: return formatted response
