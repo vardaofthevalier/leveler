@@ -20,10 +20,4 @@ type Resource interface {
 	ListRequest(cmd *cobra.Command)
 	UpdateRequest(cmd *cobra.Command)
 	DeleteRequest(cmd *cobra.Command)
-
-	Create()
-	Get()
-	List()
-	Update()
-	Delete()
 }

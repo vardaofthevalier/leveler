@@ -237,25 +237,3 @@ func (action *Action) DeleteRequest(cmd *cobra.Command) {
 } 
 
 
-// SERVER FUNCTIONS
-
-func (action *Action) Create() {
-
-}
-
-func (action *Action) Get() {
-	
-}
-
-func (action *Action) List() {
-	
-}
-
-func (action *Action) Update() {
-	
-}
-
-func (action *Action) Delete() {
-	
-}
-
