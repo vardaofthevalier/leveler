@@ -38,7 +38,6 @@ func (s *endpointServer) DeleteAction(ctx context.Context, actionId *endpoints.A
 
 func (s *endpointServer) CreateRequirement(ctx context.Context, requirement *endpoints.Requirement) (*endpoints.Requirement, error) {
 	p := s.DatabaseConnectionPool.Get()
-
 }
 
 func (s *endpointServer) GetRequirement(ctx context.Context, requirementId *endpoints.RequirementId) (*endpoints.Requirement, error) {
@@ -119,10 +118,12 @@ func main() {
 
 	// register endpoints
 	grpcServer := grpc.NewServer(opts...)
-	endpoints.RegisterActionEndpointServer(grpcServer, &endpointServer{pool})
-	endpoints.RegisterRequirementEndpointServer(grpcServer, &endpointServer{pool})
-	endpoints.RegisterRoleEndpointServer(grpcServer, &endpointServer{pool})
-	endpoints.RegisterHostEndpointServer(grpcServer, &endpointServer{pool})
+	s := &endpointServer{pool}
+	
+	endpoints.RegisterActionEndpointServer(grpcServer, s)
+	endpoints.RegisterRequirementEndpointServer(grpcServer, s)
+	endpoints.RegisterRoleEndpointServer(grpcServer, s)
+	endpoints.RegisterHostEndpointServer(grpcServer, s)
 
 	// start the server
 	grpcServer.Serve(lis)
