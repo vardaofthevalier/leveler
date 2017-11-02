@@ -2,47 +2,49 @@ package leveler
 
 import (
 	"fmt"
-	"log"
+	//"log"
 	"github.com/spf13/cobra"
-	// endpoints "leveler/endpoints"
+	endpoints "leveler/endpoints"
 )
 
-type Requirement struct {}
+type Requirement struct {
+	Client endpoints.RequirementEndpointClient
+}
 
 // CLIENT FUNCTIONS
 
-func (requirement *Requirement) Usage() string {
+func (requirement Requirement) Usage() string {
 	return "requirement"
 }
 
-func (requirement *Requirement) ShortDescription() string {
+func (requirement Requirement) ShortDescription() string {
 	return "TODO"
 }
 
-func (requirement *Requirement) LongDescription() string {
+func (requirement Requirement) LongDescription() string {
 	return `TODO`
 }
 
-func (requirement *Requirement) AddFlags(operation string, cmd *cobra.Command) {
+func (requirement Requirement) AddFlags(operation string, cmd *cobra.Command) {
 
 }
 
-func (requirement *Requirement) CreateRequest(cmd *cobra.Command) {
+func (requirement Requirement) CreateRequest(cmd *cobra.Command) {
 	fmt.Println("made it!")
 }
 
-func (requirement *Requirement) GetRequest(cmd *cobra.Command) {
+func (requirement Requirement) GetRequest(cmd *cobra.Command) {
 	fmt.Println("made it!")
 }
 
-func (requirement *Requirement) ListRequest(cmd *cobra.Command) {
+func (requirement Requirement) ListRequest(cmd *cobra.Command) {
 	fmt.Println("made it!")
 }	
 
-func (requirement *Requirement) UpdateRequest(cmd *cobra.Command) {
+func (requirement Requirement) UpdateRequest(cmd *cobra.Command) {
 	fmt.Println("made it!")
 }
 
-func (requirement *Requirement) DeleteRequest(cmd *cobra.Command) {
+func (requirement Requirement) DeleteRequest(cmd *cobra.Command) {
 	fmt.Println("made it!")
 } 

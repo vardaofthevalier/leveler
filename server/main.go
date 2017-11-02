@@ -21,6 +21,7 @@ type endpointServer struct {
 // ACTION ENDPOINTS
 
 func (s *endpointServer) CreateAction(ctx context.Context, action *endpoints.Action) (*endpoints.Action, error) {
+	log.Print(action)
 	return action, nil // TODO: create the action and populate Id field with unique id
 }
 
@@ -120,9 +121,9 @@ func main() {
 	var opts []grpc.ServerOption
 	
 	// listen on the specified port
-	var port *int
-	*port = 8080
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))  // TODO: get port number from configuration
+	host := "127.0.0.1"
+	port := 8080
+	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", host, port))  // TODO: get port number from configuration
 	if err != nil {
 	        log.Fatalf("failed to listen: %v", err)
 	}
