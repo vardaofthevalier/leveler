@@ -5,24 +5,44 @@ import (
 	"log"
 	"net"
 	"context"
-	"google.golang.org/grpc"
+	json "encoding/json"
 	data "leveler/data"
+	grpc "google.golang.org/grpc"
 	endpoints "leveler/endpoints"
-	redis_pool "github.com/mediocregopher/radix.v2/pool"
+	proto "github.com/golang/protobuf/proto"
+	jsonpb "github.com/golang/protobuf/jsonpb"
 	google_protobuf "github.com/golang/protobuf/ptypes/empty"
 )
 
 type endpointServer struct {
-	DB data.Database
+	Database data.Database
 }
 
-// Utility functions
+func toJson(m proto.Message) (map[string]interface{}, error) {
+	var jsonMap interface{}
+	jsonString := jsonpb.MarshalToString(m)
+
+	err := json.Unmarshal(jsonString, &jsonMap)
+	if err != nil {
+		// TODO
+		return jsonMap, err
+	} 
+
+	return jsonMap
+}
 
 // ACTION ENDPOINTS
 
-func (s *endpointServer) CreateAction(ctx context.Context, action *endpoints.Action) (*endpoints.Action, error) {
+func (s endpointServer) CreateAction(ctx context.Context, action *endpoints.Action) (*endpoints.Action, error) {
 	log.Print(action)
-	return action, nil // TODO: create the action and populate Id field with unique id
+	// TODO: logging
+
+	err := s.Database.Create("action", toJson(action))
+	if err != nil {
+		// TODO
+	}
+
+	return 201, nil
 }
 
 func (s *endpointServer) GetAction(ctx context.Context, actionId *endpoints.ActionId) (*endpoints.Action, error) {
@@ -121,19 +141,19 @@ func main() {
 	var opts []grpc.ServerOption
 	
 	// listen on the specified port
+	protocol := "tcp"
 	host := "127.0.0.1"
 	port := 8080
-	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", host, port))  // TODO: get port number from configuration
+
+	lis, err := net.Listen(protocol, fmt.Sprintf("%s:%d", host, port))  // TODO: get port number from configuration
 	if err != nil {
 	        log.Fatalf("failed to listen: %v", err)
 	}
 
 	// create a Redis db object
-	pool, err := redis_pool.New("tcp", "localhost:6379", 10)  // TODO: move connection info to configuration
-	if err != nil {
-		log.Fatalf("Couldn't connect to Redis: %s", err)
-	}
-	db := &data.RedisDatabase{DatabaseConnectionPool: *pool}
+	port = 6379
+	pool_size := 10
+	db := data.NewRedisDatabase(protocol, host, port, pool_size)  // TODO: move connection info to configuration
 
 	// register endpoints
 	grpcServer := grpc.NewServer(opts...)
