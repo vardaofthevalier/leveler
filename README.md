@@ -18,7 +18,7 @@ go build
 To build the server:
 
 ```
-cd leveler/server
+cd $GOHOME/src/leveler/server
 go build
 ```
 
@@ -34,6 +34,7 @@ cd $GOHOME/src/leveler/server
 Test that the client can communicate with the server by running a simple command:
 
 ```
+cd $GOHOME/src/leveler/client
 ./client create action --name "foo" --description "a foo" --command "echo foo"
 ```
 
