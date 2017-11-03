@@ -2,13 +2,13 @@ syntax = "proto3";
 
 package leveler;
 
-import "google/protobuf/empty.proto";
 import "util.proto";
+import "google/protobuf/empty.proto";
 
 service ActionEndpoint {
     rpc GetAction (ActionId) returns (Action) {}
     rpc ListActions (Query) returns (ActionList) {}
-    rpc CreateAction (Action) returns (Action) {}
+    rpc CreateAction (Action) returns (ActionId) {}
     rpc UpdateAction (Action) returns (Action) {}
     rpc DeleteAction (ActionId) returns (google.protobuf.Empty) {}
 }

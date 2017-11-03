@@ -9,7 +9,7 @@ import "google/protobuf/empty.proto";
 service RoleEndpoint {
 	rpc GetRole (RoleId) returns (Role) {}
     rpc ListRoles (Query) returns (RoleList) {}
-    rpc CreateRole (Role) returns (Role) {}
+    rpc CreateRole (Role) returns (RoleId) {}
     rpc UpdateRole (Role) returns (Role) {}
     rpc DeleteRole (RoleId) returns (google.protobuf.Empty) {}
 }

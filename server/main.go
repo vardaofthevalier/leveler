@@ -18,7 +18,7 @@ type endpointServer struct {
 	Database data.Database
 }
 
-func toJson(m proto.Message) (map[string]interface{}, error) {
+func convertProtoToJsonMap(m proto.Message) (map[string]interface{}, error) {
 	var jsonMap interface{}
 	jsonString := jsonpb.MarshalToString(m)
 
@@ -31,9 +31,13 @@ func toJson(m proto.Message) (map[string]interface{}, error) {
 	return jsonMap
 }
 
+func convertJsonMapToProtobuf(m map[string]string) (proto.Message, error) {
+
+}
+
 // ACTION ENDPOINTS
 
-func (s endpointServer) CreateAction(ctx context.Context, action *endpoints.Action) (*endpoints.Action, error) {
+func (s endpointServer) CreateAction(ctx context.Context, action *endpoints.Action) (*endpoints.ActionId, error) {
 	log.Print(action)
 	// TODO: logging
 
@@ -47,6 +51,12 @@ func (s endpointServer) CreateAction(ctx context.Context, action *endpoints.Acti
 
 func (s *endpointServer) GetAction(ctx context.Context, actionId *endpoints.ActionId) (*endpoints.Action, error) {
 	var action endpoints.Action
+
+	err := s.Database.Get("action", toJson(actionId))
+	if err != nil {
+		// TODO
+	}
+
 	return &action, nil
 }
 

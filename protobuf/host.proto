@@ -6,12 +6,12 @@ import "requirement.proto";
 import "constraint.proto";
 import "role.proto";
 import "util.proto";
-import "google/protobuf/empty.proto";
+import "google/protobuf/empty.proto"
 
 service HostEndpoint {
     rpc GetHost (HostId) returns (Host) {}
     rpc ListHosts (Query) returns (HostList) {}
-    rpc CreateHost (Host) returns (Host) {}
+    rpc CreateHost (Host) returns (HostId) {}
     rpc UpdateHost (Host) returns (Host) {}
     rpc DeleteHost (HostId) returns (google.protobuf.Empty) {}
 }

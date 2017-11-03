@@ -144,8 +144,6 @@ func (action Action) ListRequest(cmd *cobra.Command) {
 		Query: queryString,
 	}
 
-	// TODO: validate query string
-
 	// do list request
 	actionList, err := action.Client.ListActions(context.Background(), &query)
 

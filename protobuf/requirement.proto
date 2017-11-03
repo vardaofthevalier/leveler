@@ -10,7 +10,7 @@ import "google/protobuf/empty.proto";
 service RequirementEndpoint {
     rpc GetRequirement (RequirementId) returns (Requirement) {}
     rpc ListRequirements (Query) returns (RequirementList) {}
-    rpc CreateRequirement (Requirement) returns (Requirement) {}
+    rpc CreateRequirement (Requirement) returns (RequirementId) {}
     rpc UpdateRequirement (Requirement) returns (Requirement) {}
     rpc DeleteRequirement (RequirementId) returns (google.protobuf.Empty) {}
 }
