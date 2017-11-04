@@ -6,7 +6,7 @@ import "requirement.proto";
 import "constraint.proto";
 import "role.proto";
 import "util.proto";
-import "google/protobuf/empty.proto"
+import "google/protobuf/empty.proto";
 
 service HostEndpoint {
     rpc GetHost (HostId) returns (Host) {}
@@ -17,15 +17,16 @@ service HostEndpoint {
 }
 
 message HostId {
-    string Name = 1;
+    string Id = 1;
 }
 
 message Host {
-    string Name = 1;
-    string Description = 2;
-    repeated Constraint Constraints = 3;
-    repeated Role Roles = 4;
-    repeated Requirement Requirements = 5;
+    string Id = 1;
+    string Name = 2;
+    string Description = 3;
+    repeated Constraint Constraints = 4;
+    repeated Role Roles = 5;
+    repeated Requirement Requirements = 6;
 }
 
 message HostList {

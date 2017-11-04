@@ -16,16 +16,17 @@ service RequirementEndpoint {
 }
 
 message RequirementId {
-    string Name = 1;
+    string Id = 1;
 }
 
 message Requirement {
-    string Name = 1;
-    string Description = 2;
-    repeated Action Actions = 3;
-    repeated Action Tests = 4;
-    repeated Constraint Constraints = 5;
-    map<string, string> Environment = 6;
+    string Id = 1;
+    string Name = 2;
+    string Description = 3;
+    repeated Action Actions = 4;
+    repeated Action Tests = 5;
+    repeated Constraint Constraints = 6;
+    map<string, string> Environment = 7;
 }
 
 message RequirementList {

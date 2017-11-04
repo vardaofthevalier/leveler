@@ -15,13 +15,14 @@ service RoleEndpoint {
 }
 
 message RoleId {
-	string Name = 1;
+	string Id = 1;
 }
 
 message Role {
-	string Name = 1;
-	string Description = 2; 
-	repeated Requirement Requirements = 3;
+	string Id = 1;
+	string Name = 2;
+	string Description = 3; 
+	repeated Requirement Requirements = 4;
 }
 
 message RoleList {

@@ -123,7 +123,7 @@ func (action Action) GetRequest(cmd *cobra.Command) {
 	// do get request
 	actionData, err := action.doGet(&a)
 	if err != nil {
-		fmt.Println("Error creating action: %s", err)
+		fmt.Println("Error retrieving action: %s", err)
 		os.Exit(1)
 	}
 

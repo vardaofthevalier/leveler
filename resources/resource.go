@@ -2,12 +2,7 @@ package leveler
 
 import (
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
 )
-
-var Connection *grpc.ClientConn
-
-var opts []grpc.DialOption
 
 type Resource interface {
 	Usage() string
