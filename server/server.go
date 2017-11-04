@@ -95,7 +95,7 @@ func (s *EndpointServer) genericList(t string, query string, dest interface{}) e
 		return err
 	}
 
-	err = proto.Unmarshal(jsonString, dest.(proto.Message))
+	err = jsonpb.Unmarshal(bytes.NewReader(jsonString), dest.(proto.Message))
 	if err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func (s *EndpointServer) genericUpdate(t string, id string, obj proto.Message, d
 		return err
 	}
 
-	err = proto.Unmarshal(jsonString, dest.(proto.Message))
+	err = jsonpb.Unmarshal(bytes.NewReader(jsonString), dest.(proto.Message))
 	if err != nil {
 		return err
 	}
