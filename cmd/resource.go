@@ -1,32 +1,40 @@
 package leveler
 
 import (
-	"os"
-	"fmt"
-	"context"
 	"github.com/spf13/cobra"
-	endpoints "leveler/endpoints"
+	pb "leveler/resources"
 )
 
-type Action struct {
-	Client endpoints.ActionEndpointClient
+type Resource interface {
+	Usage() string
+	ShortDescription() string
+	LongDescription() string
+	AddFlags(operation string, cmd *cobra.Command)
+	
+	CreateRequest(cmd *cobra.Command)
+	GetRequest(cmd *cobra.Command)
+	ListRequest(cmd *cobra.Command)
+	UpdateRequest(cmd *cobra.Command)
+	DeleteRequest(cmd *cobra.Command)
 }
+
+type resource pb.Resource
 
 // CLIENT FUNCTIONS
 
-func (action Action) Usage() string {
-	return "action"
+func (r *resource) Usage() string {
+	return r.Usage
 }
 
-func (action Action) ShortDescription() string {
-	return "Perform an operation on an Action resource"
+func (r *resource) ShortDescription() string {
+	return r.ShortDescription
 }
 
-func (action Action) LongDescription() string {
-	return `TODO`
+func (r *resource) LongDescription() string {
+	return r.LongDescription
 }
 
-func (action Action) AddFlags(operation string, cmd *cobra.Command) {
+func (r *resource) AddFlags(operation string, cmd *cobra.Command) {
 
 	var id string
 	var query string
@@ -86,7 +94,7 @@ func (action Action) CreateRequest(cmd *cobra.Command) {
 	// shell is optional (default == /bin/bash)
 	shell, _ := cmd.Flags().GetString("shell")
 
-	a := endpoints.Action{
+	a := service.Action{
 		Name: name,
 		Description: desc,
 		Command: command,
@@ -114,7 +122,7 @@ func (action Action) GetRequest(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 
-	a := endpoints.ActionId{
+	a := service.ActionId{
 		Id: id,
 	}
 
@@ -131,7 +139,7 @@ func (action Action) GetRequest(cmd *cobra.Command) {
 	fmt.Println(actionData)
 }
 
-func (action Action) doGet(actionId *endpoints.ActionId) (*endpoints.Action, error) {
+func (action Action) doGet(actionId *service.ActionId) (*service.Action, error) {
 	a, err := action.Client.GetAction(context.Background(), actionId)
 	return a, err
 }
@@ -140,7 +148,7 @@ func (action Action) ListRequest(cmd *cobra.Command) {
 	fmt.Println("made it to list!")
 
 	queryString, _ := cmd.Flags().GetString("query")
-	query := endpoints.Query{
+	query := service.Query{
 		Query: queryString,
 	}
 
@@ -178,7 +186,7 @@ func (action Action) UpdateRequest(cmd *cobra.Command) {
 	// shell is optional
 	shell, _ := cmd.Flags().GetString("shell")
 
-	a := endpoints.Action{
+	a := service.Action{
 		Id: id,
 		Name: name,
 		Description: desc,
@@ -189,7 +197,7 @@ func (action Action) UpdateRequest(cmd *cobra.Command) {
 	fmt.Println(a)
 
 	// lookup existing resource 
-	actionData, err := action.doGet(&endpoints.ActionId{a.Id})
+	actionData, err := action.doGet(&service.ActionId{a.Id})
 
 	if err != nil {
 		actionData, err = action.Client.UpdateAction(context.Background(), &a)
@@ -217,7 +225,7 @@ func (action Action) DeleteRequest(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 
-	a := endpoints.ActionId{
+	a := service.ActionId{
 		Id: id,
 	}
 
@@ -241,5 +249,3 @@ func (action Action) DeleteRequest(cmd *cobra.Command) {
 	// TODO: return formatted response
 	fmt.Println(actionData)
 } 
-
-

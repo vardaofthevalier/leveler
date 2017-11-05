@@ -1,0 +1,41 @@
+Resources:
+- Name: action
+  Usage: action
+  ShortDescription: Perform an operation on an Action resource
+  LongDescription: Defined as a command and shell which can be later applied to a Host Resources
+  Operations:
+  - Name: create
+    Options:
+      - Name: name 
+        ShortName: n 
+        Type: string 
+        Required: true 
+        Description: A descriptive name for the action
+      - name: description
+        ShortName: d
+        Type: string 
+        Required: false
+        Description: A concise description for the goal of the action
+      - name: command 
+        ShortName: c
+        Type: string 
+        Required: true
+        Description: A command representing the action
+      - name: shell
+        ShortName: s
+        Type: string 
+        Required: true
+        Default: /bin/bash
+        Description: A concise description for the goal of the action
+  - Name: get
+    Options:
+  - Name: list
+    Options:
+  - Name: update
+    Options:
+  - Name: patch
+    Options:
+  - Name: delete
+    Options:
+  - Name: apply
+    Options:

@@ -5,6 +5,7 @@ import (
 	"log"
 	"regexp"
 	"strings"
+	config "leveler/config"
 	uuid "github.com/satori/go.uuid"
 	redis "github.com/mediocregopher/radix.v2/redis"
 	redis_pool "github.com/mediocregopher/radix.v2/pool"
@@ -398,11 +399,11 @@ func (db RedisDatabase) Flush(kind string) error {
 	return nil
 }
 
-func NewRedisDatabase(protocol string, host string, port int, size int) RedisDatabase {
-	pool, err := redis_pool.New(protocol, fmt.Sprintf("%s:%d", host, port), size)  
+func NewRedisDatabase(protocol string, host string, port int32, size int32) RedisDatabase {
+	pool, err := redis_pool.New(protocol, fmt.Sprintf("%s:%d", host, port), int(size))  
 	if err != nil {
 		log.Fatalf("Couldn't connect to Redis server: %s", err)
 	}
 
-	return RedisDatabase{DatabaseConnectionPool: *pool}
+	return RedisDatabase{DatabaseConnectionPool: *pool, DatabaseLabels: config.DatabaseLabelsMap}
 }

@@ -2,7 +2,21 @@ syntax = "proto3";
 
 package leveler;
 
+message Database {
+	string type = 1;
+	string host = 2;
+	int32 port = 3;
+	oneof opts {
+		RedisOptions options = 4;
+	}
+}
+
+message RedisOptions {
+	int32 poolSize = 1;
+}
+
 message Config {
-	string Host = 1;
-	int32 Port = 2;
+	string host = 1;
+	int32 port = 2;
+	Database database = 3;
 }

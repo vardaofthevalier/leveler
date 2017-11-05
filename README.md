@@ -39,3 +39,11 @@ cd $GOHOME/src/leveler/client
 ```
 
 You should see the action resource object echoed in the server component's logs.
+
+## Project Structure
+
+This project has been designed with the intention of easily supporting modifications or extensions to the underlying gRPC service implementation.
+
+// TODO: write a more thorough explanation
+
+## Future Work

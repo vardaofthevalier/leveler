@@ -2,13 +2,12 @@ package leveler
 
 import (
 	"fmt"
-	//"log"
 	"github.com/spf13/cobra"
-	endpoints "leveler/endpoints"
+	service "leveler/grpc"
 )
 
 type Role struct {
-	Client endpoints.RoleEndpointClient
+	Client service.RoleEndpointClient
 }
 
 // CLIENT FUNCTIONS

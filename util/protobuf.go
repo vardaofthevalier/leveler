@@ -2,6 +2,7 @@ package leveler
 
 import (
 	json "encoding/json"
+	yaml "gopkg.in/yaml.v2"
 	proto "github.com/golang/protobuf/proto"
 	jsonpb "github.com/golang/protobuf/jsonpb"
 )
@@ -39,4 +40,17 @@ func ConvertMapToJson(m map[string]string) ([]byte, error) {
 	}
 
 	return jsonString, nil
+}
+
+func ConvertYamlToProto(yml []byte, p *proto.Message) error {
+	err := yaml.Unmarshal(yml, p)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func FormatProto(p *proto.Message) {
+	// TODO: transform messages into human readable output and print them
 }

@@ -19,16 +19,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: "A list resources of a particular type",
+var patchCmd = &cobra.Command{
+	Use:   "patch",
+	Short: "Partially update a resource",
 	Long: `TODO`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("list called")
+		fmt.Println("patch called")
 	},
 }
 
 func init() {
-	AddListCommands(listCmd)
-	RootCmd.AddCommand(listCmd)
+	AddPatchCommands(patchCmd)
+	RootCmd.AddCommand(patchCmd)
 }
