@@ -2,6 +2,7 @@
 package leveler
 
 import (
+	"log"
 	"context"
 	google_protobuf "github.com/golang/protobuf/ptypes/empty"
 

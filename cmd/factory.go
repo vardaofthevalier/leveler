@@ -3,8 +3,10 @@ package leveler
 import (
 	"os"
 	"fmt"
+	"io/ioutil"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
+	util "leveler/util"
 	endpoints "leveler/grpc"
 )
 
@@ -132,10 +134,41 @@ func buildResourceList() []Resource {
 		os.Exit(1)
 	}
 
-	r = append(r, Action{endpoints.NewActionEndpointClient(clientConn)})
-	r = append(r, Requirement{endpoints.NewRequirementEndpointClient(clientConn)})
-	r = append(r, Role{endpoints.NewRoleEndpointClient(clientConn)})
-	r = append(r, Host{endpoints.NewHostEndpointClient(clientConn)})
+	// read the resources.yml file to get a list of resources
+	var resourcesYml map[string]interface 
+
+	contents, err = ioutil.ReadFile("resources.yml")
+
+	if err != nil {
+		return err
+	}
+
+	err = util.ConvertYamlToMap(contents, m)
+	if err != nil {
+		fmt.Printf("Couldn't create resource map: %v", err)
+		os.Exit(1)
+	}
+
+	for r := range m["Resources"] {
+		var operations []*service.CmdOperation
+
+		for o := range r["Operations"] {
+			var options []*service.Option
+			for opt := range o["Options"] {
+				options = append(options, &service.Option{Name: opt["Name"], ShortName: opt["ShortName"], Type: opt["Type"], Default: opt["Default"], Description: opt["Description"],})
+			}
+			operations = append(operations, &service.CmdOperation{Name: o["Name"], Options: options,})
+		}
+		cmdConfig := &service.CmdConfig{
+			Name: r["Name"],
+			Usage: r["Usage"],
+			ShortDescription: r["ShortDescription"],
+			LongDescription: r["LongDescription"],
+			Operations: operations,
+		}
+
+		r = append(r, Resource{Client: endpoints.ResourceEndpointClient(clientConn), CmdConfig: cmdConfig})
+	}
 
 	return r
 }

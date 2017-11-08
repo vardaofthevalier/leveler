@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package leveler;
+
+import "google/protobuf/any.proto";
+
+service ResourceEndpoint {
+    rpc GetResource (ResourceId) returns (ResourceResult) {}
+    rpc ListResources (Query) returns (ResourceResult) {}
+    rpc CreateResource (google.protobuf.Any) returns (ResourceResult) {}
+    rpc UpdateResource (google.protobuf.Any) returns (ResourceResult) {}
+    rpc DeleteResource (ResourceId) returns (ResourceResult) {}
+}
+
+message Query {
+    string Query = 1;
+}
+
+message ResourceId {
+    string Id = 1;
+}
+
+message ResourceList {
+    repeated google.protobuf.Any Results = 1;
+}
+
+message ResourceResult {
+    int32 Status = 1;
+    oneof results {
+        ResourceList List = 2;
+        ResourceId Id = 3;
+    }
+}

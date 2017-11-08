@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-package leveler;
-
-message Query {
-    string Query = 1;
-}

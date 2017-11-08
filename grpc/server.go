@@ -94,24 +94,12 @@ func (s *EndpointServer) genericList(t string, query string, dest interface{}) e
 func (s *EndpointServer) genericUpdate(t string, id string, obj proto.Message, dest interface{}) error {
 	log.Printf("Updating %s: %v", obj)
 
-	var jsonString []byte
-
 	m, err := util.ConvertProtoToJsonMap(obj)
 	if err != nil {
 		return err
 	}
 
-	result, err := s.Database.Update(t, id, m)
-	if err != nil {
-		return err
-	}
-
-	jsonString, err = util.ConvertMapToJson(result)
-	if err != nil {
-		return err
-	}
-
-	err = jsonpb.Unmarshal(bytes.NewReader(jsonString), dest.(proto.Message))
+	err = s.Database.Update(t, id, m)
 	if err != nil {
 		return err
 	}

@@ -1,8 +1,9 @@
 package leveler
 
 import (
+	os
 	"github.com/spf13/cobra"
-	pb "leveler/resources"
+	service "leveler/grpc"
 )
 
 type Resource interface {
@@ -18,56 +19,39 @@ type Resource interface {
 	DeleteRequest(cmd *cobra.Command)
 }
 
-type resource pb.Resource
+type Resource struct {
+	Client service.ResourceEndpointClient
+	CmdConfig service.CmdConfig
+}
 
 // CLIENT FUNCTIONS
 
-func (r *resource) Usage() string {
-	return r.Usage
+func (r *Resource) Usage() string {
+	return r.CmdConfig.Usage
 }
 
-func (r *resource) ShortDescription() string {
-	return r.ShortDescription
+func (r *Resource) ShortDescription() string {
+	return r.CmdConfig.ShortDescription
 }
 
-func (r *resource) LongDescription() string {
-	return r.LongDescription
+func (r *Resource) LongDescription() string {
+	return r.CmdConfig.LongDescription
 }
 
-func (r *resource) AddFlags(operation string, cmd *cobra.Command) {
-
-	var id string
-	var query string
-	var name string
-	var description string
-	var command string
-	var shell string
-
-	switch operation {
-	case "create":
-		cmd.PersistentFlags().StringVarP(&name, "name", "n", "", "A descriptive name for the action")
-		cmd.PersistentFlags().StringVarP(&description, "description", "d", "", "A description for the goal of the action")
-		cmd.PersistentFlags().StringVarP(&command, "command", "c", "", "The command that defines the action")
-		cmd.PersistentFlags().StringVarP(&shell, "shell", "s", "/bin/bash", "The shell to use for running the command")
-		
-	case "get":
-		cmd.PersistentFlags().StringVarP(&id, "id", "i", "", "The unique ID for the action of interest")
-
-	case "list": 
-		cmd.PersistentFlags().StringVarP(&query, "query", "q", "", "A query for filtering the list of results")
-
-	case "update":
-		cmd.PersistentFlags().StringVarP(&id, "id", "i", "", "The unique ID for the action of interest")
-		cmd.PersistentFlags().StringVarP(&name, "name", "n", "", "A descriptive name for the action")
-		cmd.PersistentFlags().StringVarP(&description, "description", "d", "", "A description for the goal of the action")
-		cmd.PersistentFlags().StringVarP(&command, "command", "c", "", "The command that defines the action")
-		cmd.PersistentFlags().StringVarP(&shell, "shell", "s", "/bin/bash", "The shell to use for running the command")
-
-	case "delete": 
-		cmd.PersistentFlags().StringVarP(&id, "id", "i", "", "The unique ID for the action of interest")
-
-	case "apply":
-		cmd.PersistentFlags().StringVarP(&id, "id", "i", "", "The unique ID for the action of interest")
+func (r *Resource) AddFlags(operation string, cmd *cobra.Command) {
+	// TODO: find the correct operation within the resource
+	for o := range Options {
+		switch o {
+		case "string":
+			var s string
+			cmd.PersistentFlags().StringVarP(&s, o.Name, o.ShortName, o.Default, o.Description)
+		case "bool":
+			var b bool
+			cmd.PersistentFlags().StringVarP(&b, o.Name, o.ShortName, o.Default, o.Description)
+		default:
+			fmt.Printf("Unknown type '%s' for command line option", o)
+			os.Exit(1)
+		}
 	}
 }
 

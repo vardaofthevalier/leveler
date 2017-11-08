@@ -51,6 +51,15 @@ func ConvertYamlToProto(yml []byte, p *proto.Message) error {
 	return nil
 }
 
+func ConvertYamlToMap(yml []byte, m map[string]interface) error {
+	err := yaml.Unmarshal(yml, m)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func FormatProto(p *proto.Message) {
 	// TODO: transform messages into human readable output and print them
 }

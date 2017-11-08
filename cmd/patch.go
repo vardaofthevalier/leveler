@@ -29,6 +29,6 @@ var patchCmd = &cobra.Command{
 }
 
 func init() {
-	AddPatchCommands(patchCmd)
+	//AddPatchCommands(patchCmd)
 	RootCmd.AddCommand(patchCmd)
 }

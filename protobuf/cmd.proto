@@ -1,0 +1,38 @@
+syntax = "proto2";
+
+package leveler;
+
+enum Operations {
+	create = 1;
+	get = 2;
+	list = 3;
+	update = 4;
+	patch = 5;
+	delete = 6;
+	apply = 7;	
+}
+
+message ResourceCmdConfig {
+	repeated CmdConfig Resources = 1;
+}
+
+message CmdConfig {
+	required string Name = 1;
+	required string Usage = 2;
+	required string ShortDescription = 3;
+	required string LongDescription = 4;
+	repeated CmdOption Operations = 5;
+}
+
+message CmdOperation {
+	required Operation Name = 1;
+	reqpested Option Options = 2;
+}
+
+message Option {
+	required string Name = 1;
+	required string ShortName = 2;
+	required string Default = 3;
+	required string Type = 4;
+	required string Description = 5;
+}

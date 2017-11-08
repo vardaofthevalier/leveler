@@ -191,7 +191,11 @@ func evaluateSetExpression(kind string, conn *redis.Client, tokens []string, pre
 					return rh, err
 				}
 
-				return evaluateSetExpression(kind, conn, rem, intersection(complement(rh), previous))
+				c, err := complement(rh, conn)
+				if err != nil {
+					return c, err
+				}
+				return evaluateSetExpression(kind, conn, rem, intersection(c, previous))
 
 			} else if head == "(" {
 				rh, err := evaluateSetExpression(kind, conn, tail, previous)
@@ -221,7 +225,12 @@ func evaluateSetExpression(kind string, conn *redis.Client, tokens []string, pre
 					return rh, err
 				}
 
-				return evaluateSetExpression(kind, conn, rem, union(complement(rh), previous))
+				c, err := complement(rh, conn)
+				if err != nil {
+					return c, err
+				}
+
+				return evaluateSetExpression(kind, conn, rem, union(c, previous))
 
 			} else if head == "(" {
 				rh, err := evaluateSetExpression(kind, conn, tail, previous)
@@ -255,16 +264,71 @@ func evaluateSetExpression(kind string, conn *redis.Client, tokens []string, pre
 	}
 }
 
-func complement(a map[string]string) map[string] string {
-	return map[string]string{}
+func complement(a map[string]string, conn *redis.Client) (map[string]string, error) {
+	var results map[string]string
+	u, err := conn.Cmd("KEYS", "*").Array()
+	if err != nil {
+		return results, err
+	}
+
+	for _, k := range u {
+		s := k.String()
+		if _, ok := a[s]; !ok {
+			r, err := conn.Cmd("HGETALL", s).Map()
+			if err != nil {
+				return map[string]string{}, err
+			}
+			for w, v := range r {
+				results[w] = v
+			}
+		}
+	}
+
+	return results, nil
 }
 
 func intersection(a map[string] string, b map[string]string) map[string] string {
-	return map[string]string{}
+	var results map[string]string
+	var smaller map[string]string
+	var larger map[string]string
+
+	if len(a) > len(b) {
+		smaller = b
+		larger = a
+	} else {
+		smaller = a
+		larger = b
+	}
+
+	for k, v := range smaller {
+		if _, ok := larger[k]; ok {
+			results[k] = v
+		} 
+	}
+
+	return results
 }
 
 func union(a map[string] string, b map[string]string) map[string] string {
-	return map[string]string{}
+	var results map[string]string
+	var smaller map[string]string
+	var larger map[string]string
+
+	if len(a) > len(b) {
+		smaller = b
+		larger = a
+	} else {
+		smaller = a
+		larger = b
+	}
+
+	for k, _ := range smaller {
+		if exists, ok := larger[k]; !ok {
+			results[k] = exists
+		}
+	}
+
+	return results
 }
 
 func in(elem string, slice []string) bool {
@@ -351,16 +415,18 @@ func (db RedisDatabase) List(kind string, query string) (map[string]string, erro
 	return result, nil
 }
 
-func (db RedisDatabase) Update(kind string, id string, obj map[string]interface{}) (map[string]string, error) {
+func (db RedisDatabase) Update(kind string, id string, obj map[string]interface{}) error {
 	conn, err := db.selectDatabase(kind)
 	if err != nil {
-		return map[string]string{}, err
+		return err
 	}
 
 	defer db.DatabaseConnectionPool.Put(conn)
 
 	// full replace update on obj
-	return map[string]string{}, err
+	_ = conn.Cmd("HMSET", fmt.Sprintf("%s:%s", kind, id), obj).String()
+
+	return err
 }
 
 func (db RedisDatabase) Delete(kind string, id string) error {
@@ -372,6 +438,8 @@ func (db RedisDatabase) Delete(kind string, id string) error {
 	defer db.DatabaseConnectionPool.Put(conn)
 
 	// delete the hash stored at key = id
+	_ = conn.Cmd("DEL", fmt.Sprintf("%s:%s", kind, id)).String()
+
 	return err
 }
 
@@ -394,7 +462,7 @@ func (db RedisDatabase) Flush(kind string) error {
 			return err
 		}
 	}
-	// otherwise FLUSHDB
+
 	// Question: how should this be exposed?  Probably should require authentication!
 	return nil
 }
