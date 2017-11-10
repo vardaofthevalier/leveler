@@ -1,4 +1,4 @@
-package leveler
+package util
 
 import (
 	"bytes"

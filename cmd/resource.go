@@ -4,6 +4,8 @@ import (
 	"os"
 	"github.com/spf13/cobra"
 	service "leveler/grpc"
+	util "leveler/util"
+	proto "github.com/golang/protobuf/proto"
 )
 
 type Resource interface {
@@ -12,10 +14,10 @@ type Resource interface {
 	LongDescription() string
 	AddFlags(operation string, cmd *cobra.Command)
 	
-	CreateRequest(cmd *cobra.Command)
+	CreateRequest(cmd *cobra.Command) 
 	GetRequest(cmd *cobra.Command)
-	ListRequest(cmd *cobra.Command)
-	UpdateRequest(cmd *cobra.Command)
+	ListRequest(cmd *cobra.Command) 
+	UpdateRequest(cmd *cobra.Command) 
 	DeleteRequest(cmd *cobra.Command)
 }
 
@@ -55,187 +57,172 @@ func (r *resource) AddFlags(operation string, cmd *cobra.Command) {
 	}
 }
 
+func (r *resource) processArgs(cmd *cobra.Command) (*proto.Message, error) {
+	// process required args and error out if any required parameters aren't set
+
+	// look up the operation
+	var operation CmdOperation
+	for _, o := range r.CmdConfig.Operations {
+		if o.Name == cmd.Name() {
+			operation = o
+			break
+		}
+	}
+
+	// iterate through args to determine if required args were provided	and build protobuf message
+	var s *server.Resource
+	var d map[string]interface{}
+
+	s.Type = r.CmdConfig.Name
+	for _, opt := range operation.Options {
+		switch opt.Type {
+		case "string":
+			k, _ := cmd.Flags.GetString(opt.Name)
+		case "bool":
+			k, _ := cmd.Flags.GetBool(opt.Name)
+		default:
+			fmt.Printf("Unknown type '%s' in configuration", opt.Type)
+			os.Exit(1)
+		}
+
+		if len(k) == 0 && opt.Required {
+			fmt.Printf("'%s' is a required parameter!")
+			os.Exit(1)
+		}
+
+		d[opt.Name] = k
+	}
+
+	// generate protobuf message
+	details, err := util.GenerateProtoAny(d)
+	if err != nil {
+		return s, err
+	}
+
+	s.Details = details
+
+	return s, nil
+}
+
 func (r *resource) CreateRequest(cmd *cobra.Command) {
 	fmt.Println("made it to create!")
 
-	// process required args and error out if any required parameters aren't set
-	// generate protobuf message to send to the server
-	// send the message to the server
-	// if there are errors, report them
-	// otherwise print the response
-
-	// name is required
-	// name, _ := cmd.Flags().GetString("name")
-	// if len(name) == 0 {
-	// 	fmt.Println("'name' is a required parameter!")
-	// 	os.Exit(1)
-	// }
-
-	// // description is optional
-	// desc, _ := cmd.Flags().GetString("description")
-
-	// // command is required
-	// command, _:= cmd.Flags().GetString("command")
-	// if len(command) == 0 {
-	// 	fmt.Println("'command' is a required parameter!")
-	// 	os.Exit(1)
-	// }
-
-	// // shell is optional (default == /bin/bash)
-	// shell, _ := cmd.Flags().GetString("shell")
-
-	// a := service.Action{
-	// 	Name: name,
-	// 	Description: desc,
-	// 	Command: command,
-	// 	Shell: shell,
-	// }
-
-	// // do create request
-	// actionId, err := action.Client.CreateAction(context.Background(), &a)  // TODO: grpc.CallOption
-
-	// if err != nil {
-	// 	fmt.Printf("Error creating action: %s", err)
-	// 	os.Exit(1)
-	// }
-
-	// // TODO: return formatted response
-	// fmt.Println(actionId)
-}
-
-func (r *resource) GetRequest(cmd *cobra.Command) {
-	fmt.Println("made it to get!")
-	// id is required
-	id, _ := cmd.Flags().GetString("id")
-	if len(id) == 0 {
-		fmt.Println("'id' is a required parameter!")
+	message, err := r.processArgs()
+	if err != nil {
+		fmt.Printf("Couldn't process args: %v", err)
 		os.Exit(1)
 	}
 
-	a := service.ActionId{
-		Id: id,
-	}
+	// do create request
+	resourceId, err := r.Client.CreateAction(context.Background(), &message)  // TODO: grpc.CallOption
 
-	fmt.Println(a)
-
-	// do get request
-	actionData, err := action.doGet(&a)
 	if err != nil {
-		fmt.Println("Error retrieving action: %s", err)
+		fmt.Printf("Error creating resource: %s", err)
 		os.Exit(1)
 	}
 
 	// TODO: return formatted response
-	fmt.Println(actionData)
+	fmt.Println(resourceId)
 }
 
-func (r *resource) doGet(actionId *service.ActionId) (*service.Action, error) {
-	a, err := action.Client.GetAction(context.Background(), actionId)
-	return a, err
+func (r *resource) GetRequest(cmd *cobra.Command) {
+	fmt.Println("made it to get!")
+
+	message, err := r.processArgs()
+	if err != nil {
+		fmt.Printf("Couldn't process args: %v", err)
+		os.Exit(1)
+	}
+
+	// do get request
+	resource, err := action.doGet(&message)
+	if err != nil {
+		fmt.Println("Error retrieving resource: %s", err)
+		os.Exit(1)
+	}
+
+	// TODO: return formatted response
+	fmt.Println(resource)
+}
+
+func (r *resource) doGet(resourceId *service.ResourceId) {
+	resource, err := r.Client.GetAction(context.Background(), resourceId)
+	return resource, err
 }
 
 func (r *resource) ListRequest(cmd *cobra.Command) {
 	fmt.Println("made it to list!")
 
-	queryString, _ := cmd.Flags().GetString("query")
+	queryString, _ := cmd.Flags().GetString("query")  // TODO: special handling for query?  it's sort of a globally required option given the functionality of the database...
 	query := service.Query{
 		Query: queryString,
 	}
 
 	// do list request
-	actionList, err := action.Client.ListActions(context.Background(), &query)
+	resourceList, err := r.Client.ListActions(context.Background(), &query)
 
 	if err != nil {
 		fmt.Println("Error listing actions: %s", err)
 		os.Exit(1)
 	}
 
-	// TODO: return formatted response
-	fmt.Println(actionList)
+	// TODO: print formatted response
+	fmt.Println(resourceList)
 }	
 
 func (r *resource) UpdateRequest(cmd *cobra.Command) {
 	fmt.Println("made it to update!")
 
-	// id required
-	id, _ := cmd.Flags().GetString("id")
-	if len(id) == 0 {
-		fmt.Println("'id' is a required parameter!")
+	message, err := r.processArgs()
+	if err != nil {
+		fmt.Printf("Couldn't process args: %v", err)
 		os.Exit(1)
 	}
 
-	// name is optional
-	name, _ := cmd.Flags().GetString("name")
-
-	// description is optional
-	desc, _ := cmd.Flags().GetString("description")
-
-	// command is optional
-	command, _:= cmd.Flags().GetString("command")
-
-	// shell is optional
-	shell, _ := cmd.Flags().GetString("shell")
-
-	a := service.Action{
-		Id: id,
-		Name: name,
-		Description: desc,
-		Command: command,
-		Shell: shell,
-	}
-
-	fmt.Println(a)
-
 	// lookup existing resource 
-	actionData, err := action.doGet(&service.ActionId{a.Id})
+	_, err = action.doGet(&service.ResourceId{message.Id})
 
 	if err != nil {
-		actionData, err = action.Client.UpdateAction(context.Background(), &a)
-		if err != nil {
-			fmt.Printf("Error updating action: %s", err)
-			os.Exit(1)
-		}
-
-	} else {
 		fmt.Println("Requested action doesn't exist -- nothing to do")
 		os.Exit(0)
+
+	} else {
+		_, err = action.Client.UpdateResource(context.Background(), &message)
+		if err != nil {
+			fmt.Printf("Error updating resource: %s", err)
+			os.Exit(1)
+		}
 	}
 
 	// TODO: return formatted response
-	fmt.Println(actionData)
+	fmt.Println(resource)
 }
 
 func (r *resource) DeleteRequest(cmd *cobra.Command) {
 	fmt.Println("made it to delete!")
 
-	// id is required
-	id, _ := cmd.Flags().GetString("id")
-	if len(id) == 0 {
-		fmt.Println("'id' is a required parameter!")
+	message, err := r.processArgs()
+	if err != nil {
+		fmt.Printf("Couldn't process args: %v", err)
 		os.Exit(1)
 	}
 
-	a := service.ActionId{
-		Id: id,
-	}
-
-	fmt.Println(a)
-
 	// lookup existing resource 
-	actionData, err := action.doGet(&a)
+	_, err = action.doGet(&a)
 
 	if err != nil {
-		_, err = action.Client.DeleteAction(context.Background(), &a)
 		if err != nil {
-			fmt.Printf("Error deleting action: %s", err)
+			_, err = r.Client.DeleteAction(context.Background(), &message)
+		} else {
+			fmt.Printf("Error deleting resource: %s", err)
 			os.Exit(1)
 		}
 
 	} else {
-		fmt.Println("Requested action doesn't exist -- nothing to do")
+		fmt.Println("Requested resource doesn't exist -- nothing to do")
 		os.Exit(0)
 	}
 
 	// TODO: return formatted response
-	fmt.Println(actionData)
+	fmt.Printf("Successfully deleted resource '%s'", message.Id)
 } 

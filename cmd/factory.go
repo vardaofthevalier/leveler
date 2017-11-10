@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	util "leveler/util"
-	endpoints "leveler/grpc"
+	service "leveler/grpc"
 )
 
 var opts []grpc.DialOption
@@ -135,35 +135,98 @@ func buildResourceList() []Resource {
 	}
 
 	// read the resources.yml file to get a list of resources
-	var resourcesYml map[string]interface{}
-
-	contents, err = ioutil.ReadFile("resources.yml")
-
+	contents, err := ioutil.ReadFile("resources.yml")
 	if err != nil {
-		return err
+		fmt.Printf("Error reading resource configuration file: %v", err)
+		os.Exit(1)
 	}
 
-	err = util.ConvertYamlToMap(contents, m)
+	var m map[string]interface{}
+	err = util.ConvertFromYaml(contents, m)
 	if err != nil {
 		fmt.Printf("Couldn't create resource map: %v", err)
 		os.Exit(1)
 	}
 
-	for r := range m["Resources"] {
-		var operations []*service.CmdOperation
+	resources, ok := m["Resources"].([]interface{})
+	if !ok {
+		// TODO
+	}
 
-		for o := range r["Operations"] {
-			var options []*service.Option
-			for opt := range o["Options"] {
-				options = append(options, &service.Option{Name: opt["Name"], ShortName: opt["ShortName"], Type: opt["Type"], Default: opt["Default"], Description: opt["Description"],})
-			}
-			operations = append(operations, &service.CmdOperation{Name: o["Name"], Options: options,})
+	var name, shortname, typ, def, usage, shortdescription, description *string
+
+
+	for _, r := range resources {
+		var operations []*CmdOperation
+
+		r2, ok := r.(map[string]interface{})
+		if !ok {
+			// TODO
 		}
-		cmdConfig := &service.CmdConfig{
-			Name: r["Name"],
-			Usage: r["Usage"],
-			ShortDescription: r["ShortDescription"],
-			LongDescription: r["LongDescription"],
+		ops, ok := r2["Operations"].([]interface{})
+		if !ok {
+			// TODO
+		}
+
+		for _, o := range ops {
+			var options []*Option
+
+			o2, ok := o.(map[string]interface{})
+			if !ok {
+				// TODO
+			}
+			opts, ok := o2["Options"].([]interface{})
+			if !ok {
+				// TODO
+			}
+
+			for _, opt := range opts {
+				opt2, ok := opt.(map[string]string)
+				if !ok {
+					// TODO
+				}
+				*name = opt2["Name"]
+				*shortname = opt2["ShortName"]
+				*typ = opt2["Type"]
+				*def = opt2["Default"]
+				*description = opt2["Description"]
+				options = append(options, &Option{Name: name, ShortName: shortname, Type: typ, Default: def, Description: description,})
+			}
+			// TODO: start here 
+			o3, ok := o2["Name"].(string)
+			if !ok {
+				// TODO
+			}
+			*name = o3
+			operations = append(operations, &CmdOperation{Name: name, Options: options,}) // TODO: name should be an Operation
+		}
+
+		n, ok := r2["Name"].(string)
+		if !ok {
+			// TODO
+		}
+
+		u, ok := r2["Usage"].(string)
+		if !ok {
+			// TODO
+		}
+
+		s, ok := r2["ShortDescription"].(string)
+		if !ok {
+			// TODO
+		}
+
+		l, ok := r2["LongDescription"].(string)
+		if !ok {
+			// TODO
+		}
+
+		// TODO: pointers
+		cmdConfig := &CmdConfig{
+			Name: n,
+			Usage: r,
+			ShortDescription: s,
+			LongDescription: l,
 			Operations: operations,
 		}
 
