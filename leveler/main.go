@@ -19,5 +19,5 @@ import (
 )
 
 func main() {
-	leveler.Execute()
+	cmd.Execute()
 }

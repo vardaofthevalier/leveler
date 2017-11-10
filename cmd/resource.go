@@ -2,10 +2,11 @@ package cmd
 
 import (
 	"os"
+	"fmt"
+	"context"
 	"github.com/spf13/cobra"
 	service "leveler/grpc"
 	util "leveler/util"
-	proto "github.com/golang/protobuf/proto"
 )
 
 type Resource interface {
@@ -21,76 +22,84 @@ type Resource interface {
 	DeleteRequest(cmd *cobra.Command)
 }
 
-type resource struct {
+type ResourceClient struct {
 	Client service.ResourceEndpointClient
 	CmdConfig CmdConfig
 }
 
 // CLIENT FUNCTIONS
 
-func (r *resource) Usage() string {
-	return r.CmdConfig.Usage
+func (r ResourceClient) Usage() string {
+	return *r.CmdConfig.Usage
 }
 
-func (r *resource) ShortDescription() string {
-	return r.CmdConfig.ShortDescription
+func (r ResourceClient) ShortDescription() string {
+	return *r.CmdConfig.ShortDescription
 }
 
-func (r *resource) LongDescription() string {
-	return r.CmdConfig.LongDescription
+func (r ResourceClient) LongDescription() string {
+	return *r.CmdConfig.LongDescription
 }
 
-func (r *resource) AddFlags(operation string, cmd *cobra.Command) {
+func (r ResourceClient) AddFlags(operation string, cmd *cobra.Command) {
 	// TODO: find the correct operation within the resource
-	for o := range Options {
-		switch o {
-		case "string":
-			var s string
-			cmd.PersistentFlags().StringVarP(&s, o.Name, o.ShortName, o.Default, o.Description)
-		case "bool":
-			var b bool
-			cmd.PersistentFlags().StringVarP(&b, o.Name, o.ShortName, o.Default, o.Description)
-		default:
-			fmt.Printf("Unknown type '%s' for command line option", o)
-			os.Exit(1)
+	for _, o := range r.CmdConfig.Operations {
+		if o.Name.String() == operation {
+			for _, f := range o.Options {
+				var s string
+				switch *f.Type {
+				case "string":
+					cmd.PersistentFlags().StringVarP(&s, *f.Name, *f.ShortName, *f.Default, *f.Description)
+				case "bool":
+					cmd.PersistentFlags().StringVarP(&s, *f.Name, *f.ShortName, *f.Default, *f.Description)
+				default:
+					fmt.Printf("Unknown type '%s' for command line option", *f.Type)
+					os.Exit(1)
+				}
+			}
 		}
 	}
 }
 
-func (r *resource) processArgs(cmd *cobra.Command) (*proto.Message, error) {
+func (r ResourceClient) processArgs(cmd *cobra.Command) (interface{}, error) {
 	// process required args and error out if any required parameters aren't set
 
 	// look up the operation
-	var operation CmdOperation
+	var operation *CmdOperation
 	for _, o := range r.CmdConfig.Operations {
-		if o.Name == cmd.Name() {
+		if o.Name.String() == cmd.Name() {
 			operation = o
 			break
 		}
 	}
 
 	// iterate through args to determine if required args were provided	and build protobuf message
-	var s *server.Resource
+	var s service.Resource
 	var d map[string]interface{}
 
-	s.Type = r.CmdConfig.Name
+	s.Type = *r.CmdConfig.Name
+	var k string
+	var b bool
 	for _, opt := range operation.Options {
-		switch opt.Type {
+		switch *opt.Type {
 		case "string":
-			k, _ := cmd.Flags.GetString(opt.Name)
+			k, _ = cmd.Flags().GetString(*opt.Name)
+			if len(k) == 0 && *opt.Required {
+				fmt.Printf("'%s' is a required parameter!", *opt.Name)
+				os.Exit(1)
+			}
 		case "bool":
-			k, _ := cmd.Flags.GetBool(opt.Name)
+			b, _ = cmd.Flags().GetBool(*opt.Name)
+			if !b && *opt.Required {
+				fmt.Printf("'%s' is a required parameter!", *opt.Name)
+				os.Exit(1)
+			}
 		default:
-			fmt.Printf("Unknown type '%s' in configuration", opt.Type)
+			fmt.Printf("Unknown type '%s' in configuration", *opt.Type)
 			os.Exit(1)
 		}
 
-		if len(k) == 0 && opt.Required {
-			fmt.Printf("'%s' is a required parameter!")
-			os.Exit(1)
-		}
-
-		d[opt.Name] = k
+		d[*opt.Name] = k
 	}
 
 	// generate protobuf message
@@ -104,17 +113,21 @@ func (r *resource) processArgs(cmd *cobra.Command) (*proto.Message, error) {
 	return s, nil
 }
 
-func (r *resource) CreateRequest(cmd *cobra.Command) {
+func (r ResourceClient) CreateRequest(cmd *cobra.Command) {
 	fmt.Println("made it to create!")
 
-	message, err := r.processArgs()
+	message, err := r.processArgs(cmd)
 	if err != nil {
 		fmt.Printf("Couldn't process args: %v", err)
 		os.Exit(1)
 	}
 
+	resource, ok := message.(service.Resource)
+	if !ok {
+		// TODO
+	}
 	// do create request
-	resourceId, err := r.Client.CreateAction(context.Background(), &message)  // TODO: grpc.CallOption
+	resourceId, err := r.Client.CreateResource(context.Background(), &resource)  // TODO: grpc.CallOption
 
 	if err != nil {
 		fmt.Printf("Error creating resource: %s", err)
@@ -125,17 +138,21 @@ func (r *resource) CreateRequest(cmd *cobra.Command) {
 	fmt.Println(resourceId)
 }
 
-func (r *resource) GetRequest(cmd *cobra.Command) {
+func (r ResourceClient) GetRequest(cmd *cobra.Command) {
 	fmt.Println("made it to get!")
 
-	message, err := r.processArgs()
+	message, err := r.processArgs(cmd)
 	if err != nil {
 		fmt.Printf("Couldn't process args: %v", err)
 		os.Exit(1)
 	}
 
 	// do get request
-	resource, err := action.doGet(&message)
+	resourceId, ok := message.(service.ResourceId)
+	if !ok {
+		// TODO
+	}
+	resource, err := r.doGet(&resourceId)
 	if err != nil {
 		fmt.Println("Error retrieving resource: %s", err)
 		os.Exit(1)
@@ -145,12 +162,12 @@ func (r *resource) GetRequest(cmd *cobra.Command) {
 	fmt.Println(resource)
 }
 
-func (r *resource) doGet(resourceId *service.ResourceId) {
-	resource, err := r.Client.GetAction(context.Background(), resourceId)
+func (r ResourceClient) doGet(resourceId *service.ResourceId) (*service.Resource, error) {
+	resource, err := r.Client.GetResource(context.Background(), resourceId)
 	return resource, err
 }
 
-func (r *resource) ListRequest(cmd *cobra.Command) {
+func (r ResourceClient) ListRequest(cmd *cobra.Command) {
 	fmt.Println("made it to list!")
 
 	queryString, _ := cmd.Flags().GetString("query")  // TODO: special handling for query?  it's sort of a globally required option given the functionality of the database...
@@ -159,10 +176,10 @@ func (r *resource) ListRequest(cmd *cobra.Command) {
 	}
 
 	// do list request
-	resourceList, err := r.Client.ListActions(context.Background(), &query)
+	resourceList, err := r.Client.ListResources(context.Background(), &query)
 
 	if err != nil {
-		fmt.Println("Error listing actions: %s", err)
+		fmt.Println("Error listing resources: %s", err)
 		os.Exit(1)
 	}
 
@@ -170,24 +187,29 @@ func (r *resource) ListRequest(cmd *cobra.Command) {
 	fmt.Println(resourceList)
 }	
 
-func (r *resource) UpdateRequest(cmd *cobra.Command) {
+func (r ResourceClient) UpdateRequest(cmd *cobra.Command) {
 	fmt.Println("made it to update!")
 
-	message, err := r.processArgs()
+	message, err := r.processArgs(cmd)
 	if err != nil {
 		fmt.Printf("Couldn't process args: %v", err)
 		os.Exit(1)
 	}
 
+	input, ok := message.(service.Resource)
+	if !ok {
+		// TODO
+	}
+
 	// lookup existing resource 
-	_, err = action.doGet(&service.ResourceId{message.Id})
+	_, err = r.doGet(&service.ResourceId{Id: input.Id, Type: input.Type,})
 
 	if err != nil {
-		fmt.Println("Requested action doesn't exist -- nothing to do")
+		fmt.Println("Requested resource doesn't exist -- nothing to do")
 		os.Exit(0)
 
 	} else {
-		_, err = action.Client.UpdateResource(context.Background(), &message)
+		_, err = r.Client.UpdateResource(context.Background(), &input)
 		if err != nil {
 			fmt.Printf("Error updating resource: %s", err)
 			os.Exit(1)
@@ -195,24 +217,28 @@ func (r *resource) UpdateRequest(cmd *cobra.Command) {
 	}
 
 	// TODO: return formatted response
-	fmt.Println(resource)
+	fmt.Printf("Successfully updated resource '%s'", input.Id)
 }
 
-func (r *resource) DeleteRequest(cmd *cobra.Command) {
+func (r ResourceClient) DeleteRequest(cmd *cobra.Command) {
 	fmt.Println("made it to delete!")
 
-	message, err := r.processArgs()
+	message, err := r.processArgs(cmd)
 	if err != nil {
 		fmt.Printf("Couldn't process args: %v", err)
 		os.Exit(1)
 	}
 
+	resourceId, ok := message.(service.ResourceId)
+	if !ok {
+		// TODO
+	}
 	// lookup existing resource 
-	_, err = action.doGet(&a)
+	_, err = r.doGet(&service.ResourceId{Id: resourceId.Id, Type: resourceId.Type})
 
 	if err != nil {
 		if err != nil {
-			_, err = r.Client.DeleteAction(context.Background(), &message)
+			_, err = r.Client.DeleteResource(context.Background(), &resourceId)
 		} else {
 			fmt.Printf("Error deleting resource: %s", err)
 			os.Exit(1)
@@ -224,5 +250,5 @@ func (r *resource) DeleteRequest(cmd *cobra.Command) {
 	}
 
 	// TODO: return formatted response
-	fmt.Printf("Successfully deleted resource '%s'", message.Id)
+	fmt.Printf("Successfully deleted resource '%s'", resourceId.Id)
 } 

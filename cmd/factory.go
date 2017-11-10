@@ -141,97 +141,100 @@ func buildResourceList() []Resource {
 		os.Exit(1)
 	}
 
-	var m map[string]interface{}
+	var m ResourceCmdConfig
 	err = util.ConvertFromYaml(contents, m)
 	if err != nil {
 		fmt.Printf("Couldn't create resource map: %v", err)
 		os.Exit(1)
 	}
 
-	resources, ok := m["Resources"].([]interface{})
-	if !ok {
-		// TODO
+	for _, res := range m.Resources {
+		r = append(r, ResourceClient{Client: service.NewResourceEndpointClient(clientConn), CmdConfig: *res})
 	}
 
-	var name, shortname, typ, def, usage, shortdescription, description *string
+	// resources, ok := m["Resources"].([]interface{})
+	// if !ok {
+	// 	// TODO
+	// }
+
+	// var name, shortname, typ, def, usage, shortdescription, description *string
 
 
-	for _, r := range resources {
-		var operations []*CmdOperation
+	// for _, r := range resources {
+	// 	var operations []*CmdOperation
 
-		r2, ok := r.(map[string]interface{})
-		if !ok {
-			// TODO
-		}
-		ops, ok := r2["Operations"].([]interface{})
-		if !ok {
-			// TODO
-		}
+	// 	r2, ok := r.(map[string]interface{})
+	// 	if !ok {
+	// 		// TODO
+	// 	}
+	// 	ops, ok := r2["Operations"].([]interface{})
+	// 	if !ok {
+	// 		// TODO
+	// 	}
 
-		for _, o := range ops {
-			var options []*Option
+	// 	for _, o := range ops {
+	// 		var options []*Option
 
-			o2, ok := o.(map[string]interface{})
-			if !ok {
-				// TODO
-			}
-			opts, ok := o2["Options"].([]interface{})
-			if !ok {
-				// TODO
-			}
+	// 		o2, ok := o.(map[string]interface{})
+	// 		if !ok {
+	// 			// TODO
+	// 		}
+	// 		opts, ok := o2["Options"].([]interface{})
+	// 		if !ok {
+	// 			// TODO
+	// 		}
 
-			for _, opt := range opts {
-				opt2, ok := opt.(map[string]string)
-				if !ok {
-					// TODO
-				}
-				*name = opt2["Name"]
-				*shortname = opt2["ShortName"]
-				*typ = opt2["Type"]
-				*def = opt2["Default"]
-				*description = opt2["Description"]
-				options = append(options, &Option{Name: name, ShortName: shortname, Type: typ, Default: def, Description: description,})
-			}
-			// TODO: start here 
-			o3, ok := o2["Name"].(string)
-			if !ok {
-				// TODO
-			}
-			*name = o3
-			operations = append(operations, &CmdOperation{Name: name, Options: options,}) // TODO: name should be an Operation
-		}
+	// 		for _, opt := range opts {
+	// 			opt2, ok := opt.(map[string]string)
+	// 			if !ok {
+	// 				// TODO
+	// 			}
+	// 			*name = opt2["Name"]
+	// 			*shortname = opt2["ShortName"]
+	// 			*typ = opt2["Type"]
+	// 			*def = opt2["Default"]
+	// 			*description = opt2["Description"]
+	// 			options = append(options, &Option{Name: name, ShortName: shortname, Type: typ, Default: def, Description: description,})
+	// 		}
+	// 		// TODO: start here 
+	// 		o3, ok := o2["Name"].(string)
+	// 		if !ok {
+	// 			// TODO
+	// 		}
+	// 		*name = o3
+	// 		operations = append(operations, &CmdOperation{Name: name, Options: options,}) // TODO: name should be an Operation
+	// 	}
 
-		n, ok := r2["Name"].(string)
-		if !ok {
-			// TODO
-		}
+	// 	n, ok := r2["Name"].(string)
+	// 	if !ok {
+	// 		// TODO
+	// 	}
 
-		u, ok := r2["Usage"].(string)
-		if !ok {
-			// TODO
-		}
+	// 	u, ok := r2["Usage"].(string)
+	// 	if !ok {
+	// 		// TODO
+	// 	}
 
-		s, ok := r2["ShortDescription"].(string)
-		if !ok {
-			// TODO
-		}
+	// 	s, ok := r2["ShortDescription"].(string)
+	// 	if !ok {
+	// 		// TODO
+	// 	}
 
-		l, ok := r2["LongDescription"].(string)
-		if !ok {
-			// TODO
-		}
+	// 	l, ok := r2["LongDescription"].(string)
+	// 	if !ok {
+	// 		// TODO
+	// 	}
 
-		// TODO: pointers
-		cmdConfig := &CmdConfig{
-			Name: n,
-			Usage: r,
-			ShortDescription: s,
-			LongDescription: l,
-			Operations: operations,
-		}
+	// 	// TODO: pointers
+	// 	cmdConfig := &CmdConfig{
+	// 		Name: n,
+	// 		Usage: r,
+	// 		ShortDescription: s,
+	// 		LongDescription: l,
+	// 		Operations: operations,
+	// 	}
+	//}
 
-		r = append(r, resource{Client: endpoints.ResourceEndpointClient(clientConn), CmdConfig: cmdConfig})
-	}
 
 	return r
 }
