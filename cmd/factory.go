@@ -1,4 +1,4 @@
-package leveler
+package cmd
 
 import (
 	"os"
@@ -135,7 +135,7 @@ func buildResourceList() []Resource {
 	}
 
 	// read the resources.yml file to get a list of resources
-	var resourcesYml map[string]interface 
+	var resourcesYml map[string]interface{}
 
 	contents, err = ioutil.ReadFile("resources.yml")
 
@@ -167,7 +167,7 @@ func buildResourceList() []Resource {
 			Operations: operations,
 		}
 
-		r = append(r, Resource{Client: endpoints.ResourceEndpointClient(clientConn), CmdConfig: cmdConfig})
+		r = append(r, resource{Client: endpoints.ResourceEndpointClient(clientConn), CmdConfig: cmdConfig})
 	}
 
 	return r

@@ -1,4 +1,4 @@
-package leveler
+package data
 
 type Database interface {
 	Create(string, map[string]interface{}) (string, error)

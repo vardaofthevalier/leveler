@@ -43,7 +43,7 @@ func main() {
 	// register endpoints
 	grpcServer := grpc.NewServer(opts...)
 	s := &server.EndpointServer{db}
-	s.Register(grpcServer)
+	RegisterResourceEndpointServer(grpcServer, s)
 
 	// start the server
 	grpcServer.Serve(lis)

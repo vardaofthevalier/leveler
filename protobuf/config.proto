@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package leveler;
+package config;
 
 message Database {
 	string type = 1;

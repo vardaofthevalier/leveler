@@ -1,7 +1,7 @@
-package leveler
+package cmd
 
 import (
-	os
+	"os"
 	"github.com/spf13/cobra"
 	service "leveler/grpc"
 )
@@ -19,26 +19,26 @@ type Resource interface {
 	DeleteRequest(cmd *cobra.Command)
 }
 
-type Resource struct {
+type resource struct {
 	Client service.ResourceEndpointClient
-	CmdConfig service.CmdConfig
+	CmdConfig CmdConfig
 }
 
 // CLIENT FUNCTIONS
 
-func (r *Resource) Usage() string {
+func (r *resource) Usage() string {
 	return r.CmdConfig.Usage
 }
 
-func (r *Resource) ShortDescription() string {
+func (r *resource) ShortDescription() string {
 	return r.CmdConfig.ShortDescription
 }
 
-func (r *Resource) LongDescription() string {
+func (r *resource) LongDescription() string {
 	return r.CmdConfig.LongDescription
 }
 
-func (r *Resource) AddFlags(operation string, cmd *cobra.Command) {
+func (r *resource) AddFlags(operation string, cmd *cobra.Command) {
 	// TODO: find the correct operation within the resource
 	for o := range Options {
 		switch o {
@@ -55,49 +55,55 @@ func (r *Resource) AddFlags(operation string, cmd *cobra.Command) {
 	}
 }
 
-func (action Action) CreateRequest(cmd *cobra.Command) {
+func (r *resource) CreateRequest(cmd *cobra.Command) {
 	fmt.Println("made it to create!")
 
+	// process required args and error out if any required parameters aren't set
+	// generate protobuf message to send to the server
+	// send the message to the server
+	// if there are errors, report them
+	// otherwise print the response
+
 	// name is required
-	name, _ := cmd.Flags().GetString("name")
-	if len(name) == 0 {
-		fmt.Println("'name' is a required parameter!")
-		os.Exit(1)
-	}
+	// name, _ := cmd.Flags().GetString("name")
+	// if len(name) == 0 {
+	// 	fmt.Println("'name' is a required parameter!")
+	// 	os.Exit(1)
+	// }
 
-	// description is optional
-	desc, _ := cmd.Flags().GetString("description")
+	// // description is optional
+	// desc, _ := cmd.Flags().GetString("description")
 
-	// command is required
-	command, _:= cmd.Flags().GetString("command")
-	if len(command) == 0 {
-		fmt.Println("'command' is a required parameter!")
-		os.Exit(1)
-	}
+	// // command is required
+	// command, _:= cmd.Flags().GetString("command")
+	// if len(command) == 0 {
+	// 	fmt.Println("'command' is a required parameter!")
+	// 	os.Exit(1)
+	// }
 
-	// shell is optional (default == /bin/bash)
-	shell, _ := cmd.Flags().GetString("shell")
+	// // shell is optional (default == /bin/bash)
+	// shell, _ := cmd.Flags().GetString("shell")
 
-	a := service.Action{
-		Name: name,
-		Description: desc,
-		Command: command,
-		Shell: shell,
-	}
+	// a := service.Action{
+	// 	Name: name,
+	// 	Description: desc,
+	// 	Command: command,
+	// 	Shell: shell,
+	// }
 
-	// do create request
-	actionId, err := action.Client.CreateAction(context.Background(), &a)  // TODO: grpc.CallOption
+	// // do create request
+	// actionId, err := action.Client.CreateAction(context.Background(), &a)  // TODO: grpc.CallOption
 
-	if err != nil {
-		fmt.Printf("Error creating action: %s", err)
-		os.Exit(1)
-	}
+	// if err != nil {
+	// 	fmt.Printf("Error creating action: %s", err)
+	// 	os.Exit(1)
+	// }
 
-	// TODO: return formatted response
-	fmt.Println(actionId)
+	// // TODO: return formatted response
+	// fmt.Println(actionId)
 }
 
-func (action Action) GetRequest(cmd *cobra.Command) {
+func (r *resource) GetRequest(cmd *cobra.Command) {
 	fmt.Println("made it to get!")
 	// id is required
 	id, _ := cmd.Flags().GetString("id")
@@ -123,12 +129,12 @@ func (action Action) GetRequest(cmd *cobra.Command) {
 	fmt.Println(actionData)
 }
 
-func (action Action) doGet(actionId *service.ActionId) (*service.Action, error) {
+func (r *resource) doGet(actionId *service.ActionId) (*service.Action, error) {
 	a, err := action.Client.GetAction(context.Background(), actionId)
 	return a, err
 }
 
-func (action Action) ListRequest(cmd *cobra.Command) {
+func (r *resource) ListRequest(cmd *cobra.Command) {
 	fmt.Println("made it to list!")
 
 	queryString, _ := cmd.Flags().GetString("query")
@@ -148,7 +154,7 @@ func (action Action) ListRequest(cmd *cobra.Command) {
 	fmt.Println(actionList)
 }	
 
-func (action Action) UpdateRequest(cmd *cobra.Command) {
+func (r *resource) UpdateRequest(cmd *cobra.Command) {
 	fmt.Println("made it to update!")
 
 	// id required
@@ -199,7 +205,7 @@ func (action Action) UpdateRequest(cmd *cobra.Command) {
 	fmt.Println(actionData)
 }
 
-func (action Action) DeleteRequest(cmd *cobra.Command) {
+func (r *resource) DeleteRequest(cmd *cobra.Command) {
 	fmt.Println("made it to delete!")
 
 	// id is required

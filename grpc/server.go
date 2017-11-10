@@ -1,119 +1,130 @@
-package leveler
+package grpc
 
 import (
 	"log"
 	"bytes"
-	"reflect"
+	"context"
 	data "leveler/data"
 	util "leveler/util"
-	grpc "google.golang.org/grpc"
+	//callbacks "leveler/callbacks"  // TODO: create callbacks to run in the resource CRUD functions below (type dependent)
 	jsonpb "github.com/golang/protobuf/jsonpb"
-	proto "github.com/golang/protobuf/proto"
-	
+	empty "github.com/golang/protobuf/ptypes/empty"
 )
 
 type EndpointServer struct {
 	Database data.Database
 }
 
-func (s *EndpointServer) Register (grpcServer *grpc.Server) {
-	RegisterEndpoints(grpcServer, s)
-}
-
 // ACTION ENDPOINTS
 
-func (s *EndpointServer) genericCreate(t string, obj proto.Message, dest interface{}) error {
-	log.Printf("Creating %s: %v", t, obj)
+func (s *EndpointServer) CreateResource(ctx context.Context, obj *Resource) (*ResourceId, error) {
+	log.Printf("Creating %s: %v", obj.Type, obj)
 
-	var id string
+	var result *ResourceId
 
-	m, err := util.ConvertProtoToJsonMap(obj)
+	m, err := util.ConvertProtoToMap(obj.Details)
 	if err != nil {
-		return err
+		return result, err
 	}
 
-	id, err = s.Database.Create(t, m)
+	result.Id, err = s.Database.Create(obj.Type, m)
 	if err != nil {
-		return err
+		return result, err
 	}
 
-	v := reflect.ValueOf(dest).Elem().FieldByName("Id")
-	ptr := v.Addr().Interface().(*string)
-	*ptr = id
-
-	return nil
+	return result, nil
 }
 
-func (s *EndpointServer) genericGet(t string, id string, dest interface{}) error {
-	log.Printf("Retrieving %s: %s", t, id)
+func (s *EndpointServer) GetResource(ctx context.Context, obj *ResourceId) (*Resource, error) {
+	log.Printf("Retrieving %s: %s", obj.Type, obj.Id)
 
 	var jsonString []byte
+	var result *Resource
 
-	result, err := s.Database.Get(t, id)
+	r, err := s.Database.Get(obj.Type, obj.Id)
 	if err != nil {
-		return err
+		return result, err
 	}
 
-	jsonString, err = util.ConvertMapToJson(result)
+	jsonString, err = util.ConvertToJson(r)
 	if err != nil {
 		log.Printf("Error converting map to JSON: %v", err)
-		return err
+		return result, err
 	}
 
-	err = jsonpb.Unmarshal(bytes.NewReader(jsonString), dest.(proto.Message))
+	err = jsonpb.Unmarshal(bytes.NewReader(jsonString), result.Details)
 	if err != nil {
-		return err
+		return result, err
 	}
 
-	return nil
+	return result, nil
 }
 
-func (s *EndpointServer) genericList(t string, query string, dest interface{}) error {
-	log.Printf("Retrieiving %s list", t)
+func (s *EndpointServer) ListResources(ctx context.Context, query *Query) (*ResourceList, error) {
+	log.Printf("Retrieiving %s list", query.Type)
 
 	var jsonString []byte
+	var result *ResourceList
 
-	result, err := s.Database.List(t, query)
+	list, err := s.Database.List(query.Type, query.Query)
 	if err != nil {
-		return err
+		return result, err
 	}
 
-	jsonString, err = util.ConvertMapToJson(result)
+	//var r *Resource  // TODO: start here
+	// for k, v := range list {
+	// 	details, err = util.ConvertMapToJson(v)
+	// 	if err != nil {
+	// 		return result, err
+	// 	}
+	// 	r = &Resource{
+	// 		Id: 
+	// 		Type:
+	// 		Details: 
+	// 	}
+	// 	result.Results = append(result.Results, &Resource)
+	// }
+
+	jsonString, err = util.ConvertToJson(list)
 	if err != nil {
-		return err
+		return result, err
 	}
 
-	err = jsonpb.Unmarshal(bytes.NewReader(jsonString), dest.(proto.Message))
+	err = jsonpb.Unmarshal(bytes.NewReader(jsonString), result)
 	if err != nil {
-		return err
+		return result, err
 	}
 
-	return nil
+	return result, nil
 }
 
-func (s *EndpointServer) genericUpdate(t string, id string, obj proto.Message, dest interface{}) error {
-	log.Printf("Updating %s: %v", obj)
+func (s *EndpointServer) UpdateResource(ctx context.Context, obj *Resource) (*empty.Empty, error) {
+	log.Printf("Updating %s: %s", obj.Type, obj.Id)
 
-	m, err := util.ConvertProtoToJsonMap(obj)
+	var result *empty.Empty
+
+	m, err := util.ConvertProtoToMap(obj)
 	if err != nil {
-		return err
+		return result, err
 	}
 
-	err = s.Database.Update(t, id, m)
+	err = s.Database.Update(obj.Type, obj.Id, m)
 	if err != nil {
-		return err
+		return result, err
 	}
 
-	return nil
+	return result, nil
 }
 
-func (s *EndpointServer) genericDelete(t string, id string) error {
-	log.Printf("Deleting %s: %s", t, id)
+func (s *EndpointServer) DeleteResource(ctx context.Context, obj *ResourceId) (*empty.Empty, error) {
+	log.Printf("Deleting %s: %s", obj.Type, obj.Id)
 
-	err := s.Database.Delete(t, id)
+	var result *empty.Empty
+
+	err := s.Database.Delete(obj.Type, obj.Id)
 	if err != nil {
-		return err
+		return result, err
 	}
 
-	return nil
+	return result, nil
 }

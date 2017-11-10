@@ -1,10 +1,13 @@
 package leveler
 
 import (
+	"bytes"
 	json "encoding/json"
 	yaml "gopkg.in/yaml.v2"
 	proto "github.com/golang/protobuf/proto"
 	jsonpb "github.com/golang/protobuf/jsonpb"
+	ptypes "github.com/golang/protobuf/ptypes"
+	any "github.com/golang/protobuf/ptypes/any"
 )
 
 var jsonMarshaler = jsonpb.Marshaler{
@@ -18,7 +21,7 @@ var jsonUnmarshaler = jsonpb.Unmarshaler{
 	AllowUnknownFields: false,
 }
 
-func ConvertProtoToJsonMap(m proto.Message) (map[string]interface{}, error) {
+func ConvertProtoToMap(m proto.Message) (map[string]interface{}, error) {
 	var jsonMap map[string]interface{}
 	jsonString, err := jsonMarshaler.MarshalToString(m)
 	if err != nil {
@@ -33,8 +36,20 @@ func ConvertProtoToJsonMap(m proto.Message) (map[string]interface{}, error) {
 	return jsonMap, nil
 }
 
-func ConvertMapToJson(m map[string]string) ([]byte, error) {
-	jsonString, err := json.Marshal(m)
+func ConvertJsonToProto(b []byte) (proto.Message, error) {
+	var message proto.Message
+
+	r := bytes.NewReader(b)
+	err := jsonUnmarshaler.Unmarshal(r, message)
+	if err != nil {
+		return message, err
+	}
+
+	return message, nil
+}
+
+func ConvertToJson(i interface{}) ([]byte, error) {
+	jsonString, err := json.Marshal(i)
 	if err != nil {
 		return jsonString, err
 	}
@@ -42,8 +57,9 @@ func ConvertMapToJson(m map[string]string) ([]byte, error) {
 	return jsonString, nil
 }
 
-func ConvertYamlToProto(yml []byte, p *proto.Message) error {
-	err := yaml.Unmarshal(yml, p)
+
+func ConvertFromYaml(yml []byte, i interface{}) error {
+	err := yaml.Unmarshal(yml, i)
 	if err != nil {
 		return err
 	}
@@ -51,13 +67,26 @@ func ConvertYamlToProto(yml []byte, p *proto.Message) error {
 	return nil
 }
 
-func ConvertYamlToMap(yml []byte, m map[string]interface) error {
-	err := yaml.Unmarshal(yml, m)
+func GenerateProtoAny(m map[string]interface{}) (*any.Any, error) {
+	var message proto.Message
+	var a *any.Any
+
+	b, err := ConvertToJson(m)
 	if err != nil {
-		return err
+		return a, err
 	}
 
-	return nil
+	message, err = ConvertJsonToProto(b)
+	if err != nil {
+		return a, err
+	}
+
+	a, err = ptypes.MarshalAny(message)
+	if err != nil {
+		return a, err
+	}
+
+	return a, nil
 }
 
 func FormatProto(p *proto.Message) {

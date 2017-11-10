@@ -1,4 +1,4 @@
-package leveler
+package config
 
 var DatabaseLabelsMap = map[string]int{
 	"action": 0,

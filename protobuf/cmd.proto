@@ -1,8 +1,8 @@
 syntax = "proto2";
 
-package leveler;
+package cmd;
 
-enum Operations {
+enum Operation {
 	create = 1;
 	get = 2;
 	list = 3;
@@ -21,12 +21,12 @@ message CmdConfig {
 	required string Usage = 2;
 	required string ShortDescription = 3;
 	required string LongDescription = 4;
-	repeated CmdOption Operations = 5;
+	repeated CmdOperation Operations = 5;
 }
 
 message CmdOperation {
 	required Operation Name = 1;
-	reqpested Option Options = 2;
+	repeated Option Options = 2;
 }
 
 message Option {
@@ -35,4 +35,5 @@ message Option {
 	required string Default = 3;
 	required string Type = 4;
 	required string Description = 5;
+	required bool Required = 6;
 }
