@@ -1,15 +1,15 @@
 syntax = "proto2";
 
-package cmd;
+package cmdconfig;
 
 enum Operation {
-	create = 1;
-	get = 2;
-	list = 3;
-	update = 4;
-	patch = 5;
-	delete = 6;
-	apply = 7;	
+	CREATE = 0;
+	GET = 1;
+	LIST = 2;
+	UPDATE = 3;
+	PATCH = 4;
+	DELETE = 5;
+	APPLY = 6;	
 }
 
 message ResourceCmdConfig {

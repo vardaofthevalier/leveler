@@ -17,10 +17,10 @@ type EndpointServer struct {
 
 // ACTION ENDPOINTS
 
-func (s *EndpointServer) CreateResource(ctx context.Context, obj *Resource) (*ResourceId, error) {
+func (s *EndpointServer) CreateResource(ctx context.Context, obj Resource) (ResourceId, error) {
 	log.Printf("Creating %s: %v", obj.Type, obj)
 
-	var result *ResourceId
+	var result ResourceId
 
 	m, err := util.ConvertProtoToMap(obj.Details)
 	if err != nil {
@@ -35,11 +35,11 @@ func (s *EndpointServer) CreateResource(ctx context.Context, obj *Resource) (*Re
 	return result, nil
 }
 
-func (s *EndpointServer) GetResource(ctx context.Context, obj *ResourceId) (*Resource, error) {
+func (s *EndpointServer) GetResource(ctx context.Context, obj ResourceId) (Resource, error) {
 	log.Printf("Retrieving %s: %s", obj.Type, obj.Id)
 
 	var jsonString []byte
-	var result *Resource
+	var result Resource
 
 	r, err := s.Database.Get(obj.Type, obj.Id)
 	if err != nil {
@@ -60,18 +60,18 @@ func (s *EndpointServer) GetResource(ctx context.Context, obj *ResourceId) (*Res
 	return result, nil
 }
 
-func (s *EndpointServer) ListResources(ctx context.Context, query *Query) (*ResourceList, error) {
+func (s *EndpointServer) ListResources(ctx context.Context, query Query) (ResourceList, error) {
 	log.Printf("Retrieiving %s list", query.Type)
 
 	var jsonString []byte
-	var result *ResourceList
+	var result ResourceList
 
 	list, err := s.Database.List(query.Type, query.Query)
 	if err != nil {
 		return result, err
 	}
 
-	//var r *Resource  // TODO: start here
+	//var r Resource  // TODO: start here
 	// for k, v := range list {
 	// 	details, err = util.ConvertMapToJson(v)
 	// 	if err != nil {
@@ -98,7 +98,7 @@ func (s *EndpointServer) ListResources(ctx context.Context, query *Query) (*Reso
 	return result, nil
 }
 
-func (s *EndpointServer) UpdateResource(ctx context.Context, obj *Resource) (*empty.Empty, error) {
+func (s *EndpointServer) UpdateResource(ctx context.Context, obj Resource) (*empty.Empty, error) {
 	log.Printf("Updating %s: %s", obj.Type, obj.Id)
 
 	var result *empty.Empty
@@ -116,7 +116,7 @@ func (s *EndpointServer) UpdateResource(ctx context.Context, obj *Resource) (*em
 	return result, nil
 }
 
-func (s *EndpointServer) DeleteResource(ctx context.Context, obj *ResourceId) (*empty.Empty, error) {
+func (s *EndpointServer) DeleteResource(ctx context.Context, obj ResourceId) (*empty.Empty, error) {
 	log.Printf("Deleting %s: %s", obj.Type, obj.Id)
 
 	var result *empty.Empty

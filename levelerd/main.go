@@ -33,6 +33,8 @@ func main() {
 
 	var db data.RedisDatabase 
 
+	fmt.Println(c)
+
 	if c.Database.Type == "redis" {
 		// create a Redis db object
 		db = data.NewRedisDatabase(protocol, c.Database.Host, c.Database.Port, c.Database.GetOptions().GetPoolSize()) 

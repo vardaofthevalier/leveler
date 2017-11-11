@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"context"
 	"github.com/spf13/cobra"
-	service "leveler/grpc"
 	util "leveler/util"
+	cmdconfig "leveler/cmdconfig"
+	service "leveler/grpc"
 )
 
 type Resource interface {
@@ -24,7 +25,7 @@ type Resource interface {
 
 type ResourceClient struct {
 	Client service.ResourceEndpointClient
-	CmdConfig CmdConfig
+	CmdConfig cmdconfig.CmdConfig
 }
 
 // CLIENT FUNCTIONS

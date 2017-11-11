@@ -36,16 +36,23 @@ func ConvertProtoToMap(m proto.Message) (map[string]interface{}, error) {
 	return jsonMap, nil
 }
 
-func ConvertJsonToProto(b []byte) (proto.Message, error) {
-	var message proto.Message
-
+func ConvertJsonToProto(b []byte, m interface{}) error {
 	r := bytes.NewReader(b)
-	err := jsonUnmarshaler.Unmarshal(r, message)
+	err := jsonUnmarshaler.Unmarshal(r, m.(proto.Message))
 	if err != nil {
-		return message, err
+		return err
 	}
 
-	return message, nil
+	return nil
+}
+
+func ConvertFromJson(b []byte, i interface{}) error {
+	err := json.Unmarshal(b, i)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func ConvertToJson(i interface{}) ([]byte, error) {
@@ -76,7 +83,7 @@ func GenerateProtoAny(m map[string]interface{}) (*any.Any, error) {
 		return a, err
 	}
 
-	message, err = ConvertJsonToProto(b)
+	err = ConvertJsonToProto(b, &message)
 	if err != nil {
 		return a, err
 	}
