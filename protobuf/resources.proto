@@ -1,16 +1,16 @@
 syntax = "proto3";
 
-package grpc;
+package resources;
 
 import "google/protobuf/any.proto";
 import "google/protobuf/empty.proto";
 
 service ResourceEndpoint {
-    rpc GetResource (ResourceId) returns (Resource) {}
+    rpc GetResource (Resource) returns (Resource) {}
     rpc ListResources (Query) returns (ResourceList) {}
-    rpc CreateResource (Resource) returns (ResourceId) {}
+    rpc CreateResource (Resource) returns (Resource) {}
     rpc UpdateResource (Resource) returns (google.protobuf.Empty) {}
-    rpc DeleteResource (ResourceId) returns (google.protobuf.Empty) {}
+    rpc DeleteResource (Resource) returns (google.protobuf.Empty) {}
 }
 
 message Query {
@@ -19,14 +19,27 @@ message Query {
 }
 
 message Resource {
-    string Type = 1;
-    string Id = 2;
-    google.protobuf.Any Details = 3;
-}
-
-message ResourceId {
     string Id = 1;
     string Type = 2;
+    repeated google.protobuf.Any Details = 3;
+}
+
+message StringDetail {
+    string Name = 1;
+    string Value = 2;
+    bool Required = 3;
+}
+
+message BoolDetail {
+    string Name = 1;
+    bool Value = 2;
+    bool Required = 3;
+}
+
+message Int64Detail {
+    string Name = 1;
+    int64 Value = 2;
+    bool Required = 3;
 }
 
 message ResourceList {

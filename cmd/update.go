@@ -29,6 +29,6 @@ var updateCmd = &cobra.Command{
 }
 
 func init() {
-	AddUpdateCommands(updateCmd)
+	AddCommands(updateCmd)
 	RootCmd.AddCommand(updateCmd)
 }

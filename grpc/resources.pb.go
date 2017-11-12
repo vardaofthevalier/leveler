@@ -10,7 +10,9 @@ It is generated from these files:
 It has these top-level messages:
 	Query
 	Resource
-	ResourceId
+	StringDetail
+	BoolDetail
+	Int64Detail
 	ResourceList
 */
 package grpc
@@ -62,22 +64,15 @@ func (m *Query) GetType() string {
 }
 
 type Resource struct {
-	Type    string               `protobuf:"bytes,1,opt,name=Type" json:"Type,omitempty"`
-	Id      string               `protobuf:"bytes,2,opt,name=Id" json:"Id,omitempty"`
-	Details *google_protobuf.Any `protobuf:"bytes,3,opt,name=Details" json:"Details,omitempty"`
+	Id      string                 `protobuf:"bytes,1,opt,name=Id" json:"Id,omitempty"`
+	Type    string                 `protobuf:"bytes,2,opt,name=Type" json:"Type,omitempty"`
+	Details []*google_protobuf.Any `protobuf:"bytes,3,rep,name=Details" json:"Details,omitempty"`
 }
 
 func (m *Resource) Reset()                    { *m = Resource{} }
 func (m *Resource) String() string            { return proto.CompactTextString(m) }
 func (*Resource) ProtoMessage()               {}
 func (*Resource) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
-
-func (m *Resource) GetType() string {
-	if m != nil {
-		return m.Type
-	}
-	return ""
-}
 
 func (m *Resource) GetId() string {
 	if m != nil {
@@ -86,35 +81,114 @@ func (m *Resource) GetId() string {
 	return ""
 }
 
-func (m *Resource) GetDetails() *google_protobuf.Any {
+func (m *Resource) GetType() string {
+	if m != nil {
+		return m.Type
+	}
+	return ""
+}
+
+func (m *Resource) GetDetails() []*google_protobuf.Any {
 	if m != nil {
 		return m.Details
 	}
 	return nil
 }
 
-type ResourceId struct {
-	Id   string `protobuf:"bytes,1,opt,name=Id" json:"Id,omitempty"`
-	Type string `protobuf:"bytes,2,opt,name=Type" json:"Type,omitempty"`
+type StringDetail struct {
+	Name     string `protobuf:"bytes,1,opt,name=Name" json:"Name,omitempty"`
+	Value    string `protobuf:"bytes,2,opt,name=Value" json:"Value,omitempty"`
+	Required bool   `protobuf:"varint,3,opt,name=Required" json:"Required,omitempty"`
 }
 
-func (m *ResourceId) Reset()                    { *m = ResourceId{} }
-func (m *ResourceId) String() string            { return proto.CompactTextString(m) }
-func (*ResourceId) ProtoMessage()               {}
-func (*ResourceId) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+func (m *StringDetail) Reset()                    { *m = StringDetail{} }
+func (m *StringDetail) String() string            { return proto.CompactTextString(m) }
+func (*StringDetail) ProtoMessage()               {}
+func (*StringDetail) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
 
-func (m *ResourceId) GetId() string {
+func (m *StringDetail) GetName() string {
 	if m != nil {
-		return m.Id
+		return m.Name
 	}
 	return ""
 }
 
-func (m *ResourceId) GetType() string {
+func (m *StringDetail) GetValue() string {
 	if m != nil {
-		return m.Type
+		return m.Value
 	}
 	return ""
+}
+
+func (m *StringDetail) GetRequired() bool {
+	if m != nil {
+		return m.Required
+	}
+	return false
+}
+
+type BoolDetail struct {
+	Name     string `protobuf:"bytes,1,opt,name=Name" json:"Name,omitempty"`
+	Value    bool   `protobuf:"varint,2,opt,name=Value" json:"Value,omitempty"`
+	Required bool   `protobuf:"varint,3,opt,name=Required" json:"Required,omitempty"`
+}
+
+func (m *BoolDetail) Reset()                    { *m = BoolDetail{} }
+func (m *BoolDetail) String() string            { return proto.CompactTextString(m) }
+func (*BoolDetail) ProtoMessage()               {}
+func (*BoolDetail) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+
+func (m *BoolDetail) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *BoolDetail) GetValue() bool {
+	if m != nil {
+		return m.Value
+	}
+	return false
+}
+
+func (m *BoolDetail) GetRequired() bool {
+	if m != nil {
+		return m.Required
+	}
+	return false
+}
+
+type Int64Detail struct {
+	Name     string `protobuf:"bytes,1,opt,name=Name" json:"Name,omitempty"`
+	Value    int64  `protobuf:"varint,2,opt,name=Value" json:"Value,omitempty"`
+	Required bool   `protobuf:"varint,3,opt,name=Required" json:"Required,omitempty"`
+}
+
+func (m *Int64Detail) Reset()                    { *m = Int64Detail{} }
+func (m *Int64Detail) String() string            { return proto.CompactTextString(m) }
+func (*Int64Detail) ProtoMessage()               {}
+func (*Int64Detail) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
+
+func (m *Int64Detail) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *Int64Detail) GetValue() int64 {
+	if m != nil {
+		return m.Value
+	}
+	return 0
+}
+
+func (m *Int64Detail) GetRequired() bool {
+	if m != nil {
+		return m.Required
+	}
+	return false
 }
 
 type ResourceList struct {
@@ -124,7 +198,7 @@ type ResourceList struct {
 func (m *ResourceList) Reset()                    { *m = ResourceList{} }
 func (m *ResourceList) String() string            { return proto.CompactTextString(m) }
 func (*ResourceList) ProtoMessage()               {}
-func (*ResourceList) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+func (*ResourceList) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
 
 func (m *ResourceList) GetResults() []*Resource {
 	if m != nil {
@@ -136,7 +210,9 @@ func (m *ResourceList) GetResults() []*Resource {
 func init() {
 	proto.RegisterType((*Query)(nil), "grpc.Query")
 	proto.RegisterType((*Resource)(nil), "grpc.Resource")
-	proto.RegisterType((*ResourceId)(nil), "grpc.ResourceId")
+	proto.RegisterType((*StringDetail)(nil), "grpc.StringDetail")
+	proto.RegisterType((*BoolDetail)(nil), "grpc.BoolDetail")
+	proto.RegisterType((*Int64Detail)(nil), "grpc.Int64Detail")
 	proto.RegisterType((*ResourceList)(nil), "grpc.ResourceList")
 }
 
@@ -151,11 +227,11 @@ const _ = grpc1.SupportPackageIsVersion4
 // Client API for ResourceEndpoint service
 
 type ResourceEndpointClient interface {
-	GetResource(ctx context.Context, in *ResourceId, opts ...grpc1.CallOption) (*Resource, error)
+	GetResource(ctx context.Context, in *Resource, opts ...grpc1.CallOption) (*Resource, error)
 	ListResources(ctx context.Context, in *Query, opts ...grpc1.CallOption) (*ResourceList, error)
-	CreateResource(ctx context.Context, in *Resource, opts ...grpc1.CallOption) (*ResourceId, error)
+	CreateResource(ctx context.Context, in *Resource, opts ...grpc1.CallOption) (*Resource, error)
 	UpdateResource(ctx context.Context, in *Resource, opts ...grpc1.CallOption) (*google_protobuf1.Empty, error)
-	DeleteResource(ctx context.Context, in *ResourceId, opts ...grpc1.CallOption) (*google_protobuf1.Empty, error)
+	DeleteResource(ctx context.Context, in *Resource, opts ...grpc1.CallOption) (*google_protobuf1.Empty, error)
 }
 
 type resourceEndpointClient struct {
@@ -166,7 +242,7 @@ func NewResourceEndpointClient(cc *grpc1.ClientConn) ResourceEndpointClient {
 	return &resourceEndpointClient{cc}
 }
 
-func (c *resourceEndpointClient) GetResource(ctx context.Context, in *ResourceId, opts ...grpc1.CallOption) (*Resource, error) {
+func (c *resourceEndpointClient) GetResource(ctx context.Context, in *Resource, opts ...grpc1.CallOption) (*Resource, error) {
 	out := new(Resource)
 	err := grpc1.Invoke(ctx, "/grpc.ResourceEndpoint/GetResource", in, out, c.cc, opts...)
 	if err != nil {
@@ -184,8 +260,8 @@ func (c *resourceEndpointClient) ListResources(ctx context.Context, in *Query, o
 	return out, nil
 }
 
-func (c *resourceEndpointClient) CreateResource(ctx context.Context, in *Resource, opts ...grpc1.CallOption) (*ResourceId, error) {
-	out := new(ResourceId)
+func (c *resourceEndpointClient) CreateResource(ctx context.Context, in *Resource, opts ...grpc1.CallOption) (*Resource, error) {
+	out := new(Resource)
 	err := grpc1.Invoke(ctx, "/grpc.ResourceEndpoint/CreateResource", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
@@ -202,7 +278,7 @@ func (c *resourceEndpointClient) UpdateResource(ctx context.Context, in *Resourc
 	return out, nil
 }
 
-func (c *resourceEndpointClient) DeleteResource(ctx context.Context, in *ResourceId, opts ...grpc1.CallOption) (*google_protobuf1.Empty, error) {
+func (c *resourceEndpointClient) DeleteResource(ctx context.Context, in *Resource, opts ...grpc1.CallOption) (*google_protobuf1.Empty, error) {
 	out := new(google_protobuf1.Empty)
 	err := grpc1.Invoke(ctx, "/grpc.ResourceEndpoint/DeleteResource", in, out, c.cc, opts...)
 	if err != nil {
@@ -214,11 +290,11 @@ func (c *resourceEndpointClient) DeleteResource(ctx context.Context, in *Resourc
 // Server API for ResourceEndpoint service
 
 type ResourceEndpointServer interface {
-	GetResource(context.Context, *ResourceId) (*Resource, error)
+	GetResource(context.Context, *Resource) (*Resource, error)
 	ListResources(context.Context, *Query) (*ResourceList, error)
-	CreateResource(context.Context, *Resource) (*ResourceId, error)
+	CreateResource(context.Context, *Resource) (*Resource, error)
 	UpdateResource(context.Context, *Resource) (*google_protobuf1.Empty, error)
-	DeleteResource(context.Context, *ResourceId) (*google_protobuf1.Empty, error)
+	DeleteResource(context.Context, *Resource) (*google_protobuf1.Empty, error)
 }
 
 func RegisterResourceEndpointServer(s *grpc1.Server, srv ResourceEndpointServer) {
@@ -226,7 +302,7 @@ func RegisterResourceEndpointServer(s *grpc1.Server, srv ResourceEndpointServer)
 }
 
 func _ResourceEndpoint_GetResource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc1.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ResourceId)
+	in := new(Resource)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -238,7 +314,7 @@ func _ResourceEndpoint_GetResource_Handler(srv interface{}, ctx context.Context,
 		FullMethod: "/grpc.ResourceEndpoint/GetResource",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ResourceEndpointServer).GetResource(ctx, req.(*ResourceId))
+		return srv.(ResourceEndpointServer).GetResource(ctx, req.(*Resource))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -298,7 +374,7 @@ func _ResourceEndpoint_UpdateResource_Handler(srv interface{}, ctx context.Conte
 }
 
 func _ResourceEndpoint_DeleteResource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc1.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ResourceId)
+	in := new(Resource)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -310,7 +386,7 @@ func _ResourceEndpoint_DeleteResource_Handler(srv interface{}, ctx context.Conte
 		FullMethod: "/grpc.ResourceEndpoint/DeleteResource",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ResourceEndpointServer).DeleteResource(ctx, req.(*ResourceId))
+		return srv.(ResourceEndpointServer).DeleteResource(ctx, req.(*Resource))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -347,25 +423,28 @@ var _ResourceEndpoint_serviceDesc = grpc1.ServiceDesc{
 func init() { proto.RegisterFile("resources.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
-	// 320 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x51, 0x4d, 0x4f, 0xb3, 0x40,
-	0x10, 0x06, 0xda, 0xf7, 0xad, 0x0e, 0x8a, 0xcd, 0xa4, 0x31, 0x88, 0x97, 0x66, 0x4f, 0x9c, 0xb6,
-	0x16, 0x3d, 0x18, 0xe3, 0xc5, 0xd8, 0xc6, 0x90, 0x78, 0x91, 0xe8, 0xd5, 0xa4, 0x2d, 0x63, 0xd3,
-	0x04, 0x81, 0xb0, 0xcb, 0x81, 0x9f, 0xe4, 0xbf, 0x34, 0xd0, 0x5d, 0xb4, 0x45, 0xbd, 0x6d, 0x9e,
-	0xaf, 0x79, 0x66, 0x16, 0x4e, 0x0a, 0x12, 0x59, 0x59, 0xac, 0x48, 0xf0, 0xbc, 0xc8, 0x64, 0x86,
-	0xfd, 0x75, 0x91, 0xaf, 0xbc, 0xb3, 0x75, 0x96, 0xad, 0x13, 0x9a, 0x34, 0xd8, 0xb2, 0x7c, 0x9b,
-	0x2c, 0xd2, 0x6a, 0x2b, 0xf0, 0xce, 0xf7, 0x29, 0x7a, 0xcf, 0xa5, 0x22, 0xd9, 0x14, 0xfe, 0x3d,
-	0x95, 0x54, 0x54, 0x38, 0x52, 0x0f, 0xd7, 0x1c, 0x9b, 0xfe, 0x61, 0xa4, 0x50, 0x84, 0xfe, 0x73,
-	0x95, 0x93, 0x6b, 0x35, 0x60, 0xf3, 0x66, 0xaf, 0x70, 0x10, 0xa9, 0x0e, 0x2d, 0x6f, 0x7e, 0xf1,
-	0xe8, 0x80, 0x15, 0xc6, 0xca, 0x61, 0x85, 0x31, 0x72, 0x18, 0xcc, 0x48, 0x2e, 0x36, 0x89, 0x70,
-	0x7b, 0x63, 0xd3, 0xb7, 0x83, 0x11, 0xdf, 0x36, 0xe2, 0xba, 0x11, 0xbf, 0x4b, 0xab, 0x48, 0x8b,
-	0xd8, 0x05, 0x80, 0xce, 0x0f, 0x63, 0x95, 0x66, 0xb6, 0x69, 0x3f, 0x35, 0xba, 0x86, 0x23, 0xed,
-	0x78, 0xdc, 0x08, 0x89, 0x3e, 0x0c, 0x22, 0x12, 0x65, 0x22, 0x85, 0x6b, 0x8e, 0x7b, 0xbe, 0x1d,
-	0x38, 0xbc, 0x3e, 0x12, 0xd7, 0xa2, 0x48, 0xd3, 0xc1, 0x87, 0x05, 0x43, 0x8d, 0xce, 0xd3, 0x38,
-	0xcf, 0x36, 0xa9, 0xc4, 0x29, 0xd8, 0x0f, 0x24, 0xdb, 0x1d, 0x87, 0xbb, 0xe6, 0x30, 0xf6, 0xf6,
-	0xe2, 0x98, 0x81, 0x01, 0x1c, 0xd7, 0x93, 0x35, 0x22, 0xd0, 0xde, 0x4a, 0x9a, 0x2b, 0x7a, 0xb8,
-	0xab, 0xaf, 0x95, 0xcc, 0xc0, 0x2b, 0x70, 0xee, 0x0b, 0x5a, 0x48, 0x6a, 0x27, 0xed, 0xe5, 0x7a,
-	0x9d, 0xc9, 0xcc, 0xc0, 0x1b, 0x70, 0x5e, 0xf2, 0xf8, 0x2f, 0xd7, 0x69, 0xe7, 0xbc, 0xf3, 0xfa,
-	0xc3, 0x99, 0x81, 0xb7, 0xe0, 0xcc, 0x28, 0xa1, 0x6f, 0xde, 0xee, 0x6e, 0xbf, 0xba, 0x97, 0xff,
-	0x1b, 0xe4, 0xf2, 0x33, 0x00, 0x00, 0xff, 0xff, 0x41, 0xf6, 0x09, 0x86, 0x82, 0x02, 0x00, 0x00,
+	// 354 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x52, 0x41, 0x4b, 0xf3, 0x40,
+	0x10, 0xfd, 0x92, 0xf4, 0xb3, 0x75, 0x52, 0xa3, 0x2c, 0x45, 0x62, 0xbc, 0x94, 0x9c, 0x72, 0x4a,
+	0xb1, 0x8a, 0x88, 0x37, 0xb5, 0x45, 0x0a, 0x22, 0x98, 0x56, 0x8f, 0x42, 0xda, 0x8c, 0x21, 0x90,
+	0x66, 0xe3, 0x66, 0x73, 0xc8, 0xef, 0xf1, 0x8f, 0xca, 0x6e, 0xb2, 0x4a, 0xab, 0x48, 0xf4, 0x36,
+	0xf3, 0xe6, 0xbd, 0x37, 0x8f, 0xdd, 0x81, 0x7d, 0x86, 0x05, 0x2d, 0xd9, 0x0a, 0x0b, 0x3f, 0x67,
+	0x94, 0x53, 0xd2, 0x89, 0x59, 0xbe, 0x72, 0x8e, 0x62, 0x4a, 0xe3, 0x14, 0x47, 0x12, 0x5b, 0x96,
+	0x2f, 0xa3, 0x30, 0xab, 0x6a, 0x82, 0x73, 0xbc, 0x3d, 0xc2, 0x75, 0xce, 0x9b, 0xa1, 0x7b, 0x02,
+	0xff, 0x1f, 0x4a, 0x64, 0x15, 0x19, 0x34, 0x85, 0xad, 0x0d, 0x35, 0x6f, 0x37, 0x68, 0x50, 0x02,
+	0x9d, 0x45, 0x95, 0xa3, 0xad, 0x4b, 0x50, 0xd6, 0xee, 0x33, 0xf4, 0x82, 0x26, 0x03, 0xb1, 0x40,
+	0x9f, 0x45, 0x8d, 0x44, 0x9f, 0x45, 0xdf, 0xf1, 0x89, 0x0f, 0xdd, 0x09, 0xf2, 0x30, 0x49, 0x0b,
+	0xdb, 0x18, 0x1a, 0x9e, 0x39, 0x1e, 0xf8, 0x75, 0x22, 0x5f, 0x25, 0xf2, 0xaf, 0xb2, 0x2a, 0x50,
+	0x24, 0x77, 0x01, 0xfd, 0x39, 0x67, 0x49, 0x16, 0xd7, 0x80, 0xf0, 0xbc, 0x0f, 0xd7, 0xd8, 0x6c,
+	0x91, 0xb5, 0x48, 0xfb, 0x14, 0xa6, 0xa5, 0x5a, 0x54, 0x37, 0xc4, 0x11, 0xc9, 0x5e, 0xcb, 0x84,
+	0x61, 0x64, 0x1b, 0x43, 0xcd, 0xeb, 0x05, 0x1f, 0xbd, 0x1b, 0x00, 0x5c, 0x53, 0x9a, 0xb6, 0xf5,
+	0xec, 0xb5, 0xf1, 0x9c, 0x83, 0x39, 0xcb, 0xf8, 0xf9, 0x59, 0x5b, 0x53, 0xa3, 0x8d, 0xe9, 0x05,
+	0xf4, 0xd5, 0xf3, 0xde, 0x25, 0x05, 0x27, 0x1e, 0x74, 0x03, 0x2c, 0xca, 0x94, 0x17, 0xb6, 0x26,
+	0x9f, 0xcf, 0xf2, 0xc5, 0x8f, 0xfb, 0x8a, 0x14, 0xa8, 0xf1, 0xf8, 0x4d, 0x87, 0x03, 0x85, 0x4e,
+	0xb3, 0x28, 0xa7, 0x49, 0xc6, 0xc9, 0x08, 0xcc, 0x5b, 0xe4, 0x9f, 0x1f, 0xb6, 0x29, 0x76, 0xb6,
+	0x7a, 0xf7, 0x1f, 0x19, 0xc3, 0x9e, 0xd8, 0xab, 0x90, 0x82, 0x98, 0x35, 0x45, 0x1e, 0x84, 0x43,
+	0x36, 0xf9, 0x82, 0x29, 0x35, 0xd6, 0x0d, 0xc3, 0x90, 0xe3, 0x2f, 0xf6, 0x5c, 0x82, 0xf5, 0x98,
+	0x47, 0x3f, 0x69, 0x0e, 0xbf, 0xdc, 0xc9, 0x54, 0x5c, 0x6e, 0xad, 0x9d, 0x60, 0x8a, 0x7f, 0xd1,
+	0x2e, 0x77, 0x24, 0x72, 0xfa, 0x1e, 0x00, 0x00, 0xff, 0xff, 0x45, 0x15, 0x4e, 0x42, 0x49, 0x03,
+	0x00, 0x00,
 }

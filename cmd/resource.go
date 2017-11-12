@@ -3,11 +3,13 @@ package cmd
 import (
 	"os"
 	"fmt"
+	"reflect"
 	"context"
 	"github.com/spf13/cobra"
-	util "leveler/util"
 	cmdconfig "leveler/cmdconfig"
 	service "leveler/grpc"
+	ptypes "github.com/golang/protobuf/ptypes"
+	any "github.com/golang/protobuf/ptypes/any"
 )
 
 type Resource interface {
@@ -42,93 +44,157 @@ func (r ResourceClient) LongDescription() string {
 	return *r.CmdConfig.LongDescription
 }
 
-func (r ResourceClient) AddFlags(operation string, cmd *cobra.Command) {
-	// TODO: find the correct operation within the resource
+func (r ResourceClient) AddOptions(cmd *cobra.Command) {
+	var def string
 	for _, o := range r.CmdConfig.Operations {
-		if o.Name.String() == operation {
-			for _, f := range o.Options {
-				var s string
-				switch *f.Type {
-				case "string":
-					cmd.PersistentFlags().StringVarP(&s, *f.Name, *f.ShortName, *f.Default, *f.Description)
-				case "bool":
-					cmd.PersistentFlags().StringVarP(&s, *f.Name, *f.ShortName, *f.Default, *f.Description)
-				default:
-					fmt.Printf("Unknown type '%s' for command line option", *f.Type)
-					os.Exit(1)
+		// process string options
+		if o.Name.String() == cmd.Name() {
+			for _, f := range o.StringOptions {
+				if f.Default == nil {
+					def = ""
+				} else {
+					def = *f.Default
 				}
+
+				if *f.Required {
+					cmd.Args = func()
+
+				} else {
+					cmd.PersistentFlags().StringVarP(new(string), *f.Name, *f.Name[0], def, *f.Description)
+				}
+			}
+
+			// process bool options
+			for _, f := range o.BoolOptions {
+				cmd.PersistentFlags().BoolVarP(new(bool), *f.Name, *f.Name[0], *f.Default, *f.Description)
+			}
+
+			// process int64 options
+			for _, f := range o.Int64Options {
+				cmd.PersistentFlags().Int64VarP(new(int64), *f.Name, *f.Name[0], *f.Default, *f.Description)
 			}
 		}
 	}
 }
 
-func (r ResourceClient) processArgs(cmd *cobra.Command) (interface{}, error) {
-	// process required args and error out if any required parameters aren't set
+func (r ResourceClient) getId(cmd *cobra.Command) (string, error) {
 
-	// look up the operation
-	var operation *CmdOperation
+}
+
+func (r ResourceClient) processDetails(operation *cmdconfig.CmdOperation, cmd *cobra.Command) ([]*any.Any, error) {
+	// process required args and error out if any required parameters aren't set
+	var d = []*any.Any{}
+
+	var k string
+	var b bool
+	var i int64
+	var err error
+	// process string options
+	for _, opt := range operation.StringOptions {
+		k, err = cmd.Flags().GetString(*opt.Name)
+		if (err != nil || len(k) == 0) && *opt.Required {
+			fmt.Printf("'%s' is a required parameter!", *opt.Name)
+			os.Exit(1)
+		} else if err != nil || len(k) == 0 {
+			continue
+		}
+
+		detail := &service.StringDetail{
+			Name: *opt.Name,
+			Value: k,
+		}
+
+		a, err := ptypes.MarshalAny(detail) 
+		if err != nil {
+			return d, nil
+		}
+
+		d = append(d, a)
+	}
+
+	// process bool options
+	for _, opt := range operation.BoolOptions {
+		b, err = cmd.Flags().GetBool(*opt.Name)
+		if err != nil && *opt.Required {
+			fmt.Printf("'%s' is a required parameter!", *opt.Name)
+			os.Exit(1)
+		} else if err != nil {
+			continue
+		}
+
+		detail := &service.BoolDetail{
+			Name: *opt.Name,
+			Value: b,
+		}
+
+		a, err := ptypes.MarshalAny(detail) 
+		if err != nil {
+			return d, nil
+		}
+
+		d = append(d, a)
+	}
+
+	// process int64 options
+	for _, opt := range operation.Int64Options {
+		i, err = cmd.Flags().GetInt64(*opt.Name)
+		if err != nil && *opt.Required {
+			fmt.Printf("'%s' is a required parameter!", *opt.Name)
+			os.Exit(1)
+		} else if err != nil {
+			continue
+		}
+
+		detail := &service.Int64Detail{
+			Name: *opt.Name,
+			Value: i,
+		}
+
+		a, err := ptypes.MarshalAny(detail) 
+		if err != nil {
+			return d, nil
+		}
+
+		d = append(d, a)
+	}
+
+	return d, nil
+}
+
+func (r ResourceClient) lookupOperation(op string, cmd *cobra.Command) *cmdconfig.CmdOperation {
+	// look up the operation in the cmdconfig
+	var operation *cmdconfig.CmdOperation
 	for _, o := range r.CmdConfig.Operations {
-		if o.Name.String() == cmd.Name() {
+		if o.Name.String() == op {
 			operation = o
 			break
 		}
 	}
 
-	// iterate through args to determine if required args were provided	and build protobuf message
-	var s service.Resource
-	var d map[string]interface{}
-
-	s.Type = *r.CmdConfig.Name
-	var k string
-	var b bool
-	for _, opt := range operation.Options {
-		switch *opt.Type {
-		case "string":
-			k, _ = cmd.Flags().GetString(*opt.Name)
-			if len(k) == 0 && *opt.Required {
-				fmt.Printf("'%s' is a required parameter!", *opt.Name)
-				os.Exit(1)
-			}
-		case "bool":
-			b, _ = cmd.Flags().GetBool(*opt.Name)
-			if !b && *opt.Required {
-				fmt.Printf("'%s' is a required parameter!", *opt.Name)
-				os.Exit(1)
-			}
-		default:
-			fmt.Printf("Unknown type '%s' in configuration", *opt.Type)
-			os.Exit(1)
-		}
-
-		d[*opt.Name] = k
-	}
-
-	// generate protobuf message
-	details, err := util.GenerateProtoAny(d)
-	if err != nil {
-		return s, err
-	}
-
-	s.Details = details
-
-	return s, nil
+	return operation
 }
 
 func (r ResourceClient) CreateRequest(cmd *cobra.Command) {
-	fmt.Println("made it to create!")
+	var err error
+	var s = &service.Resource{
+		Type: cmd.Name(),
+	}
 
-	message, err := r.processArgs(cmd)
+	// op := r.lookupOperation("create", cmd)
+
+	s.Details, err = r.processDetails(op, cmd)
 	if err != nil {
 		fmt.Printf("Couldn't process args: %v", err)
 		os.Exit(1)
 	}
 
-	resource, ok := message.(service.Resource)
+	resource, ok := message.(*service.Resource)
 	if !ok {
-		// TODO
+		fmt.Printf("Type assertion error (can't cast to type Resource) -- %v", message)
+		os.Exit(1)
 	}
 	// do create request
-	resourceId, err := r.Client.CreateResource(context.Background(), &resource)  // TODO: grpc.CallOption
+	resourceId, err := r.Client.CreateResource(context.Background(), resource)  // TODO: grpc.CallOption
 
 	if err != nil {
 		fmt.Printf("Error creating resource: %s", err)
@@ -136,24 +202,31 @@ func (r ResourceClient) CreateRequest(cmd *cobra.Command) {
 	}
 
 	// TODO: return formatted response
-	fmt.Println(resourceId)
+	fmt.Println(resourceId.Id)
 }
 
 func (r ResourceClient) GetRequest(cmd *cobra.Command) {
-	fmt.Println("made it to get!")
+	var err error 
 
-	message, err := r.processArgs(cmd)
+	op := r.lookupOperation("get", cmd)
+	id, err := r.getId(cmd)
 	if err != nil {
-		fmt.Printf("Couldn't process args: %v", err)
+		fmt.Println("Couldn't process positional arg (id): %v", err)
 		os.Exit(1)
 	}
 
-	// do get request
-	resourceId, ok := message.(service.ResourceId)
-	if !ok {
-		// TODO
+	var s = &service.Resource{
+		Type: cmd.Name(),
+		Id: id
 	}
-	resource, err := r.doGet(&resourceId)
+
+	// do get request
+	resource, ok := message.(*service.Resource)
+	if !ok {
+		fmt.Printf("Type assertion error (can't cast to type Resource) -- %v", message)
+		os.Exit(1)
+	}
+	resource, err := r.doGet(resource)
 	if err != nil {
 		fmt.Println("Error retrieving resource: %s", err)
 		os.Exit(1)
@@ -163,8 +236,8 @@ func (r ResourceClient) GetRequest(cmd *cobra.Command) {
 	fmt.Println(resource)
 }
 
-func (r ResourceClient) doGet(resourceId *service.ResourceId) (*service.Resource, error) {
-	resource, err := r.Client.GetResource(context.Background(), resourceId)
+func (r ResourceClient) doGet(resourceMetadata *service.ResourceMetadata) (*service.Resource, error) {
+	resource, err := r.Client.GetResource(context.Background(), resourceMetadata)
 	return resource, err
 }
 
@@ -191,26 +264,27 @@ func (r ResourceClient) ListRequest(cmd *cobra.Command) {
 func (r ResourceClient) UpdateRequest(cmd *cobra.Command) {
 	fmt.Println("made it to update!")
 
-	message, err := r.processArgs(cmd)
+	message, err := r.processArgs("update",cmd)
 	if err != nil {
 		fmt.Printf("Couldn't process args: %v", err)
 		os.Exit(1)
 	}
 
-	input, ok := message.(service.Resource)
+	input, ok := message.(*service.Resource)
 	if !ok {
-		// TODO
+		fmt.Println("Type assertion error (can't cast to type Resource) -- %v", message)
+		os.Exit(1)
 	}
 
 	// lookup existing resource 
-	_, err = r.doGet(&service.ResourceId{Id: input.Id, Type: input.Type,})
+	_, err = r.doGet(&service.ResourceMetadata{Id: input.Metadata.Id, Type: input.Metadata.Type,})
 
 	if err != nil {
 		fmt.Println("Requested resource doesn't exist -- nothing to do")
 		os.Exit(0)
 
 	} else {
-		_, err = r.Client.UpdateResource(context.Background(), &input)
+		_, err = r.Client.UpdateResource(context.Background(), input)
 		if err != nil {
 			fmt.Printf("Error updating resource: %s", err)
 			os.Exit(1)
@@ -218,28 +292,29 @@ func (r ResourceClient) UpdateRequest(cmd *cobra.Command) {
 	}
 
 	// TODO: return formatted response
-	fmt.Printf("Successfully updated resource '%s'", input.Id)
+	fmt.Printf("Successfully updated resource '%s'", input.Metadata.Id)
 }
 
 func (r ResourceClient) DeleteRequest(cmd *cobra.Command) {
 	fmt.Println("made it to delete!")
 
-	message, err := r.processArgs(cmd)
+	message, err := r.processArgs("delete", cmd)
 	if err != nil {
 		fmt.Printf("Couldn't process args: %v", err)
 		os.Exit(1)
 	}
 
-	resourceId, ok := message.(service.ResourceId)
+	resourceMetadata, ok := message.(*service.ResourceMetadata)
 	if !ok {
-		// TODO
+		fmt.Printf("Type assertion error (can't cast to type ResourceMetadata) -- %v", message)
+		os.Exit(1)
 	}
 	// lookup existing resource 
-	_, err = r.doGet(&service.ResourceId{Id: resourceId.Id, Type: resourceId.Type})
+	_, err = r.doGet(resourceMetadata)
 
 	if err != nil {
 		if err != nil {
-			_, err = r.Client.DeleteResource(context.Background(), &resourceId)
+			_, err = r.Client.DeleteResource(context.Background(), resourceMetadata)
 		} else {
 			fmt.Printf("Error deleting resource: %s", err)
 			os.Exit(1)
@@ -251,5 +326,5 @@ func (r ResourceClient) DeleteRequest(cmd *cobra.Command) {
 	}
 
 	// TODO: return formatted response
-	fmt.Printf("Successfully deleted resource '%s'", resourceId.Id)
+	fmt.Printf("Successfully deleted resource '%s'", resourceMetadata.Id)
 } 

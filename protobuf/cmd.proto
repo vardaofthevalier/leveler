@@ -1,15 +1,17 @@
 syntax = "proto2";
 
-package cmdconfig;
+package resources;
+
+import "resources.proto";
 
 enum Operation {
-	CREATE = 0;
-	GET = 1;
-	LIST = 2;
-	UPDATE = 3;
-	PATCH = 4;
-	DELETE = 5;
-	APPLY = 6;	
+	create = 0;
+	get = 1;
+	list = 2;
+	update = 3;
+	patch = 4;
+	delete = 5;
+	apply = 6;	
 }
 
 message ResourceCmdConfig {
@@ -21,19 +23,12 @@ message CmdConfig {
 	required string Usage = 2;
 	required string ShortDescription = 3;
 	required string LongDescription = 4;
-	repeated CmdOperation Operations = 5;
+	repeated Operation SupportedOperations = 5;
+	required ResourceSpec Spec = 6; 
 }
 
-message CmdOperation {
-	required Operation Name = 1;
-	repeated Option Options = 2;
-}
-
-message Option {
-	required string Name = 1;
-	required string ShortName = 2;
-	required string Default = 3;
-	required string Type = 4;
-	required string Description = 5;
-	required bool Required = 6;
+message ResourceSpec {
+	repeated StringDetail StringDetails = 2;
+	repeated BoolDetail BoolDetails = 3;
+	repeated Int64Detail Int64Details = 4;
 }

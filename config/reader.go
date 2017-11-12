@@ -32,7 +32,7 @@ func Read(path string, component string, config interface{}) error {
 		return err
 	}
 
-	err = util.ConvertFromYaml(contents, config.(*proto.Message))
+	err = util.ConvertFromYaml(contents, config.(proto.Message))
 	if err != nil {
 		return err
 	}

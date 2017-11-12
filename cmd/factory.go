@@ -8,125 +8,243 @@ import (
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	util "leveler/util"
-	pb "leveler/cmdconfig"
+	cmdconfig "leveler/cmdconfig"
+	service "leveler/grpc"
 )
 
 var opts []grpc.DialOption
-var resourceList = buildResourceList()
+var resourceList = buildResourceClientList()
 
-func CreateCommand(resource Resource) *cobra.Command {
+//type cmdRunFn func(*cobra.Command, []string)
 
-	var create = &cobra.Command{
-		Use:   resource.Usage(),
-		Short: resource.ShortDescription(),
-		Long: resource.LongDescription(),
-		Run: func(cmd *cobra.Command, args []string) {
-			resource.CreateRequest(cmd)
-		},
+// func CreateCommand(resource Resource, runFn cmdRunFn) *cobra.Command {
+
+// 	var create = &cobra.Command{
+// 		Use:   resource.Usage(),
+// 		Short: resource.ShortDescription(),
+// 		Long: resource.LongDescription(),
+// 		Run: func(cmd *cobra.Command, args []string) {
+// 			resource.CreateRequest(cmd)
+// 		},
+// 	}
+
+// 	resource.AddOptions("create", create)
+
+// 	return create	
+// }
+
+// func GetCommand(resource Resource) *cobra.Command {
+
+// 	var get = &cobra.Command{
+// 		Use:   resource.Usage(),
+// 		Short: resource.ShortDescription(),
+// 		Long: resource.LongDescription(),
+// 		Run: func(cmd *cobra.Command, args []string) {
+// 			resource.GetRequest(cmd)
+// 		},
+// 	}
+
+// 	resource.AddOptions("get", get)
+
+// 	return get
+// }
+
+// func ListCommand(resource Resource) *cobra.Command {
+
+// 	var list = &cobra.Command{
+// 		Use:   resource.Usage(),
+// 		Short: resource.ShortDescription(),
+// 		Long: resource.LongDescription(),
+// 		Run: func(cmd *cobra.Command, args []string) {
+// 			resource.ListRequest(cmd)
+// 		},
+// 	}
+
+// 	resource.AddOptions("list", list)
+
+// 	return list
+// }
+
+// func UpdateCommand(resource Resource) *cobra.Command {
+
+// 	var update = &cobra.Command{
+// 		Use:   resource.Usage(),
+// 		Short: resource.ShortDescription(),
+// 		Long: resource.LongDescription(),
+// 		Run: func(cmd *cobra.Command, args []string) {
+// 			resource.UpdateRequest(cmd)
+// 		},
+// 	}
+
+// 	resource.AddOptions("update", update)
+
+// 	return update
+// }
+
+// func DeleteCommand(resource Resource) *cobra.Command {
+
+// 	var delete = &cobra.Command{
+// 		Use:   resource.Usage(),
+// 		Short: resource.ShortDescription(),
+// 		Long: resource.LongDescription(),
+// 		Run: func(cmd *cobra.Command, args []string) {
+// 			resource.DeleteRequest(cmd)
+// 		},
+// 	}
+
+// 	resource.AddOptions("delete", delete)
+
+// 	return delete
+// }
+
+func AddCommands(parent *cobra.Command) {
+	var runFn cmdRunFn
+	var supported bool
+	for _, resource := range resourceList {
+		for _, o := range resource.CmdConfig.SupportedOperations {
+			if o == parent.Name() {
+				supported = true
+			}
+		}
+
+		if supported {
+			switch parent.Name() {
+			case "create":
+				var create = &cobra.Command{
+					Use:   resource.Usage(),
+					Short: resource.ShortDescription(),
+					Long: resource.LongDescription(),
+					Run: func(cmd *cobra.Command, args []string) {
+						resource.CreateRequest(cmd)
+					},
+				}
+
+				resource.AddOptions(create)
+				parent.AddCommand(create)
+
+			case "get": 
+				var get = &cobra.Command{
+					Use:   resource.Usage(),
+					Short: resource.ShortDescription(),
+					Long: resource.LongDescription(),
+					Run: func(cmd *cobra.Command, args []string) {
+						resource.GetRequest(cmd)
+					},
+				}
+
+				resource.AddOptions("get", get)
+
+			case "list":
+				var list = &cobra.Command{
+					Use:   resource.Usage(),
+					Short: resource.ShortDescription(),
+					Long: resource.LongDescription(),
+					Run: func(cmd *cobra.Command, args []string) {
+						resource.ListRequest(cmd)
+					},
+				}
+
+				resource.AddOptions(list)
+
+			case "update":
+				var update = &cobra.Command{
+					Use:   resource.Usage(),
+					Short: resource.ShortDescription(),
+					Long: resource.LongDescription(),
+					Run: func(cmd *cobra.Command, args []string) {
+						resource.UpdateRequest(cmd)
+					},
+				}
+
+				resource.AddOptions(update)
+
+				return update
+
+			case "patch":
+				fmt.Println("Operation 'patch' not yet implemented")
+				os.Exit(1)
+
+			case "delete":
+				var delete = &cobra.Command{
+					Use:   resource.Usage(),
+					Short: resource.ShortDescription(),
+					Long: resource.LongDescription(),
+					Run: func(cmd *cobra.Command, args []string) {
+						resource.DeleteRequest(cmd)
+					},
+				}
+
+				resource.AddOptions(delete)
+
+			case "apply":
+				fmt.Println("Operation 'patch' not yet implemented")
+				os.Exit(1)
+
+			default:
+				fmt.Printf("Unknown operation '%s'", operation)
+				os.Exit(1)
+			}
+			
+
+		} else {
+			runFn = func(cmd *cobra.Command, []string) { 
+				fmt.Printf("Unsupported operation '%s' for '%s'", operation, cmd.Name()) 
+				os.Exit(1)
+			}
+		}
+
+		
 	}
-
-	fmt.Printf("%v", create)
-
-	resource.AddFlags("create", create)
-
-	return create	
 }
 
-func GetCommand(resource Resource) *cobra.Command {
+// func AddListCommands(parent *cobra.Command) {
+// 	for _, r := range resourceList {
+// 		parent.AddCommand(ListCommand(r))
+// 	}
 
-	var get = &cobra.Command{
-		Use:   resource.Usage(),
-		Short: resource.ShortDescription(),
-		Long: resource.LongDescription(),
-		Run: func(cmd *cobra.Command, args []string) {
-			resource.GetRequest(cmd)
-		},
-	}
+// 	var runFn cmdRunFn
+// 	var supported bool
+// 	for _, r := range resourceList {
+// 		for _, o := range r.CmdConfig.SupportedOperations {
+// 			if o == "list" {
+// 				supported = true
+// 			}
+// 		}
 
-	resource.AddFlags("get", get)
+// 		if supported {
+// 			runFn = func(cmd *cobra.Command, []string) { resource.ListRequest(cmd) }
 
-	return get
-}
+// 		} else {
+// 			runFn = func(cmd *cobra.Command, []string) { 
+// 				fmt.Printf() 
+// 				os.Exit(1)
+// 			}
+// 		}
 
-func ListCommand(resource Resource) *cobra.Command {
+// 		parent.AddCommand(CreateCommand(r, runFn))
+// 	}
+// }
 
-	var list = &cobra.Command{
-		Use:   resource.Usage(),
-		Short: resource.ShortDescription(),
-		Long: resource.LongDescription(),
-		Run: func(cmd *cobra.Command, args []string) {
-			resource.ListRequest(cmd)
-		},
-	}
+// func AddGetCommands(parent *cobra.Command) {
+// 	for _, r := range resourceList {
+// 		parent.AddCommand(GetCommand(r))
+// 	}
+// }
 
-	resource.AddFlags("list", list)
+// func AddUpdateCommands(parent *cobra.Command) {
+// 	for _, r := range resourceList {
+// 		parent.AddCommand(UpdateCommand(r))
+// 	}
+// }
 
-	return list
-}
+// func AddDeleteCommands(parent *cobra.Command) {
+// 	for _, r := range resourceList {
+// 		parent.AddCommand(DeleteCommand(r))
+// 	}
+// }
 
-func UpdateCommand(resource Resource) *cobra.Command {
-
-	var update = &cobra.Command{
-		Use:   resource.Usage(),
-		Short: resource.ShortDescription(),
-		Long: resource.LongDescription(),
-		Run: func(cmd *cobra.Command, args []string) {
-			resource.UpdateRequest(cmd)
-		},
-	}
-
-	resource.AddFlags("update", update)
-
-	return update
-}
-
-func DeleteCommand(resource Resource) *cobra.Command {
-
-	var delete = &cobra.Command{
-		Use:   resource.Usage(),
-		Short: resource.ShortDescription(),
-		Long: resource.LongDescription(),
-		Run: func(cmd *cobra.Command, args []string) {
-			resource.DeleteRequest(cmd)
-		},
-	}
-
-	resource.AddFlags("delete", delete)
-
-	return delete
-}
-
-func AddCreateCommands(parent *cobra.Command) {
-	for _, r := range resourceList {
-		parent.AddCommand(CreateCommand(r))
-	}
-}
-
-func AddListCommands(parent *cobra.Command) {
-	for _, r := range resourceList {
-		parent.AddCommand(ListCommand(r))
-	}
-}
-
-func AddGetCommands(parent *cobra.Command) {
-	for _, r := range resourceList {
-		parent.AddCommand(GetCommand(r))
-	}
-}
-
-func AddUpdateCommands(parent *cobra.Command) {
-	for _, r := range resourceList {
-		parent.AddCommand(UpdateCommand(r))
-	}
-}
-
-func AddDeleteCommands(parent *cobra.Command) {
-	for _, r := range resourceList {
-		parent.AddCommand(DeleteCommand(r))
-	}
-}
-
-func buildResourceList() []pb.Resource {
+func buildResourceClientList() []ResourceClient {
+	var r []ResourceClient
 	opts = append(opts, grpc.WithInsecure())
 	clientConn, err := grpc.Dial("127.0.0.1:8080", opts...) // TODO: move server and port to config file
 	
@@ -148,7 +266,7 @@ func buildResourceList() []pb.Resource {
 		os.Exit(1)
 	}
 
-	var m = pb.ResourceCmdConfig{}
+	var m = cmdconfig.ResourceCmdConfig{}
 
 	err = util.ConvertJsonToProto(contents, &m)
 	if err != nil {
@@ -157,6 +275,8 @@ func buildResourceList() []pb.Resource {
 	}
 
 	for _, res := range m.Resources {
-		resourceList = append(resourceList, ResourceClient{Client: service.NewResourceEndpointClient(clientConn), pb.CmdConfig: *res})
+		r = append(r, ResourceClient{Client: service.NewResourceEndpointClient(clientConn), CmdConfig: *res})
 	}
+
+	return r
 }

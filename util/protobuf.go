@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"bytes"
 	json "encoding/json"
 	yaml "gopkg.in/yaml.v2"
@@ -46,7 +47,7 @@ func ConvertJsonToProto(b []byte, m interface{}) error {
 	return nil
 }
 
-func ConvertFromJson(b []byte, i interface{}) error {
+func ConvertFromJsonString(b []byte, i interface{}) error {
 	err := json.Unmarshal(b, i)
 	if err != nil {
 		return err
@@ -55,7 +56,7 @@ func ConvertFromJson(b []byte, i interface{}) error {
 	return nil
 }
 
-func ConvertToJson(i interface{}) ([]byte, error) {
+func ConvertToJsonString(i interface{}) ([]byte, error) {
 	jsonString, err := json.Marshal(i)
 	if err != nil {
 		return jsonString, err
@@ -64,6 +65,15 @@ func ConvertToJson(i interface{}) ([]byte, error) {
 	return jsonString, nil
 }
 
+func ConvertJsonStringToMap(jsonString []byte) (map[string]interface{}, error) {
+	var jsonMap map[string]interface{}
+	err := json.Unmarshal(jsonString, &jsonMap)
+	if err != nil {
+		return jsonMap, err
+	} 
+
+	return jsonMap, nil
+}
 
 func ConvertFromYaml(yml []byte, i interface{}) error {
 	err := yaml.Unmarshal(yml, i)
@@ -78,12 +88,13 @@ func GenerateProtoAny(m map[string]interface{}) (*any.Any, error) {
 	var message proto.Message
 	var a *any.Any
 
-	b, err := ConvertToJson(m)
+	b, err := ConvertToJsonString(m)
 	if err != nil {
 		return a, err
 	}
 
-	err = ConvertJsonToProto(b, &message)
+	fmt.Printf("%v", b)
+	err = ConvertJsonToProto(b, message)
 	if err != nil {
 		return a, err
 	}

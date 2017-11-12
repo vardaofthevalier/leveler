@@ -17,12 +17,13 @@ type EndpointServer struct {
 
 // ACTION ENDPOINTS
 
-func (s *EndpointServer) CreateResource(ctx context.Context, obj Resource) (ResourceId, error) {
+func (s *EndpointServer) CreateResource(ctx context.Context, obj *Resource) (*ResourceMetadata, error) {
+	log.Printf("%v", obj)
 	log.Printf("Creating %s: %v", obj.Type, obj)
 
-	var result ResourceId
+	var result = &Resource{}
 
-	m, err := util.ConvertProtoToMap(obj.Details)
+	m, err := util.ConvertProtoToMap(obj)
 	if err != nil {
 		return result, err
 	}
@@ -35,58 +36,20 @@ func (s *EndpointServer) CreateResource(ctx context.Context, obj Resource) (Reso
 	return result, nil
 }
 
-func (s *EndpointServer) GetResource(ctx context.Context, obj ResourceId) (Resource, error) {
+func (s *EndpointServer) GetResource(ctx context.Context, obj *Resource) (*Resource, error) {
 	log.Printf("Retrieving %s: %s", obj.Type, obj.Id)
 
 	var jsonString []byte
-	var result Resource
+	var result = &Resource{}
 
 	r, err := s.Database.Get(obj.Type, obj.Id)
 	if err != nil {
 		return result, err
 	}
 
-	jsonString, err = util.ConvertToJson(r)
+	jsonString, err = util.ConvertToJsonString(r)
 	if err != nil {
 		log.Printf("Error converting map to JSON: %v", err)
-		return result, err
-	}
-
-	err = jsonpb.Unmarshal(bytes.NewReader(jsonString), result.Details)
-	if err != nil {
-		return result, err
-	}
-
-	return result, nil
-}
-
-func (s *EndpointServer) ListResources(ctx context.Context, query Query) (ResourceList, error) {
-	log.Printf("Retrieiving %s list", query.Type)
-
-	var jsonString []byte
-	var result ResourceList
-
-	list, err := s.Database.List(query.Type, query.Query)
-	if err != nil {
-		return result, err
-	}
-
-	//var r Resource  // TODO: start here
-	// for k, v := range list {
-	// 	details, err = util.ConvertMapToJson(v)
-	// 	if err != nil {
-	// 		return result, err
-	// 	}
-	// 	r = &Resource{
-	// 		Id: 
-	// 		Type:
-	// 		Details: 
-	// 	}
-	// 	result.Results = append(result.Results, &Resource)
-	// }
-
-	jsonString, err = util.ConvertToJson(list)
-	if err != nil {
 		return result, err
 	}
 
@@ -98,8 +61,32 @@ func (s *EndpointServer) ListResources(ctx context.Context, query Query) (Resour
 	return result, nil
 }
 
-func (s *EndpointServer) UpdateResource(ctx context.Context, obj Resource) (*empty.Empty, error) {
-	log.Printf("Updating %s: %s", obj.Type, obj.Id)
+func (s *EndpointServer) ListResources(ctx context.Context, query *Query) (*ResourceList, error) {
+	log.Printf("Retrieiving %s list", query.Type)
+
+	var result = &ResourceList{}
+
+	list, err := s.Database.List(query.Type, query.Query)
+	if err != nil {
+		return result, err
+	}
+
+	for _, v := range list {
+		s, err := util.ConvertToJsonString(v)
+		if err != nil {
+			return result, err
+		}
+
+		var r *Resource
+		err = util.ConvertJsonToProto(s, &r)
+		result.Results = append(result.Results, r)
+	}
+
+	return result, nil
+}
+
+func (s *EndpointServer) UpdateResource(ctx context.Context, obj *Resource) (*empty.Empty, error) {
+	log.Printf("Updating %s: %s", obj.Metadata.Type, obj.Metadata.Id)
 
 	var result *empty.Empty
 
@@ -116,7 +103,7 @@ func (s *EndpointServer) UpdateResource(ctx context.Context, obj Resource) (*emp
 	return result, nil
 }
 
-func (s *EndpointServer) DeleteResource(ctx context.Context, obj ResourceId) (*empty.Empty, error) {
+func (s *EndpointServer) DeleteResource(ctx context.Context, obj *Resource) (*empty.Empty, error) {
 	log.Printf("Deleting %s: %s", obj.Type, obj.Id)
 
 	var result *empty.Empty
