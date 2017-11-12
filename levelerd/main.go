@@ -8,6 +8,7 @@ import (
 	server "leveler/grpc"
 	config "leveler/config"
 	grpc "google.golang.org/grpc"
+	resources "leveler/resources"
 )
 
 func main() {
@@ -45,7 +46,7 @@ func main() {
 	// register endpoints
 	grpcServer := grpc.NewServer(opts...)
 	s := &server.EndpointServer{db}
-	server.RegisterResourceEndpointServer(grpcServer, s)
+	resources.RegisterResourceEndpointServer(grpcServer, s)
 
 	// start the server
 	grpcServer.Serve(lis)

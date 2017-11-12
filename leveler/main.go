@@ -15,7 +15,7 @@
 package main
 
 import (
-	_ "leveler/cmdconfig"
+	_ "leveler/resources"
 	"leveler/cmd"
 )
 

@@ -368,7 +368,8 @@ func (db RedisDatabase) Create(kind string, obj map[string]interface{}) (string,
 	id := uuid.NewV4().String()
 
 	// create a new hash in the database
-	_ = conn.Cmd("HMSET", fmt.Sprintf("%s:%s", kind, id), obj).String()
+	ok := conn.Cmd("HMSET", fmt.Sprintf("%s:%s", kind, id), obj).String()
+	log.Printf(ok)
 
 	// create secondary keys, if applicable
 
@@ -384,7 +385,6 @@ func (db RedisDatabase) Get(kind string, id string) (map[string]string, error) {
 	defer db.DatabaseConnectionPool.Put(conn)
 
 	result, err := conn.Cmd("HGETALL", fmt.Sprintf("%s:%s", kind, id)).Map()
-	log.Println(result)
 	if err != nil {
 		return map[string]string{}, err 
 	}

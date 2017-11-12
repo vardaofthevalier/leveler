@@ -28,7 +28,7 @@ message CmdConfig {
 }
 
 message ResourceSpec {
-	repeated StringDetail StringDetails = 2;
-	repeated BoolDetail BoolDetails = 3;
-	repeated Int64Detail Int64Details = 4;
+	repeated StringDetail StringOptions = 2;
+	repeated BoolDetail BoolOptions = 3;
+	repeated Int64Detail Int64Options = 4;
 }

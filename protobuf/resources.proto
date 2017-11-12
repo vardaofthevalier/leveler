@@ -28,18 +28,25 @@ message StringDetail {
     string Name = 1;
     string Value = 2;
     bool Required = 3;
+    string Description = 4;
+    string Default = 5;
 }
 
 message BoolDetail {
     string Name = 1;
     bool Value = 2;
     bool Required = 3;
+    string Description = 4;
+    bool Default = 5;
+
 }
 
 message Int64Detail {
     string Name = 1;
     int64 Value = 2;
     bool Required = 3;
+    string Description = 4;
+    int64 Default = 5;
 }
 
 message ResourceList {

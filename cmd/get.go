@@ -24,6 +24,7 @@ var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: "A brief description of your command",
 	Long: `TODO`,
+	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("get called")
 	},

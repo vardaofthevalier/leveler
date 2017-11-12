@@ -7,38 +7,27 @@
          "LongDescription": "Defined as a command and shell which can be later applied to a destination resource",
          "SupportedOperations": ["create", "get", "list", "update", "patch", "delete", "apply"],
          "Spec": {
-            "StringDetails": [
-               {
-                  "Name": "id",
-                  "ShortName": "i",
-                  "Required": true,
-                  "Description": "The unique ID for the action of interest",
-                  "Default": ""
-               },
+            "StringOptions": [
                {
                   "Name": "name",
-                  "ShortName": "n",
                   "Required": true,
                   "Description": "A descriptive name for the action",
                   "Default": ""
                },
                {
                   "Name": "description",
-                  "ShortName": "d",
                   "Required": false,
                   "Description": "A concise description for the goal of the action",
                   "Default": ""
                },
                {
                   "Name": "command",
-                  "ShortName": "c",
                   "Required": true,
                   "Description": "A shell command that achieves the action",
                   "Default": ""
                },
                {
                   "Name": "shell",
-                  "ShortName": "s",
                   "Required": true,
                   "Default": "/bin/bash",
                   "Description": "A concise description for the goal of the action"
