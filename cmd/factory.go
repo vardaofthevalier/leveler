@@ -4,6 +4,7 @@ import (
 	"os"
 	"fmt"
 	"bytes"
+	"runtime"
 	"io/ioutil"
 	"path/filepath"
 	"github.com/spf13/cobra"
@@ -130,13 +131,18 @@ func buildResourceClientList() []ResourceClient {
 	}
 
 	// read the resources definition file to get a list of resources -- TODO: move this filename to the config file
-	dir, err := filepath.Abs(filepath.Dir("resources.json"))
+	_, current, _, ok := runtime.Caller(0)
+	if !ok {
+		panic("No caller info!")
+	}
+
+	dir, err := filepath.Abs(filepath.Dir(filepath.Dir(current)))
 	if err != nil {
 		fmt.Print(err)
 		os.Exit(1)
 	}
 
-	contents, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", dir, "resources.json"))
+	contents, err := ioutil.ReadFile(filepath.Join(dir, "leveler", "resources.json"))
 	if err != nil {
 		fmt.Printf("Error reading resource configuration file: %v", err)
 		os.Exit(1)

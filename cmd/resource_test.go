@@ -1,13 +1,70 @@
 package cmd
 
 import (
+	"os"
+	"fmt"
+	"flag"
+	"bytes"
 	"testing"
+	"google.golang.org/grpc"
 	mocks "leveler/mocks"
 	resources "leveler/resources"
+	jsonpb "github.com/golang/protobuf/jsonpb"
 )
 
-func generateCmdConfig() *CmdConfig {
+var testConfig = `{
+	"Name": "action",
+    "Usage": "action",
+    "ShortDescription": "Perform an operation on an Action resource",
+    "LongDescription": "Defined as a command and shell which can be later applied to a destination resource",
+    "SupportedOperations": ["create", "get", "list", "update", "patch", "delete", "apply"],
+    "Spec": {
+       "StringOptions": [
+          {
+             "Name": "name",
+             "Required": true,
+             "Description": "A descriptive name for the action",
+             "Default": "", 
+             "IsSecondaryKey": true
+          },
+          {
+             "Name": "description",
+             "Required": false,
+             "Description": "A concise description for the goal of the action",
+             "Default": ""
+          },
+          {
+             "Name": "command",
+             "Required": true,
+             "Description": "A shell command that achieves the action",
+             "Default": ""
+          },
+          {
+             "Name": "shell",
+             "Required": true,
+             "Default": "/bin/bash",
+             "Description": "A concise description for the goal of the action"
+          }
+        ]
+    }
+}
+`
+func generateCmdConfig() *resources.CmdConfig {
 	// read config from resources.json
+
+	var m = &resources.CmdConfig{}
+	var jsonUnmarshaler = jsonpb.Unmarshaler{
+		AllowUnknownFields: false,
+	}
+
+	reader := bytes.NewReader([]byte(testConfig))
+	err := jsonUnmarshaler.Unmarshal(reader, m)
+	if err != nil {
+		fmt.Printf("Error processing resource configuration: %v", err)
+		os.Exit(1)
+	}
+
+	return m
 }
 
 func getResourceClient() *ResourceClient {
@@ -18,10 +75,10 @@ func getResourceClient() *ResourceClient {
 
 	var r *ResourceClient 
 
-	if mock {
+	if *mock {
 		r = &ResourceClient{
 			Client: &mocks.MockResourceEndpointClient{},
-			CmdConfig: generateCmdConfig(),
+			CmdConfig: *generateCmdConfig(),
 		}
 	} else {
 		if *port == -1 {
@@ -38,7 +95,7 @@ func getResourceClient() *ResourceClient {
 
 			r = &ResourceClient{
 				Client: resources.NewResourceEndpointClient(clientConn), 
-				CmdConfig: generateCmdConfig(),
+				CmdConfig: *generateCmdConfig(),
 			}
 		}
 	}
@@ -48,50 +105,56 @@ func getResourceClient() *ResourceClient {
 
 var resourceClient = getResourceClient()
 
-func (t *testing.T) TestResourceClient_Usage() {
-
+func TestResourceClient_Usage(t *testing.T) {
+	if resourceClient.Usage() != "action" {
+		t.Errorf("Usage() returned the wrong value!")
+	}
 }
 
-func (t *testing.T) TestResourceClient_ShortDescription() {
+func TestResourceClient_ShortDescription(t *testing.T)  {
+	if resourceClient.ShortDescription() != "Perform an operation on an Action resource" {
+		t.Errorf("ShortDescription() returned the wrong value!")
+	}
+}
+
+func TestResourceClient_LongDescription(t *testing.T) {
+	if resourceClient.LongDescription() != "Defined as a command and shell which can be later applied to a destination resource" {
+		t.Errorf("LongDescription() returned the wrong value!")
+	}
+}
+
+func TestResourceClient_AddOptions(t *testing.T) {
 	
 }
 
-func (t *testing.T) TestResourceClient_LongDescription() {
+func TestResourceClient_getId(t *testing.T) {
 	
 }
 
-func (t *testing.T) TestResourceClient_AddOptions() {
+func TestResourceClient_processFlags(t *testing.T) {
 	
 }
 
-func (t *testing.T) TestResourceClient_getId() {
+func TestResourceClient_doGet(t *testing.T) {
 	
 }
 
-func (t *testing.T) TestResourceClient_processFlags() {
+func TestResourceClient_CreateRequest(t *testing.T) {
 	
 }
 
-func (t *testing.T) TestResourceClient_doGet() {
+func TestResourceClient_GetRequest(t *testing.T) {
 	
 }
 
-func (t *testing.T) TestResourceClient_CreateRequest() {
+func TestResourceClient_ListRequest(t *testing.T) {
 	
 }
 
-func (t *testing.T) TestResourceClient_GetRequest() {
+func TestResourceClient_UpdateRequest(t *testing.T) {
 	
 }
 
-func (t *testing.T) TestResourceClient_ListRequest() {
-	
-}
-
-func (t *testing.T) TestResourceClient_UpdateRequest() {
-	
-}
-
-func (t *testing.T) TestResourceClient_DeleteRequest() {
+func TestResourceClient_DeleteRequest(t *testing.T) {
 	
 }
