@@ -1,15 +1,14 @@
 package grpc
 
 import (
-	//"fmt"
 	"log"
-	"bytes"
+	"errors"
 	"context"
 	data "leveler/data"
-	util "leveler/util"
 	resources "leveler/resources"
 	//callbacks "leveler/callbacks"  // TODO: create callbacks to run in the resource CRUD functions below (type dependent)
-	jsonpb "github.com/golang/protobuf/jsonpb"
+	proto "github.com/golang/protobuf/proto"
+	ptypes "github.com/golang/protobuf/ptypes"
 	empty "github.com/golang/protobuf/ptypes/empty"
 )
 
@@ -17,18 +16,48 @@ type EndpointServer struct {
 	Database data.Database
 }
 
-// ACTION ENDPOINTS
-
 func (s *EndpointServer) CreateResource(ctx context.Context, obj *resources.Resource) (*resources.Resource, error) {
-	log.Printf("%v", obj)
 	log.Printf("Creating %s: %v", obj.Type, obj)
 
 	var result = &resources.Resource{}
 
-	m, err := util.ConvertProtoToMap(obj)
-	if err != nil {
-		return result, err
+	var m = make(map[string]interface{})
+	var err error
+
+	var stringDetail resources.StringDetail
+	var stringDetailErr error 
+
+	var boolDetail resources.BoolDetail 
+	var boolDetailErr error 
+
+	var int64Detail resources.Int64Detail 
+	var int64DetailErr error 
+
+	for _, d := range obj.Details {
+		stringDetailErr = ptypes.UnmarshalAny(d, &stringDetail)
+		boolDetailErr = ptypes.UnmarshalAny(d, &boolDetail)
+		int64DetailErr = ptypes.UnmarshalAny(d, &int64Detail)
+
+		if stringDetailErr == nil {
+			if stringDetail.IsSecondaryKey {
+				m[stringDetail.Name] = stringDetail.Value
+			}
+		} else if boolDetailErr == nil {
+			if boolDetail.IsSecondaryKey {
+				m[boolDetail.Name] = boolDetail.Value
+			}
+		} else if int64DetailErr == nil {
+			if int64Detail.IsSecondaryKey {
+				m[int64Detail.Name] = int64Detail.Value
+			}
+		} else {
+			return result, errors.New("Malformed detail")
+		}
 	}
+
+	m["protobuf"] = proto.MarshalTextString(obj)
+
+	log.Printf("About to create object: %v", m)
 
 	result.Id, err = s.Database.Create(obj.Type, m)
 	if err != nil {
@@ -41,7 +70,6 @@ func (s *EndpointServer) CreateResource(ctx context.Context, obj *resources.Reso
 func (s *EndpointServer) GetResource(ctx context.Context, obj *resources.Resource) (*resources.Resource, error) {
 	log.Printf("Retrieving %s: %s", obj.Type, obj.Id)
 
-	var jsonString []byte
 	var result = &resources.Resource{}
 
 	r, err := s.Database.Get(obj.Type, obj.Id)
@@ -49,14 +77,9 @@ func (s *EndpointServer) GetResource(ctx context.Context, obj *resources.Resourc
 		return result, err
 	}
 
-	jsonString, err = util.ConvertToJsonString(r)
+	err = proto.UnmarshalText(r, result)
 	if err != nil {
-		log.Printf("Error converting map to JSON: %v", err)
-		return result, err
-	}
-
-	err = jsonpb.Unmarshal(bytes.NewReader(jsonString), result)
-	if err != nil {
+		log.Printf("Error converting text data to Protobuf: %v", err)
 		return result, err
 	}
 
@@ -67,20 +90,23 @@ func (s *EndpointServer) ListResources(ctx context.Context, query *resources.Que
 	log.Printf("Retrieiving %s list", query.Type)
 
 	var result = &resources.ResourceList{}
+	var list []string
+	var err error 
 
-	list, err := s.Database.List(query.Type, query.Query)
+	list, err = s.Database.List(query.Type, query.Query)
 	if err != nil {
 		return result, err
 	}
 
+	var r *resources.Resource
 	for _, v := range list {
-		s, err := util.ConvertToJsonString(v)
+		r = new(resources.Resource)
+		err := proto.UnmarshalText(v, r)
 		if err != nil {
+			log.Printf("Error converting text data to Protobuf: %v", err)
 			return result, err
 		}
 
-		var r *resources.Resource
-		err = util.ConvertJsonToProto(s, &r)
 		result.Results = append(result.Results, r)
 	}
 
@@ -91,11 +117,35 @@ func (s *EndpointServer) UpdateResource(ctx context.Context, obj *resources.Reso
 	log.Printf("Updating %s: %s", obj.Type, obj.Id)
 
 	var result *empty.Empty
+	var err error 
 
-	m, err := util.ConvertProtoToMap(obj)
-	if err != nil {
-		return result, err
+	var m map[string]interface{}
+	var stringDetail resources.StringDetail
+	var stringDetailErr error 
+
+	var boolDetail resources.BoolDetail 
+	var boolDetailErr error 
+
+	var int64Detail resources.Int64Detail 
+	var int64DetailErr error 
+
+	for _, d := range obj.Details {
+		stringDetailErr = ptypes.UnmarshalAny(d, &stringDetail)
+		boolDetailErr = ptypes.UnmarshalAny(d, &boolDetail)
+		int64DetailErr = ptypes.UnmarshalAny(d, &int64Detail)
+
+		if stringDetailErr == nil {
+			m[stringDetail.Name] = stringDetail.Value
+		} else if boolDetailErr == nil {
+			m[boolDetail.Name] = boolDetail.Value
+		} else if int64DetailErr == nil {
+			m[int64Detail.Name] = int64Detail.Value
+		} else {
+			return result, errors.New("Malformed detail")
+		}
 	}
+
+	m["protobuf"] = proto.MarshalTextString(obj)
 
 	err = s.Database.Update(obj.Type, obj.Id, m)
 	if err != nil {

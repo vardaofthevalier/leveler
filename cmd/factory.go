@@ -48,7 +48,7 @@ func AddCommands(parent *cobra.Command) {
 					},
 				}
 
-				resource.AddOptions(get)
+				//resource.AddOptions(get)  
 				parent.AddCommand(get)
 
 			case "list":
@@ -61,7 +61,8 @@ func AddCommands(parent *cobra.Command) {
 					},
 				}
 
-				resource.AddOptions(list)
+				//resource.AddOptions(list)  // TODO: add list options function?
+				list.PersistentFlags().StringVarP(new(string), "query", "q", "", "A query for filtering list results")
 				parent.AddCommand(list)
 
 			case "update":
@@ -92,7 +93,7 @@ func AddCommands(parent *cobra.Command) {
 					},
 				}
 
-				resource.AddOptions(delete)
+				//resource.AddOptions(delete)
 				parent.AddCommand(delete)
 
 			case "apply":

@@ -24,7 +24,7 @@ var jsonUnmarshaler = jsonpb.Unmarshaler{
 
 func ConvertProtoToMap(m proto.Message) (map[string]interface{}, error) {
 	var jsonMap map[string]interface{}
-	jsonString, err := jsonMarshaler.MarshalToString(m)
+	jsonString, err := ConvertProtoToJson(m)
 	if err != nil {
 		return jsonMap, err
 	}
@@ -35,6 +35,15 @@ func ConvertProtoToMap(m proto.Message) (map[string]interface{}, error) {
 	} 
 
 	return jsonMap, nil
+}
+
+func ConvertProtoToJson(m proto.Message) (string, error) {
+	jsonString, err := jsonMarshaler.MarshalToString(m)
+	if err != nil {
+		return jsonString, err
+	}
+
+	return jsonString, nil
 }
 
 func ConvertJsonToProto(b []byte, m interface{}) error {

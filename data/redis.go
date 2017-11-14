@@ -99,11 +99,11 @@ func (e TokenSplitError) Error() string {
 }
 
 func tokenize(s string) []string {
-	return tokenRegex.Split(s, -1)
+	return tokenRegex.FindAllString(s, -1)
 }
 
 func splitTokens(tokens []string) (string, []string, error) {
-	if len(tokens) > 2 {
+	if len(tokens) >= 2 {
 		return tokens[0], tokens[1:], nil
 
 	} else if len(tokens) == 1 {
@@ -131,23 +131,23 @@ func evaluateConditionalExpression(kind string, conn *redis.Client, head string,
 		return map[string]string{}, []string{}, QueryError{fmt.Sprintf("Unknown type for range query")}
 	}
 
-	var result map[string]string
+	var keys []string 
 
 	switch op {
 	case "==":
-		result, err = conn.Cmd(rangeqConfig.Command, rangeqName, rangeqConfig.RangeqBound(rangeqConfig.RangeqInclusive, test, ""), rangeqConfig.RangeqBound(rangeqConfig.RangeqInclusive, test, rangeqConfig.RangeqSpecial)).Map()
+		keys, err = conn.Cmd(rangeqConfig.Command, rangeqName, rangeqConfig.RangeqBound(rangeqConfig.RangeqInclusive, test, ""), rangeqConfig.RangeqBound(rangeqConfig.RangeqInclusive, test, rangeqConfig.RangeqSpecial)).List()
 	
 	case ">=":
-		result, err = conn.Cmd(rangeqConfig.Command, rangeqName, rangeqConfig.RangeqBound(rangeqConfig.RangeqInclusive, test, ""), rangeqConfig.RangeqPosInf).Map()
+		keys, err = conn.Cmd(rangeqConfig.Command, rangeqName, rangeqConfig.RangeqBound(rangeqConfig.RangeqInclusive, test, ""), rangeqConfig.RangeqPosInf).List()
 	
 	case ">": 
-		result, err = conn.Cmd(rangeqConfig.Command, rangeqName, rangeqConfig.RangeqBound(rangeqConfig.RangeqExclusive, test, ""), rangeqConfig.RangeqPosInf).Map()
+		keys, err = conn.Cmd(rangeqConfig.Command, rangeqName, rangeqConfig.RangeqBound(rangeqConfig.RangeqExclusive, test, ""), rangeqConfig.RangeqPosInf).List()
 	
 	case "<=":
-		result, err = conn.Cmd(rangeqConfig.Command, rangeqName, rangeqConfig.RangeqNegInf, rangeqConfig.RangeqBound(rangeqConfig.RangeqInclusive, test, "")).Map()
+		keys, err = conn.Cmd(rangeqConfig.Command, rangeqName, rangeqConfig.RangeqNegInf, rangeqConfig.RangeqBound(rangeqConfig.RangeqInclusive, test, "")).List()
 	
 	case "<":
-		result, err = conn.Cmd(rangeqConfig.Command, rangeqName, rangeqConfig.RangeqNegInf, rangeqConfig.RangeqBound(rangeqConfig.RangeqExclusive, test, "")).Map()
+		keys, err = conn.Cmd(rangeqConfig.Command, rangeqName, rangeqConfig.RangeqNegInf, rangeqConfig.RangeqBound(rangeqConfig.RangeqExclusive, test, "")).List()
 	
 	default:
 		return map[string]string{}, []string{}, QueryError{fmt.Sprintf("Invalid conditional operator '%s'", op)}
@@ -157,8 +157,30 @@ func evaluateConditionalExpression(kind string, conn *redis.Client, head string,
 		return map[string]string{}, []string{}, err
 	}
 
-	return result, tail, nil
+	log.Printf("Got keys: %v", keys)
 
+	var finalKeys []string
+	var f []string
+	for _, r := range keys {
+		if rangeqConfig.Command == "ZRANGEBYSCORE" {
+			finalKeys = append(finalKeys, r)
+		} else {
+			f = strings.Split(r, ":")
+			finalKeys = append(finalKeys, f[len(f) - 1])
+		}
+	}
+
+	var result = make(map[string]string)
+	var r string
+	for _, k := range finalKeys {
+		r, err = conn.Cmd("GET", fmt.Sprintf("%s:%s", kind, k)).Str()
+		if err != nil {
+			return map[string]string{}, []string{}, err
+		}
+		result[k] = r
+	}
+
+	return result, tail, nil
 }
 
 func evaluateSetExpression(kind string, conn *redis.Client, tokens []string, previous map[string]string) (map[string]string, error) {
@@ -250,11 +272,6 @@ func evaluateSetExpression(kind string, conn *redis.Client, tokens []string, pre
 			}	
 		}
 	} else {
-		head, tail, err := splitTokens(tail)
-		if err != nil {
-			return map[string]string{}, QueryError{fmt.Sprintf("Malformed query")}
-		}
-
 		lh, rem, err := evaluateConditionalExpression(kind, conn, head, tail)
 		if err != nil {
 			return lh, err
@@ -272,22 +289,23 @@ func complement(a map[string]string, conn *redis.Client) (map[string]string, err
 	}
 
 	for _, k := range u {
-		s := k.String()
+		s, err := k.Str()
+		if err != nil {
+			return map[string]string{}, err
+		}
 		if _, ok := a[s]; !ok {
-			r, err := conn.Cmd("HGETALL", s).Map()
+			r, err := conn.Cmd("GET", s).Str()
 			if err != nil {
 				return map[string]string{}, err
 			}
-			for w, v := range r {
-				results[w] = v
-			}
+			results[s] = r
 		}
 	}
 
 	return results, nil
 }
 
-func intersection(a map[string] string, b map[string]string) map[string] string {
+func intersection(a map[string]string, b map[string]string) map[string]string {
 	var results map[string]string
 	var smaller map[string]string
 	var larger map[string]string
@@ -309,7 +327,7 @@ func intersection(a map[string] string, b map[string]string) map[string] string 
 	return results
 }
 
-func union(a map[string] string, b map[string]string) map[string] string {
+func union(a map[string]string, b map[string]string) map[string]string {
 	var results map[string]string
 	var smaller map[string]string
 	var larger map[string]string
@@ -352,8 +370,17 @@ func (db *RedisDatabase) selectDatabase(kind string) (*redis.Client, error) {
 	return conn, nil
 }
 
-func (db *RedisDatabase) executeQuery(q string, kind string, conn *redis.Client) (map[string]string, error) {
-	return evaluateSetExpression(kind, conn, tokenize(q), map[string]string{})
+func (db *RedisDatabase) executeQuery(q string, kind string, conn *redis.Client) ([]string, error) {
+	r, err := evaluateSetExpression(kind, conn, tokenize(q), map[string]string{})
+	if err != nil {
+		return []string{}, err
+	}
+
+	var final []string
+	for _, f := range r {
+		final = append(final, f)
+	}
+	return final, nil
 }
 
 func (db RedisDatabase) Create(kind string, obj map[string]interface{}) (string, error) {
@@ -367,45 +394,88 @@ func (db RedisDatabase) Create(kind string, obj map[string]interface{}) (string,
 	// generate a uuid for the hash key
 	id := uuid.NewV4().String()
 
-	// create a new hash in the database
-	ok := conn.Cmd("HMSET", fmt.Sprintf("%s:%s", kind, id), obj).String()
-	log.Printf(ok)
+	// create a new key in the database
+	_, err = conn.Cmd("SET", fmt.Sprintf("%s:%s", kind, id), obj["protobuf"]).Str()
+	if err != nil {
+		return "", err
+	}
 
 	// create secondary keys, if applicable
+	for k, v := range obj {
+		if k != "protobuf"{
+			switch t := v.(type) {
+			case string:
+				_, err := conn.Cmd("ZADD", fmt.Sprintf("%s.%s.index", kind, k), 0, fmt.Sprintf("%s:%s", v, id)).Int()
+				if err != nil {
+					return "", err
+				}
+
+			case bool:
+				if t {
+					_, err := conn.Cmd("ZADD", fmt.Sprintf("%s.%s.index", kind, k), 0, fmt.Sprintf("true:%s", id)).Int()
+					if err != nil {
+						return "", err
+					}
+				} else {
+					_, err := conn.Cmd("ZADD", fmt.Sprintf("%s.%s.index", kind, k), 0, fmt.Sprintf("false:%s", id)).Int()
+					if err != nil {
+						return "", err
+					}
+				}
+
+			case int64:
+				_, err := conn.Cmd("ZADD", fmt.Sprintf("%s.%s.index", kind, k), v, id).Int()
+				if err != nil {
+					return "", err
+				}
+			}
+		}
+	}
 
 	return id, nil
 }
 
-func (db RedisDatabase) Get(kind string, id string) (map[string]string, error) {
+func (db RedisDatabase) Get(kind string, id string) (string, error) {
 	conn, err := db.selectDatabase(kind)
 	if err != nil {
-		return map[string]string{}, err
+		return "", err
 	}
 
 	defer db.DatabaseConnectionPool.Put(conn)
 
-	result, err := conn.Cmd("HGETALL", fmt.Sprintf("%s:%s", kind, id)).Map()
+	result, err := conn.Cmd("GET", fmt.Sprintf("%s:%s", kind, id)).Str()
 	if err != nil {
-		return map[string]string{}, err 
+		return "", err
 	}
 
 	return result, nil
 }
 
-func (db RedisDatabase) List(kind string, query string) (map[string]string, error) {
+func (db RedisDatabase) List(kind string, query string) ([]string, error) {
 	conn, err := db.selectDatabase(kind)
 	if err != nil {
-		return map[string]string{}, err
+		return []string{}, err
 	}
 
 	defer db.DatabaseConnectionPool.Put(conn)
 
-	var result map[string]string
-
+	var result []string
+	var keys []string 
 	if len(query) > 0 {
 		result, err = db.executeQuery(query, kind, conn)
 	} else {
-		result, err = conn.Cmd("GET", kind).Map()
+		keys, err = conn.Cmd("KEYS", fmt.Sprintf("%s:*", kind)).List()
+		if err != nil {
+			return result, err
+		}
+
+		for _, k := range keys {
+			v, err := conn.Cmd("GET", k).Str()
+			if err != nil {
+				return []string{}, err
+			}
+			result = append(result, v)
+		}
 	}
 
 	if err != nil {
@@ -424,7 +494,7 @@ func (db RedisDatabase) Update(kind string, id string, obj map[string]interface{
 	defer db.DatabaseConnectionPool.Put(conn)
 
 	// full replace update on obj
-	_ = conn.Cmd("HMSET", fmt.Sprintf("%s:%s", kind, id), obj).String()
+	_, err = conn.Cmd("SET", fmt.Sprintf("%s:%s", kind, id), obj["protobuf"]).Str()
 
 	return err
 }
@@ -438,7 +508,7 @@ func (db RedisDatabase) Delete(kind string, id string) error {
 	defer db.DatabaseConnectionPool.Put(conn)
 
 	// delete the hash stored at key = id
-	_ = conn.Cmd("DEL", fmt.Sprintf("%s:%s", kind, id)).String()
+	_, err = conn.Cmd("DEL", fmt.Sprintf("%s:%s", kind, id)).Str()
 
 	return err
 }

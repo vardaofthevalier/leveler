@@ -12,7 +12,8 @@
                   "Name": "name",
                   "Required": true,
                   "Description": "A descriptive name for the action",
-                  "Default": ""
+                  "Default": "", 
+                  "IsSecondaryKey": true
                },
                {
                   "Name": "description",

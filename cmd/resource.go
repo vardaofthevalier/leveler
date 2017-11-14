@@ -85,6 +85,7 @@ func (r ResourceClient) processFlags(cmd *cobra.Command) ([]*any.Any, error) {
 		detail := &service.StringDetail{
 			Name: opt.Name,
 			Value: k,
+			IsSecondaryKey: opt.IsSecondaryKey,
 		}
 
 		a, err := ptypes.MarshalAny(detail) 
@@ -108,6 +109,7 @@ func (r ResourceClient) processFlags(cmd *cobra.Command) ([]*any.Any, error) {
 		detail := &service.BoolDetail{
 			Name: opt.Name,
 			Value: b,
+			IsSecondaryKey: opt.IsSecondaryKey,
 		}
 
 		a, err := ptypes.MarshalAny(detail) 
@@ -131,6 +133,7 @@ func (r ResourceClient) processFlags(cmd *cobra.Command) ([]*any.Any, error) {
 		detail := &service.Int64Detail{
 			Name: opt.Name,
 			Value: i,
+			IsSecondaryKey: opt.IsSecondaryKey,
 		}
 
 		a, err := ptypes.MarshalAny(detail) 
@@ -196,6 +199,7 @@ func (r ResourceClient) ListRequest(cmd *cobra.Command) {
 	queryString, _ := cmd.Flags().GetString("query")  // TODO: special handling for query?  it's sort of a globally required option given the functionality of the database...
 	query := service.Query{
 		Query: queryString,
+		Type: *r.CmdConfig.Name,
 	}
 
 	// do list request
@@ -245,14 +249,11 @@ func (r ResourceClient) DeleteRequest(cmd *cobra.Command) {
 	fmt.Println("made it to delete!")
 
 	var err error
+	id := r.getId(cmd)
+
 	var s = &service.Resource{
 		Type: cmd.Name(),
-	}
-
-	s.Details, err = r.processFlags(cmd)
-	if err != nil {
-		fmt.Printf("Couldn't process args: %v", err)
-		os.Exit(1)
+		Id: id,
 	}
 
 	_, err = r.doGet(s)

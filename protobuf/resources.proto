@@ -30,6 +30,7 @@ message StringDetail {
     bool Required = 3;
     string Description = 4;
     string Default = 5;
+    bool IsSecondaryKey = 6;
 }
 
 message BoolDetail {
@@ -38,7 +39,7 @@ message BoolDetail {
     bool Required = 3;
     string Description = 4;
     bool Default = 5;
-
+    bool IsSecondaryKey = 6;
 }
 
 message Int64Detail {
@@ -47,6 +48,7 @@ message Int64Detail {
     bool Required = 3;
     string Description = 4;
     int64 Default = 5;
+    bool IsSecondaryKey = 6;
 }
 
 message ResourceList {
