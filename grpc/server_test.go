@@ -6,17 +6,26 @@ import (
 	"context"
 	"reflect"
 	resources "leveler/resources"
-	uuid "github.com/satori/go.uuid"
+	proto "github.com/golang/protobuf/proto"
 )
 
 type MockDatabase struct {}
 
+var endpointServer = &EndpointServer{
+	Database: &MockDatabase{},
+}
+
 func (m *MockDatabase) Create(kind string, keys map[string]interface{}, data string) (string, error) {
-	return uuid.NewV4().String(), nil
+	return "MockID", nil
 }
 
 func (m *MockDatabase) Get(kind string, id string) (string, error) {
-	return fmt.Sprintf("Kind: %s, Id: %s", kind, id), nil
+	r := &resources.Resource{
+		Type: "resource",
+	}
+
+
+	return proto.MarshalTextString(r), nil
 }
 
 func (m *MockDatabase) List(kind string, query string) ([]string, error){
@@ -39,10 +48,6 @@ func TestCreateResource(t *testing.T) {
 	var result *resources.Resource
 	var err error 
 
-	endpointServer := &EndpointServer{
-		Database: &MockDatabase{},
-	}
-
 	r := &resources.Resource{
 		Type: "resource",
 	}
@@ -58,7 +63,33 @@ func TestCreateResource(t *testing.T) {
 }
 
 func TestGetResource(t *testing.T) {
+	var result *resources.Resource 
+	var err error 
 
+	// WITH ID
+	r := &resources.Resource{
+		Type: "resource",
+		Id: "MockId",
+	}
+
+	result, err = endpointServer.GetResource(context.Background(), r)
+	if err != nil {
+		t.Errorf("Error running test: %v", err)
+	}
+
+	if reflect.TypeOf(result) != reflect.TypeOf(&resources.Resource{}) {
+		t.Errorf("Incorrect type returned!")
+	}
+
+	// WITHOUT ID
+	r = &resources.Resource{
+		Type: "resource",
+	}
+
+	result, err = endpointServer.GetResource(context.Background(), r)
+	if err == nil {
+		t.Errorf("Unexpected pass! Shouldn't pass without ID")
+	}
 }
 
 func TestListResource(t *testing.T) {
