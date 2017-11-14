@@ -141,7 +141,7 @@ func buildResourceClientList() []ResourceClient {
 		os.Exit(1)
 	}
 
-	// read the resources.yml file to get a list of resources
+	// read the resources definition file to get a list of resources -- TODO: move this filename to the config file
 	dir, err := filepath.Abs(filepath.Dir("resources.json"))
 	if err != nil {
 		fmt.Print(err)
