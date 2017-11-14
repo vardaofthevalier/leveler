@@ -10,6 +10,8 @@ import (
 	data "leveler/data"
 	resources "leveler/resources"
 	proto "github.com/golang/protobuf/proto"
+	ptypes "github.com/golang/protobuf/ptypes"
+	any "github.com/golang/protobuf/ptypes/any"
 	empty "github.com/golang/protobuf/ptypes/empty"
 )
 
@@ -81,9 +83,57 @@ func (m *MockDatabase) Flush(db string) error {
 	return nil
 }
 
+func generateDetails() []*any.Any {
+	var details []*any.Any
+	var a *any.Any
+	var err error
+
+	stringDetail := &resources.StringDetail{
+		Name: "foo",
+		Value: "a foo",
+	}
+
+	a, err = ptypes.MarshalAny(stringDetail)
+	if err != nil {
+		fmt.Printf("Couldn't marshal message to type *any.Any: %v", err)
+		os.Exit(1)
+	}
+
+	details = append(details, a)
+
+	boolDetail := &resources.BoolDetail{
+		Name: "isFoo",
+		Value: true,
+	}
+
+	a, err = ptypes.MarshalAny(boolDetail)
+	if err != nil {
+		fmt.Printf("Couldn't marshal message to type *any.Any: %v", err)
+		os.Exit(1)
+	}
+
+	details = append(details, a)
+
+	int64Detail := &resources.Int64Detail{
+		Name: "fooIndex",
+		Value: 42,
+	}
+
+	a, err = ptypes.MarshalAny(int64Detail)
+	if err != nil {
+		fmt.Printf("Couldn't marshal message to type *any.Any: %v", err)
+		os.Exit(1)
+	}
+
+	details = append(details, a)
+
+	return details
+}
+
 func TestCreateResource_WithType(t *testing.T) {
 	r := &resources.Resource{
 		Type: "resource",
+		Details: generateDetails(),
 	}
 
 	result, err := endpointServer.CreateResource(context.Background(), r)

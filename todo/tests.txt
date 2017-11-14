@@ -1,7 +1,7 @@
 Unit Tests By Package:
 - cmd:
   - factory_test.go (IN PROGRESS)
-  - resource_test.go
+  - resource_test.go (IN PROGRESS)
 - config:
   - reader_test.go
 - grpc:
@@ -14,3 +14,6 @@ Integration Tests By Package:
   - interface_test.go (Testing the command line interface, which will basically result in an end-to-end test of each command path)
 - IDEA:
   - Some unit tests can be re-run as integration tests with Mock* types set to real things -- need to include a -mock cli argument to `go test` (DONE)
+
+Code changes:
+- implement changes to server.go to correct testing errors

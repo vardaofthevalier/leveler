@@ -28,8 +28,6 @@ type ResourceClient struct {
 	CmdConfig resources.CmdConfig
 }
 
-// CLIENT FUNCTIONS
-
 func (r ResourceClient) Usage() string {
 	return *r.CmdConfig.Usage
 }
