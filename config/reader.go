@@ -2,9 +2,9 @@ package config
 
 import (	
 	"fmt"
-	ioutil "io/ioutil"
 	user "os/user"
-	util "leveler/util"
+	ioutil "io/ioutil"
+	yaml "gopkg.in/yaml.v2"
 	proto "github.com/golang/protobuf/proto"
 )
 
@@ -32,7 +32,7 @@ func Read(path string, component string, config interface{}) error {
 		return err
 	}
 
-	err = util.ConvertFromYaml(contents, config.(proto.Message))
+	err = yaml.Unmarshal(contents, config.(proto.Message))
 	if err != nil {
 		return err
 	}

@@ -383,7 +383,7 @@ func (db *RedisDatabase) executeQuery(q string, kind string, conn *redis.Client)
 	return final, nil
 }
 
-func (db RedisDatabase) Create(kind string, obj map[string]interface{}) (string, error) {
+func (db RedisDatabase) Create(kind string, keys map[string]interface{}, data string) (string, error) {
 	conn, err := db.selectDatabase(kind)
 	if err != nil {
 		return "", err
@@ -395,39 +395,37 @@ func (db RedisDatabase) Create(kind string, obj map[string]interface{}) (string,
 	id := uuid.NewV4().String()
 
 	// create a new key in the database
-	_, err = conn.Cmd("SET", fmt.Sprintf("%s:%s", kind, id), obj["protobuf"]).Str()
+	_, err = conn.Cmd("SET", fmt.Sprintf("%s:%s", kind, id), data).Str()
 	if err != nil {
 		return "", err
 	}
 
 	// create secondary keys, if applicable
-	for k, v := range obj {
-		if k != "protobuf"{
-			switch t := v.(type) {
-			case string:
-				_, err := conn.Cmd("ZADD", fmt.Sprintf("%s.%s.index", kind, k), 0, fmt.Sprintf("%s:%s", v, id)).Int()
+	for k, v := range keys {
+		switch t := v.(type) {
+		case string:
+			_, err := conn.Cmd("ZADD", fmt.Sprintf("%s.%s.index", kind, k), 0, fmt.Sprintf("%s:%s", v, id)).Int()
+			if err != nil {
+				return "", err
+			}
+
+		case bool:
+			if t {
+				_, err := conn.Cmd("ZADD", fmt.Sprintf("%s.%s.index", kind, k), 0, fmt.Sprintf("true:%s", id)).Int()
 				if err != nil {
 					return "", err
 				}
-
-			case bool:
-				if t {
-					_, err := conn.Cmd("ZADD", fmt.Sprintf("%s.%s.index", kind, k), 0, fmt.Sprintf("true:%s", id)).Int()
-					if err != nil {
-						return "", err
-					}
-				} else {
-					_, err := conn.Cmd("ZADD", fmt.Sprintf("%s.%s.index", kind, k), 0, fmt.Sprintf("false:%s", id)).Int()
-					if err != nil {
-						return "", err
-					}
-				}
-
-			case int64:
-				_, err := conn.Cmd("ZADD", fmt.Sprintf("%s.%s.index", kind, k), v, id).Int()
+			} else {
+				_, err := conn.Cmd("ZADD", fmt.Sprintf("%s.%s.index", kind, k), 0, fmt.Sprintf("false:%s", id)).Int()
 				if err != nil {
 					return "", err
 				}
+			}
+
+		case int64:
+			_, err := conn.Cmd("ZADD", fmt.Sprintf("%s.%s.index", kind, k), v, id).Int()
+			if err != nil {
+				return "", err
 			}
 		}
 	}
@@ -485,7 +483,7 @@ func (db RedisDatabase) List(kind string, query string) ([]string, error) {
 	return result, nil
 }
 
-func (db RedisDatabase) Update(kind string, id string, obj map[string]interface{}) error {
+func (db RedisDatabase) Update(kind string, id string, data string) error {
 	conn, err := db.selectDatabase(kind)
 	if err != nil {
 		return err
@@ -494,7 +492,7 @@ func (db RedisDatabase) Update(kind string, id string, obj map[string]interface{
 	defer db.DatabaseConnectionPool.Put(conn)
 
 	// full replace update on obj
-	_, err = conn.Cmd("SET", fmt.Sprintf("%s:%s", kind, id), obj["protobuf"]).Str()
+	_, err = conn.Cmd("SET", fmt.Sprintf("%s:%s", kind, id), data).Str()
 
 	return err
 }

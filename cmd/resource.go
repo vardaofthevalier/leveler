@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"context"
 	"github.com/spf13/cobra"
-	cmdconfig "leveler/resources"
-	service "leveler/resources"
+	resources "leveler/resources"
 	ptypes "github.com/golang/protobuf/ptypes"
 	any "github.com/golang/protobuf/ptypes/any"
 )
@@ -25,8 +24,8 @@ type Resource interface {
 }
 
 type ResourceClient struct {
-	Client service.ResourceEndpointClient
-	CmdConfig cmdconfig.CmdConfig
+	Client resources.ResourceEndpointClient
+	CmdConfig resources.CmdConfig
 }
 
 // CLIENT FUNCTIONS
@@ -82,7 +81,7 @@ func (r ResourceClient) processFlags(cmd *cobra.Command) ([]*any.Any, error) {
 			continue
 		}
 
-		detail := &service.StringDetail{
+		detail := &resources.StringDetail{
 			Name: opt.Name,
 			Value: k,
 			IsSecondaryKey: opt.IsSecondaryKey,
@@ -106,7 +105,7 @@ func (r ResourceClient) processFlags(cmd *cobra.Command) ([]*any.Any, error) {
 			continue
 		}
 
-		detail := &service.BoolDetail{
+		detail := &resources.BoolDetail{
 			Name: opt.Name,
 			Value: b,
 			IsSecondaryKey: opt.IsSecondaryKey,
@@ -130,7 +129,7 @@ func (r ResourceClient) processFlags(cmd *cobra.Command) ([]*any.Any, error) {
 			continue
 		}
 
-		detail := &service.Int64Detail{
+		detail := &resources.Int64Detail{
 			Name: opt.Name,
 			Value: i,
 			IsSecondaryKey: opt.IsSecondaryKey,
@@ -149,7 +148,7 @@ func (r ResourceClient) processFlags(cmd *cobra.Command) ([]*any.Any, error) {
 
 func (r ResourceClient) CreateRequest(cmd *cobra.Command) {
 	var err error
-	var s = &service.Resource{
+	var s = &resources.Resource{
 		Type: cmd.Name(),
 	}
 
@@ -173,7 +172,7 @@ func (r ResourceClient) CreateRequest(cmd *cobra.Command) {
 func (r ResourceClient) GetRequest(cmd *cobra.Command) {
 	id := r.getId(cmd)
 
-	var s = &service.Resource{
+	var s = &resources.Resource{
 		Type: cmd.Name(),
 		Id: id,
 	}
@@ -188,7 +187,7 @@ func (r ResourceClient) GetRequest(cmd *cobra.Command) {
 	fmt.Printf("%v", resource)
 }
 
-func (r ResourceClient) doGet(resource *service.Resource) (*service.Resource, error) {
+func (r ResourceClient) doGet(resource *resources.Resource) (*resources.Resource, error) {
 	resource, err := r.Client.GetResource(context.Background(), resource)
 	return resource, err
 }
@@ -197,7 +196,7 @@ func (r ResourceClient) ListRequest(cmd *cobra.Command) {
 	fmt.Println("made it to list!")
 
 	queryString, _ := cmd.Flags().GetString("query")  // TODO: special handling for query?  it's sort of a globally required option given the functionality of the database...
-	query := service.Query{
+	query := resources.Query{
 		Query: queryString,
 		Type: *r.CmdConfig.Name,
 	}
@@ -218,7 +217,7 @@ func (r ResourceClient) UpdateRequest(cmd *cobra.Command) {
 	fmt.Println("made it to update!")
 
 	var err error
-	var s = &service.Resource{
+	var s = &resources.Resource{
 		Type: cmd.Name(),
 	}
 
@@ -251,7 +250,7 @@ func (r ResourceClient) DeleteRequest(cmd *cobra.Command) {
 	var err error
 	id := r.getId(cmd)
 
-	var s = &service.Resource{
+	var s = &resources.Resource{
 		Type: cmd.Name(),
 		Id: id,
 	}

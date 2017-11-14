@@ -3,12 +3,13 @@ package cmd
 import (
 	"os"
 	"fmt"
+	"bytes"
 	"io/ioutil"
 	"path/filepath"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
-	util "leveler/util"
 	resources "leveler/resources"
+	jsonpb "github.com/golang/protobuf/jsonpb"
 )
 
 var opts []grpc.DialOption
@@ -48,7 +49,6 @@ func AddCommands(parent *cobra.Command) {
 					},
 				}
 
-				//resource.AddOptions(get)  
 				parent.AddCommand(get)
 
 			case "list":
@@ -61,7 +61,6 @@ func AddCommands(parent *cobra.Command) {
 					},
 				}
 
-				//resource.AddOptions(list)  // TODO: add list options function?
 				list.PersistentFlags().StringVarP(new(string), "query", "q", "", "A query for filtering list results")
 				parent.AddCommand(list)
 
@@ -78,10 +77,19 @@ func AddCommands(parent *cobra.Command) {
 				resource.AddOptions(update)
 				parent.AddCommand(update)
 
-			case "patch":
-				continue
-				// fmt.Println("Operation 'patch' not yet implemented")
-				// os.Exit(1)
+			case "patch":  // TODO: fully implement the patch operation
+				var patch = &cobra.Command{
+					Use:   resource.Usage(),
+					Short: resource.ShortDescription(),
+					Long: resource.LongDescription(),
+					Run: func(cmd *cobra.Command, args []string) {
+						fmt.Println("'patch' operation not yet implemented!")
+						os.Exit(1)
+					},
+				}
+
+				resource.AddOptions(patch)
+				parent.AddCommand(patch)
 
 			case "delete":
 				var delete = &cobra.Command{
@@ -93,18 +101,24 @@ func AddCommands(parent *cobra.Command) {
 					},
 				}
 
-				//resource.AddOptions(delete)
 				parent.AddCommand(delete)
 
 			case "apply":
-				continue
-				// fmt.Println("Operation 'apply' not yet implemented")
-				// os.Exit(1)
+				var apply = &cobra.Command{
+					Use:   resource.Usage(),
+					Short: resource.ShortDescription(),
+					Long: resource.LongDescription(),
+					Run: func(cmd *cobra.Command, args []string) {
+						fmt.Println("'apply' operation not yet implemented!")
+						os.Exit(1)
+					},
+				}
+
+				parent.AddCommand(apply)
 
 			default:
-				continue
-				// fmt.Printf("Unknown operation '%s'", parent.Name())
-				// os.Exit(1)
+				fmt.Printf("Unknown operation '%s'", parent.Name())
+				os.Exit(1)
 			}
 			
 
@@ -141,8 +155,12 @@ func buildResourceClientList() []ResourceClient {
 	}
 
 	var m = resources.ResourceCmdConfig{}
+	var jsonUnmarshaler = jsonpb.Unmarshaler{
+		AllowUnknownFields: false,
+	}
 
-	err = util.ConvertJsonToProto(contents, &m)
+	reader := bytes.NewReader(contents)
+	err = jsonUnmarshaler.Unmarshal(reader, &m)
 	if err != nil {
 		fmt.Printf("Error processing resource configuration file: %v", err)
 		os.Exit(1)

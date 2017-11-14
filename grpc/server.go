@@ -21,7 +21,7 @@ func (s *EndpointServer) CreateResource(ctx context.Context, obj *resources.Reso
 
 	var result = &resources.Resource{}
 
-	var m = make(map[string]interface{})
+	var keys = make(map[string]interface{})
 	var err error
 
 	var stringDetail resources.StringDetail
@@ -40,26 +40,24 @@ func (s *EndpointServer) CreateResource(ctx context.Context, obj *resources.Reso
 
 		if stringDetailErr == nil {
 			if stringDetail.IsSecondaryKey {
-				m[stringDetail.Name] = stringDetail.Value
+				keys[stringDetail.Name] = stringDetail.Value
 			}
 		} else if boolDetailErr == nil {
 			if boolDetail.IsSecondaryKey {
-				m[boolDetail.Name] = boolDetail.Value
+				keys[boolDetail.Name] = boolDetail.Value
 			}
 		} else if int64DetailErr == nil {
 			if int64Detail.IsSecondaryKey {
-				m[int64Detail.Name] = int64Detail.Value
+				keys[int64Detail.Name] = int64Detail.Value
 			}
 		} else {
 			return result, errors.New("Malformed detail")
 		}
 	}
 
-	m["protobuf"] = proto.MarshalTextString(obj)
+	pb := proto.MarshalTextString(obj)
 
-	log.Printf("About to create object: %v", m)
-
-	result.Id, err = s.Database.Create(obj.Type, m)
+	result.Id, err = s.Database.Create(obj.Type, keys, pb)
 	if err != nil {
 		return result, err
 	}
@@ -119,35 +117,9 @@ func (s *EndpointServer) UpdateResource(ctx context.Context, obj *resources.Reso
 	var result *empty.Empty
 	var err error 
 
-	var m map[string]interface{}
-	var stringDetail resources.StringDetail
-	var stringDetailErr error 
+	pb := proto.MarshalTextString(obj)
 
-	var boolDetail resources.BoolDetail 
-	var boolDetailErr error 
-
-	var int64Detail resources.Int64Detail 
-	var int64DetailErr error 
-
-	for _, d := range obj.Details {
-		stringDetailErr = ptypes.UnmarshalAny(d, &stringDetail)
-		boolDetailErr = ptypes.UnmarshalAny(d, &boolDetail)
-		int64DetailErr = ptypes.UnmarshalAny(d, &int64Detail)
-
-		if stringDetailErr == nil {
-			m[stringDetail.Name] = stringDetail.Value
-		} else if boolDetailErr == nil {
-			m[boolDetail.Name] = boolDetail.Value
-		} else if int64DetailErr == nil {
-			m[int64Detail.Name] = int64Detail.Value
-		} else {
-			return result, errors.New("Malformed detail")
-		}
-	}
-
-	m["protobuf"] = proto.MarshalTextString(obj)
-
-	err = s.Database.Update(obj.Type, obj.Id, m)
+	err = s.Database.Update(obj.Type, obj.Id, pb)
 	if err != nil {
 		return result, err
 	}
