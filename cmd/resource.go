@@ -170,6 +170,11 @@ func (r ResourceClient) CreateRequest(cmd *cobra.Command) {
 func (r ResourceClient) GetRequest(cmd *cobra.Command) {
 	id := r.getId(cmd)
 
+	if len(id) == 0 {
+		fmt.Println("'id' is a required positional parameter!")
+		os.Exit(1)
+	}
+
 	var s = &resources.Resource{
 		Type: cmd.Name(),
 		Id: id,
@@ -215,8 +220,17 @@ func (r ResourceClient) UpdateRequest(cmd *cobra.Command) {
 	fmt.Println("made it to update!")
 
 	var err error
+
+	id := r.getId(cmd)
+
+	if len(id) == 0 {
+		fmt.Println("'id' is a required positional parameter!")
+		os.Exit(1)
+	}
+
 	var s = &resources.Resource{
 		Type: cmd.Name(),
+		Id: id,
 	}
 
 	s.Details, err = r.processFlags(cmd)
@@ -247,6 +261,11 @@ func (r ResourceClient) DeleteRequest(cmd *cobra.Command) {
 
 	var err error
 	id := r.getId(cmd)
+
+	if len(id) == 0 {
+		fmt.Println("'id' is a required positional parameter!")
+		os.Exit(1)
+	}
 
 	var s = &resources.Resource{
 		Type: cmd.Name(),
