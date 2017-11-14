@@ -16,118 +16,106 @@ var opts []grpc.DialOption
 var resourceList = buildResourceClientList()
 
 func AddCommands(parent *cobra.Command) {
-	var supported bool
-	for _, resource := range resourceList {
+	for _, resource := range resourceList {  
 		for _, o := range resource.CmdConfig.SupportedOperations {
 			if o.String() == parent.Name() {
-				supported = true
+				switch parent.Name() {
+				case "create":
+					var create = &cobra.Command{
+						Use:   resource.Usage(),
+						Short: resource.ShortDescription(),
+						Long: resource.LongDescription(),
+						Run: func(cmd *cobra.Command, args []string) {
+							resource.CreateRequest(cmd)
+						},
+					}
+
+					resource.AddOptions(create)
+					parent.AddCommand(create)
+
+				case "get": 
+					var get = &cobra.Command{
+						Use:   resource.Usage(),
+						Short: resource.ShortDescription(),
+						Long: resource.LongDescription(),
+						Run: func(cmd *cobra.Command, args []string) {
+							resource.GetRequest(cmd)
+						},
+					}
+
+					parent.AddCommand(get)
+
+				case "list":
+					var list = &cobra.Command{
+						Use:   resource.Usage(),
+						Short: resource.ShortDescription(),
+						Long: resource.LongDescription(),
+						Run: func(cmd *cobra.Command, args []string) {
+							resource.ListRequest(cmd)
+						},
+					}
+
+					list.PersistentFlags().StringVarP(new(string), "query", "q", "", "A query for filtering list results")
+					parent.AddCommand(list)
+
+				case "update":
+					var update = &cobra.Command{
+						Use:   resource.Usage(),
+						Short: resource.ShortDescription(),
+						Long: resource.LongDescription(),
+						Run: func(cmd *cobra.Command, args []string) {
+							resource.UpdateRequest(cmd)
+						},
+					}
+
+					resource.AddOptions(update)
+					parent.AddCommand(update)
+
+				case "patch":  // TODO: fully implement the patch operation
+					var patch = &cobra.Command{
+						Use:   resource.Usage(),
+						Short: resource.ShortDescription(),
+						Long: resource.LongDescription(),
+						Run: func(cmd *cobra.Command, args []string) {
+							fmt.Println("'patch' operation not yet implemented!")
+							os.Exit(1)
+						},
+					}
+
+					resource.AddOptions(patch)
+					parent.AddCommand(patch)
+
+				case "delete":
+					var delete = &cobra.Command{
+						Use:   resource.Usage(),
+						Short: resource.ShortDescription(),
+						Long: resource.LongDescription(),
+						Run: func(cmd *cobra.Command, args []string) {
+							resource.DeleteRequest(cmd)
+						},
+					}
+
+					parent.AddCommand(delete)
+
+				case "apply":
+					var apply = &cobra.Command{
+						Use:   resource.Usage(),
+						Short: resource.ShortDescription(),
+						Long: resource.LongDescription(),
+						Run: func(cmd *cobra.Command, args []string) {
+							fmt.Println("'apply' operation not yet implemented!")
+							os.Exit(1)
+						},
+					}
+
+					parent.AddCommand(apply)
+
+				default:
+					fmt.Printf("Unknown operation '%s' in resource configuration", parent.Name())
+					os.Exit(1)
+				}
 			}
 		}
-
-		if supported {
-			switch parent.Name() {
-			case "create":
-				var create = &cobra.Command{
-					Use:   resource.Usage(),
-					Short: resource.ShortDescription(),
-					Long: resource.LongDescription(),
-					Run: func(cmd *cobra.Command, args []string) {
-						resource.CreateRequest(cmd)
-					},
-				}
-
-				resource.AddOptions(create)
-				parent.AddCommand(create)
-
-			case "get": 
-				var get = &cobra.Command{
-					Use:   resource.Usage(),
-					Short: resource.ShortDescription(),
-					Long: resource.LongDescription(),
-					Run: func(cmd *cobra.Command, args []string) {
-						resource.GetRequest(cmd)
-					},
-				}
-
-				parent.AddCommand(get)
-
-			case "list":
-				var list = &cobra.Command{
-					Use:   resource.Usage(),
-					Short: resource.ShortDescription(),
-					Long: resource.LongDescription(),
-					Run: func(cmd *cobra.Command, args []string) {
-						resource.ListRequest(cmd)
-					},
-				}
-
-				list.PersistentFlags().StringVarP(new(string), "query", "q", "", "A query for filtering list results")
-				parent.AddCommand(list)
-
-			case "update":
-				var update = &cobra.Command{
-					Use:   resource.Usage(),
-					Short: resource.ShortDescription(),
-					Long: resource.LongDescription(),
-					Run: func(cmd *cobra.Command, args []string) {
-						resource.UpdateRequest(cmd)
-					},
-				}
-
-				resource.AddOptions(update)
-				parent.AddCommand(update)
-
-			case "patch":  // TODO: fully implement the patch operation
-				var patch = &cobra.Command{
-					Use:   resource.Usage(),
-					Short: resource.ShortDescription(),
-					Long: resource.LongDescription(),
-					Run: func(cmd *cobra.Command, args []string) {
-						fmt.Println("'patch' operation not yet implemented!")
-						os.Exit(1)
-					},
-				}
-
-				resource.AddOptions(patch)
-				parent.AddCommand(patch)
-
-			case "delete":
-				var delete = &cobra.Command{
-					Use:   resource.Usage(),
-					Short: resource.ShortDescription(),
-					Long: resource.LongDescription(),
-					Run: func(cmd *cobra.Command, args []string) {
-						resource.DeleteRequest(cmd)
-					},
-				}
-
-				parent.AddCommand(delete)
-
-			case "apply":
-				var apply = &cobra.Command{
-					Use:   resource.Usage(),
-					Short: resource.ShortDescription(),
-					Long: resource.LongDescription(),
-					Run: func(cmd *cobra.Command, args []string) {
-						fmt.Println("'apply' operation not yet implemented!")
-						os.Exit(1)
-					},
-				}
-
-				parent.AddCommand(apply)
-
-			default:
-				fmt.Printf("Unknown operation '%s'", parent.Name())
-				os.Exit(1)
-			}
-			
-
-		} else {
-			fmt.Printf("Unsupported operation '%s' for '%s'", parent.Name(), resource.CmdConfig.Name) 
-			os.Exit(1)
-		}
-
-		
 	}
 }
 

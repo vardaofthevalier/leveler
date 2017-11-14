@@ -156,7 +156,7 @@ func (r ResourceClient) CreateRequest(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 
-	resourceId, err := r.Client.CreateResource(context.Background(), s)  // TODO: grpc.CallOption
+	resource, err := r.Client.CreateResource(context.Background(), s)  // TODO: grpc.CallOption
 
 	if err != nil {
 		fmt.Printf("Error creating resource: %s", err)
@@ -164,7 +164,7 @@ func (r ResourceClient) CreateRequest(cmd *cobra.Command) {
 	}
 
 	// TODO: return formatted response
-	fmt.Println(resourceId.Id)
+	fmt.Println(resource.Id)
 }
 
 func (r ResourceClient) GetRequest(cmd *cobra.Command) {

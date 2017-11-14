@@ -1,0 +1,8 @@
+Data model:
+- Upload contents of resources.json to Redis for schema validation on creation of new resources (leveler init schema)
+	- Create requests fail if no schema is available
+	- Normalization functions on schema update (may be difficult without a set of well-defined rules provided within the schema)
+	- Question: can key strings contain whitespace?  If so, how can the query parser be updated to support range queries?
+
+CLI:
+- Currently if an operation isn't supported for a particular resource type, the CLI doesn't report an error when you attempt to run the operation anyway.  It also doesn't barf when you run with the help (-h) flag.  The acceptable behavior would be to either 1) explicitly report a problem if an unsupported operation is run for a resource, or 2) print the usage info for the operation, where it should be obvious that the resources isn't supported since it won't show up in the subcommands list.  

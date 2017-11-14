@@ -8,8 +8,8 @@ import (
 	"testing"
 	"context"
 	data "leveler/data"
+	mocks "leveler/mocks"
 	resources "leveler/resources"
-	proto "github.com/golang/protobuf/proto"
 	ptypes "github.com/golang/protobuf/ptypes"
 	any "github.com/golang/protobuf/ptypes/any"
 	empty "github.com/golang/protobuf/ptypes/empty"
@@ -26,7 +26,7 @@ var getEndpointServer = func () *EndpointServer {
 
 	if *mock {
 		e = &EndpointServer{
-			Database: &MockDatabase{},
+			Database: &mocks.MockDatabase{},
 		}
 	} else {
 		if len(*db) == 0 {
@@ -48,40 +48,6 @@ var getEndpointServer = func () *EndpointServer {
 }
 
 var endpointServer = getEndpointServer()
-
-type MockDatabase struct {}
-
-func (m *MockDatabase) Create(kind string, keys map[string]interface{}, data string) (string, error) {
-	return "MockID", nil
-}
-
-func (m *MockDatabase) Get(kind string, id string) (string, error) {
-	r := &resources.Resource{
-		Type: "resource",
-	}
-
-	return proto.MarshalTextString(r), nil
-}
-
-func (m *MockDatabase) List(kind string, query string) ([]string, error){
-	r := &resources.Resource{
-		Type: "resource",
-	}
-
-	return []string{proto.MarshalTextString(r)}, nil
-}
-
-func (m *MockDatabase) Update(kind string, id string, data string) error {
-	return nil
-}
-
-func (m *MockDatabase) Delete(kind string, id string) error {
-	return nil
-}
-
-func (m *MockDatabase) Flush(db string) error {
-	return nil
-}
 
 func generateDetails() []*any.Any {
 	var details []*any.Any
