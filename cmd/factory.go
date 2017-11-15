@@ -2,9 +2,9 @@ package cmd
 
 import (
 	"os"
+	"os/user"
 	"fmt"
 	"bytes"
-	"runtime"
 	"io/ioutil"
 	"path/filepath"
 	"github.com/spf13/cobra"
@@ -131,18 +131,13 @@ func buildResourceClientList() []ResourceClient {
 	}
 
 	// read the resources definition file to get a list of resources -- TODO: move this filename to the config file
-	_, current, _, ok := runtime.Caller(0)
-	if !ok {
-		panic("No caller info!")
-	}
-
-	dir, err := filepath.Abs(filepath.Dir(filepath.Dir(current)))
+	u, err := user.Current() 
 	if err != nil {
-		fmt.Print(err)
+		fmt.Printf("Error getting user home directory: %v", err)
 		os.Exit(1)
 	}
 
-	contents, err := ioutil.ReadFile(filepath.Join(dir, "leveler", "resources.json"))
+	contents, err := ioutil.ReadFile(filepath.Join(u.HomeDir, ".leveler", "resources.json"))
 	if err != nil {
 		fmt.Printf("Error reading resource configuration file: %v", err)
 		os.Exit(1)

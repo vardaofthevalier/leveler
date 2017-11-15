@@ -1,0 +1,34 @@
+---
+Resources:
+- Name: action
+  Usage: action
+  ShortDescription: Perform an operation on an Action resource
+  LongDescription: Defined as a command and shell which can be later applied to a
+    destination resource
+  SupportedOperations:
+  - create
+  - get
+  - list
+  - update
+  - patch
+  - delete
+  - apply
+  Spec:
+    StringOptions:
+    - Name: name
+      Required: true
+      Description: A descriptive name for the action
+      Default: ''
+      IsSecondaryKey: true
+    - Name: description
+      Required: false
+      Description: A concise description for the goal of the action
+      Default: ''
+    - Name: command
+      Required: true
+      Description: A shell command that achieves the action
+      Default: ''
+    - Name: shell
+      Required: true
+      Default: "/bin/bash"
+      Description: A concise description for the goal of the action

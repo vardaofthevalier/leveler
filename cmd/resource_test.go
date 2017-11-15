@@ -47,8 +47,8 @@ var testConfig = `{
           }
         ]
     }
-}
-`
+}`
+
 func generateCmdConfig() *resources.CmdConfig {
 	// read config from resources.json
 
@@ -123,24 +123,8 @@ func TestResourceClient_LongDescription(t *testing.T) {
 	}
 }
 
-func TestResourceClient_AddOptions(t *testing.T) {
-	
-}
-
-func TestResourceClient_getId(t *testing.T) {
-	
-}
-
-func TestResourceClient_processFlags(t *testing.T) {
-	
-}
-
-func TestResourceClient_doGet(t *testing.T) {
-	
-}
-
 func TestResourceClient_CreateRequest(t *testing.T) {
-	
+
 }
 
 func TestResourceClient_GetRequest(t *testing.T) {

@@ -18,6 +18,9 @@ func Read(path string, component string, config interface{}) error {
 		// read the default config
 		if component == "client" {
 			path, err = getDefaultClientConfigPath()
+			if err != nil {
+				return err
+			}
 		} else {
 			path = defaultServerConfigPath
 		}

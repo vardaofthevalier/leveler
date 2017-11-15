@@ -14,7 +14,7 @@ type Resource interface {
 	Usage() string
 	ShortDescription() string
 	LongDescription() string
-	AddFlags(operation string, cmd *cobra.Command)
+	AddOptions(cmd *cobra.Command)
 	
 	CreateRequest(cmd *cobra.Command) 
 	GetRequest(cmd *cobra.Command)
@@ -198,7 +198,7 @@ func (r ResourceClient) doGet(resource *resources.Resource) (*resources.Resource
 func (r ResourceClient) ListRequest(cmd *cobra.Command) {
 	fmt.Println("made it to list!")
 
-	queryString, _ := cmd.Flags().GetString("query")  // TODO: special handling for query?  it's sort of a globally required option given the functionality of the database...
+	queryString, _ := cmd.Flags().GetString("query") 
 	query := resources.Query{
 		Query: queryString,
 		Type: *r.CmdConfig.Name,
