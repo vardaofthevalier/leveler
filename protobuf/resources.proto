@@ -31,6 +31,7 @@ message StringDetail {
     string Description = 4;
     string Default = 5;
     bool IsSecondaryKey = 6;
+    repeated string Choices = 7;
 }
 
 message BoolDetail {
@@ -49,6 +50,13 @@ message Int64Detail {
     string Description = 4;
     int64 Default = 5;
     bool IsSecondaryKey = 6;
+}
+
+message FileDetail {
+    string Name = 1;
+    string Value = 2;
+    bool Required = 3;
+    string Description = 4;
 }
 
 message ResourceList {

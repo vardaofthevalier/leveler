@@ -1,42 +1,42 @@
 {
    "Resources": [
       {
-         "Name": "action",
-         "Usage": "action",
-         "ShortDescription": "Perform an operation on an Action resource",
-         "LongDescription": "Defined as a command and shell which can be later applied to a destination resource",
-         "SupportedOperations": ["create", "get", "list", "update", "patch", "delete", "apply"],
+         "Name": "job",
+         "Usage": "job",
+         "ShortDescription": "Manage a job's status",
+         "LongDescription": "Determine the state of or delete a running job",
+         "SupportedOperations": ["get", "list", "delete"]
+      },
+      {
+         "Name": "secret",
+         "Usage": "secret",
+         "ShortDescription": "Manage secret data",
+         "LongDescription": "Manage secret data consumed by jobs",
+         "SupportedOperations": ["create", "get", "list", "update", "delete"],
          "Spec": {
             "StringOptions": [
                {
                   "Name": "name",
+                  "Description": "A descriptive name for the secret",
                   "Required": true,
-                  "Description": "A descriptive name for the action",
-                  "Default": "", 
                   "IsSecondaryKey": true
                },
                {
-                  "Name": "description",
+                  "Name": "encoding",
+                  "Description": "The encoding scheme to use for secret data -- default is 'base64'",
                   "Required": false,
-                  "Description": "A concise description for the goal of the action",
-                  "Default": ""
-               },
-               {
-                  "Name": "command",
-                  "Required": true,
-                  "Description": "A shell command that achieves the action",
-                  "Default": ""
-               },
-               {
-                  "Name": "shell",
-                  "Required": true,
-                  "Default": "/bin/bash",
-                  "Description": "A concise description for the goal of the action"
+                  "Default": "base64",
+                  "Choices": ["base64"]
                }
-
+            ],
+            "FileOptions": [
+               {
+                  "Name": "data",
+                  "Description": "Poplulate secret data from a file",
+                  "Required": true
+               }
             ]
          }
-            
       }
    ]
 }

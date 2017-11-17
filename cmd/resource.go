@@ -196,8 +196,6 @@ func (r ResourceClient) doGet(resource *resources.Resource) (*resources.Resource
 }
 
 func (r ResourceClient) ListRequest(cmd *cobra.Command) {
-	fmt.Println("made it to list!")
-
 	queryString, _ := cmd.Flags().GetString("query") 
 	query := resources.Query{
 		Query: queryString,
@@ -217,8 +215,6 @@ func (r ResourceClient) ListRequest(cmd *cobra.Command) {
 }	
 
 func (r ResourceClient) UpdateRequest(cmd *cobra.Command) {
-	fmt.Println("made it to update!")
-
 	var err error
 
 	id := r.getId(cmd)
@@ -257,8 +253,6 @@ func (r ResourceClient) UpdateRequest(cmd *cobra.Command) {
 }
 
 func (r ResourceClient) DeleteRequest(cmd *cobra.Command) {
-	fmt.Println("made it to delete!")
-
 	var err error
 	id := r.getId(cmd)
 

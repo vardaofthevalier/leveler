@@ -24,10 +24,11 @@ message CmdConfig {
 	required string ShortDescription = 3;
 	required string LongDescription = 4;
 	repeated Operation SupportedOperations = 5;
-	required ResourceSpec Spec = 6; 
+	optional ResourceSpec Spec = 6; 
 }
 
 message ResourceSpec {
+	repeated FileDetail FileOptions = 1;
 	repeated StringDetail StringOptions = 2;
 	repeated BoolDetail BoolOptions = 3;
 	repeated Int64Detail Int64Options = 4;
