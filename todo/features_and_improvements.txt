@@ -1,5 +1,6 @@
 Data model:
 - Upload contents of resources.json to Redis for schema validation on creation of new resources (leveler init schema)
+	- May also be a good idea to read the schema directly from redis for CLI building just to ensure that things match up correctly
 	- Create requests fail if no schema is available
 	- Normalization functions on schema update (may be difficult without a set of well-defined rules provided within the schema)
 	- Question: can key strings contain whitespace?  If so, how can the query parser be updated to support range queries?

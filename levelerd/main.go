@@ -38,7 +38,11 @@ func main() {
 
 	if c.Database.Type == "redis" {
 		// create a Redis db object
-		db = data.NewRedisDatabase(protocol, c.Database.Host, c.Database.Port, c.Database.GetOptions().GetPoolSize()) 
+		db = data.NewRedisDatabase(c.Database.Protocol, c.Database.Host, c.Database.Port, c.Database.GetOptions().GetPoolSize()) 
+	} else if c.Database.Type == "sql" {
+		// create a MySql db object
+		db = data.NewSqlDatabase(protocol, )
+		defer db.Close()
 	} else {
 		log.Fatalf("Unknown database type '%s'", c.Database.Type)
 	}
@@ -50,4 +54,5 @@ func main() {
 
 	// start the server
 	grpcServer.Serve(lis)
+
 }
