@@ -1,42 +1,64 @@
 {
    "Resources": [
       {
-         "Name": "action",
-         "Usage": "action",
-         "ShortDescription": "Perform an operation on an Action resource",
-         "LongDescription": "Defined as a command and shell which can be later applied to a destination resource",
-         "SupportedOperations": ["create", "get", "list", "update", "patch", "delete", "apply"],
-         "Spec": {
-            "StringOptions": [
-               {
-                  "Name": "name",
-                  "Required": true,
-                  "Description": "A descriptive name for the action",
-                  "Default": "", 
-                  "IsSecondaryKey": true
-               },
-               {
-                  "Name": "description",
-                  "Required": false,
-                  "Description": "A concise description for the goal of the action",
-                  "Default": ""
-               },
-               {
-                  "Name": "command",
-                  "Required": true,
-                  "Description": "A shell command that achieves the action",
-                  "Default": ""
-               },
-               {
-                  "Name": "shell",
-                  "Required": true,
-                  "Default": "/bin/bash",
-                  "Description": "A concise description for the goal of the action"
-               }
+         "Name": "integration",
+         "Usage": "integration",
+         "ShortDescription": "An integration with a 3rd party service",
+         "LongDescription": "An integration with a 3rd party service",
+         "SupportedOperations": ["add", "get", "list", "remove", "update"],
+         "Options": [
+            {
+               "Name": "name",
+               "Required": true,
+               "Description": "A descriptive name for the integration",
+               "IsSecondaryKey": true
+            }
+         ],
+         "ProtobufType": "Integration"
+      },
+      {
+         "Name": "repository",
+         "Usage": "repository",
+         "ShortDescription": "An SCM repository",
+         "LongDescription": "An SCM repository",
+         "SupportedOperations": ["add", "get", "list", "remove"],
+         "Options": [
 
-            ]
-         }
-            
-      }
+         ],
+         "ProtobufType": "Repository",
+      },
+      {
+         "Name": "secret",
+         "Usage": "secret",
+         "ShortDescription": "Represents a blob of secret data to store securely",
+         "LongDescription": "Represents a blob of secret data to store securely",
+         "SupportedOperations": ["add", "get", "list", "remove"],
+         "Options": [
+
+         ],
+         "ProtobufType": "Secret",
+      },
+      {
+         "Name": "pipeline",
+         "Usage": "pipeline",
+         "ShortDescription": "A pipeline to run on the cluster",
+         "LongDescription": "A pipeline to run on the cluster",
+         "SupportedOperations": ["run", "get", "list", "cancel"],
+         "Options": [
+
+         ],
+         "ProtobufType": "Secret",
+      },
+      {
+         "Name": "job",
+         "Usage": "job",
+         "ShortDescription": "A pipeline to run on the cluster",
+         "LongDescription": "A pipeline to run on the cluster",
+         "SupportedOperations": ["get", "list"],
+         "Options": [
+
+         ],
+         "ProtobufType": "Secret",
+      },
    ]
 }

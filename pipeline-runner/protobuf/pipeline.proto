@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+package pipelines;
+
+message GlobalConfig {
+    // metadata configuration
+    message Metadata {
+        string language = 1;
+        string environment = 2;
+        string cloud = 3;
+        string team = 4;
+        bool disableQualityChecks = 5;
+    }
+
+    Metadata metadata = 1;
+    // notifications configuration
+    message NotificationsConfig {
+        message SlackConfig {
+            string baseUrl = 1;
+            string channel = 2;
+            string mention = 3;
+        }
+
+        repeated SlackConfig slack = 1;
+    }
+
+    NotificationsConfig notifications = 2;
+
+    message PipelineConfig {
+        message PipelineStep {
+            message UserData {
+                string fileName = 1;
+                string contents = 2;
+            }
+            string name = 1;
+            string workdir = 2;
+            string command = 3;
+            Parallel parallel = 4;
+            repeated UserData user_data = 5;
+            string waitUntil = 6;
+            string failIf = 7;
+            int32 timeout = 8;
+            int32 interval = 9;
+            bool skip = 10;
+
+        }
+
+        message Parallel {
+            repeated PipelineStep steps = 1;
+        }
+
+        message BuildConfig {
+            bool skip = 1;
+            repeated PipelineStep steps = 2;
+            repeated string logs = 3;
+        }
+
+        BuildConfig build = 1;
+
+        message IntegrationConfig {
+            bool skip = 1;
+            repeated PipelineStep steps = 2;
+            repeated string logs = 3;
+        }
+
+        IntegrationConfig integration = 2;
+
+        message DeployConfig {
+            bool skip = 1;
+            repeated PipelineStep steps = 2;
+            repeated string logs = 3;
+        }
+
+        DeployConfig deploy = 3;
+    }
+
+    PipelineConfig pipeline = 3;
+}
