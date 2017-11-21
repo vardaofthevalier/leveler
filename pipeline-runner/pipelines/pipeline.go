@@ -17,7 +17,6 @@ const (
 type Pipeline struct {
 	Config *PipelineConfig
 	Root *PipelineJob
-	Alerts []*PipelineAlertConfig
 }
 
 type PipelineJob interface {
@@ -32,7 +31,7 @@ type PipelineJobStatus struct {
 }
 
 func (p *Pipeline) Run(quit chan bool) map[string]PipelineJobStatus {
-	// IDEA:  quit will be a channel stored a map, which can be accessed by ID in order to kill a pipeline from the server API
+	// IDEA:  quit will be a channel stored in a map, which can be accessed by ID in order to kill a pipeline from the server API
 	// In addition to this, when a cancel command is sent to the server, some initial job killing can occur before the quit message is sent
 	jobStatuses := map[string]PipelineJobStatus
 
@@ -77,7 +76,7 @@ func (p *Pipeline) Run(quit chan bool) map[string]PipelineJobStatus {
 					if len(parentFailures) > 0 {
 						close(scheduler)
 					}
-					// TODO: check the database to make sure the job and/or pipeline hasn't been cancelled by the user
+
 					go j.Run()
 
 					if len(current.Children) > 0 {

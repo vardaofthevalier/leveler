@@ -2,10 +2,44 @@ syntax = "proto3";
 
 package resources;
 
+import "user.proto"
+import "integration.proto"
+import "pipeline.proto"
+import "repository.proto"
+import "secret.proto"
+
 import "google/protobuf/any.proto";
 import "google/protobuf/empty.proto";
 
-service ResourceEndpoint {
+service ResourceServer {
+    rpc AddUser(User) returns (UserCredentials) {}
+
+    rpc AddIntegration(Integration) returns (google.protobuf.Empty) {}
+    rpc GetIntegration(Integration) returns (Integration) {}
+    rpc ListIntegrations(Query) returns (IntegrationsList) {}
+    rpc UpdateIntegration(Integration) returns (google.protobuf.Empty) {}
+    rpc RemoveIntegration(Integration) returns (google.protobuf.Empty) {}
+
+    rpc AddRepository(Repository) returns (google.protobuf.Empty) {}
+    rpc GetRepository(Repository) returns (Repository) {}
+    rpc ListRepositories(Query) returns (RepositoryList) {}
+    rpc RemoveRepository(Repository) returns (google.protobuf.Empty) {}
+
+    rpc AddSecret(Secret) returns (google.protobuf.Empty) {}
+    rpc GetSecret(Secret) returns (Secret) {}
+    rpc ListSecrets(Query) returns (SecretsList) {}
+    rpc RemoveSecret(Secret) returns (google.protobuf.Empty) {}
+
+    rpc GetPipeline(Pipeline) returns (Pipeline) {}
+    rpc ListPipelines(Query) returns (PipelineList) {}
+    rpc RunPipeline(Pipeline) returns (Pipeline) {}
+    rpc CancelPipeline(Pipeline) returns (google.protobuf.Empty) {}
+
+    rpc GetJob(Job) returns (Job) {}
+    rpc ListJobs(Query) returns (JobsList) {}
+
+    rpc GetLogs(Loggable) returns (stream Log) {}
+
     rpc GetResource (google.protobuf.Any) returns (Resource) {}
     rpc ListResources (Query) returns ([]google.protobuf.Empty]) {}
     rpc CreateResource (google.protobuf.Any) returns (Resource) {}
@@ -17,4 +51,5 @@ message Query {
     string Query = 1;
     string Type = 2;
 }
+
 

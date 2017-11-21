@@ -4,8 +4,10 @@ import (
 	"fmt"
 )
 
-func (p *Pipeline) BuildBatchJobGraph() error {
-
+func (p *Pipeline) BuildBasicPipelineGraph() error {
+	// validate that integration configurations can be found for the user who submitted this pipeline
+	// if not, return an error to the caller
+	// otherwise, build the pipeline graph
 }
 
 func (p *Pipeline) BuildCicdPipelineGraph() error {

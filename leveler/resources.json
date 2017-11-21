@@ -12,6 +12,13 @@
                "Required": true,
                "Description": "A descriptive name for the integration",
                "IsSecondaryKey": true
+            },
+            {
+               "Name": "type",
+               "Required": true,
+               "Description": "",
+               "IsSecondaryKey": true,
+               "Choices": ["storage", "notification", "scm"]
             }
          ],
          "ProtobufType": "Integration"

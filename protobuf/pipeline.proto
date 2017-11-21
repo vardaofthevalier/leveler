@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package pipelines;
+
+import "integration.proto"
+
+enum LogProducer {
+	pipeline = 1;
+	job = 2;
+}
+
+message Loggable {
+	LogProducer kind = 1;
+}
+
+message Log {
+	string message = 1;
+}
+
+message PipelineScmConfig {
+	oneof scm {
+		BitbucketAccessConfig bitbucket = 1;
+		GithubAccessConfig github = 2;
+	}
+}
+
+message PipelineStorageConfig {
+	oneof storage {
+		AWSs3Config s3 = 1;
+		NexusConfig nexus = 2;
+	}
+}
+
+message PipelineInput {
+	oneof input {
+		S3Data s3 = 1;
+		NexusData nexus = 2;
+	}	
+}
+
+message PipelineOutput {
+	oneof output {
+		S3Data s3 = 1;
+		NexusData nexus = 2;
+	}
+}
+
+message PipelineAlertConfig {
+	oneof config {
+		SlackConfig slack = 1;
+	}
+}
+
+message PipelineStep {
+	string name = 1;
+    string workdir = 2;
+    string command = 3;
+    Parallel parallel = 4;
+    repeated PipelineInput inputs = 5;
+    repeated PipelineOutput outputs = 6;
+    string waitUntil = 7;
+    string failIf = 8;
+    int32 timeout = 9;
+    int32 interval = 10;
+    bool skip = 11;
+}
+
+message Parallel {
+	repeated PipelineStep steps = 1;
+}
+
+message BasicPipeline {
+	repeated PipelineAlertConfig alerts = 1;
+	repeated PipelineStorageConfig storage = 2;
+	repeated PipelineScmConfig scm = 3;
+	repeated PipelineStep steps = 4;
+}
+
+message CicdPipeline {
+	repeated PipelineAlertConfig alerts = 1;
+	repeated PipelineStorageConfig storage = 2;
+	repeated PipelineScmConfig scm = 3;
+
+
+}
+
