@@ -2,11 +2,11 @@ syntax = "proto3";
 
 package pipelines;
 
-import "integration.proto"
+import "integration.proto";
 
 enum LogProducer {
-	pipeline = 1;
-	job = 2;
+	pipeline = 0;
+	job = 1;
 }
 
 message Loggable {
@@ -26,9 +26,19 @@ message PipelineScmConfig {
 
 message PipelineStorageConfig {
 	oneof storage {
-		AWSs3Config s3 = 1;
+		AWSConfig s3 = 1;
 		NexusConfig nexus = 2;
 	}
+}
+
+message S3Data {
+	string src = 1;
+	string dest = 2;
+}
+
+message NexusData {
+	string src = 1;
+	string dest = 3;
 }
 
 message PipelineInput {
@@ -55,18 +65,12 @@ message PipelineStep {
 	string name = 1;
     string workdir = 2;
     string command = 3;
-    Parallel parallel = 4;
+    string image = 4;
     repeated PipelineInput inputs = 5;
     repeated PipelineOutput outputs = 6;
-    string waitUntil = 7;
-    string failIf = 8;
-    int32 timeout = 9;
-    int32 interval = 10;
-    bool skip = 11;
-}
-
-message Parallel {
-	repeated PipelineStep steps = 1;
+    int32 timeout = 7;
+    bool skip = 8;
+    repeated string dependsOn = 9;
 }
 
 message BasicPipeline {
@@ -80,7 +84,9 @@ message CicdPipeline {
 	repeated PipelineAlertConfig alerts = 1;
 	repeated PipelineStorageConfig storage = 2;
 	repeated PipelineScmConfig scm = 3;
-
-
+	repeated PipelineStep quality = 4;
+	repeated PipelineStep build = 5;
+	repeated PipelineStep integration = 6;
+	repeated PipelineStep promote = 7;
 }
 

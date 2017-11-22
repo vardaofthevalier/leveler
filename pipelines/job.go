@@ -1,30 +1,33 @@
-package pipeline 
+package pipelines
 
 import (
-	"fmt"
+	//"fmt"
 	"sync"
-	"os/exec"
+	//"os/exec"
+	"leveler/config"
+	uuid "github.com/satori/go.uuid"
 )
+
+type NewJobFn func(*config.ServerConfig, *PipelineStep) (PipelineJob, error) 
 
 type KubernetesPipelineJobInit struct {
 	Credentials []*ExternalDataProvider
 	Data []*ExternalDataProvider
 }
 
-type Kubernetes
-
 type KubernetesPipelineJob struct {
 	Id string
 	Name string
 	Namespace string
 	Container string
-	RepoPath string
+	Workdir string
 	Script string
 	Env *map[string]string
 	Init *KubernetesPipelineJobInit
 	VolumeSizeGi int
 	Parents []*PipelineJob
 	Children []*PipelineJob
+	Visited bool
 }
 
 var pipelineJobPvcTemplate = `
@@ -115,7 +118,7 @@ var pipelineJobPodTemplate = `
 					"mountPath": "/configmap"
 				}
 			],
-			"workingDir": "/data/{{.RepoPath}}",
+			"workingDir": "/data/{{.Workdir}}",
 			"lifecyle"
 		],
 		"volumes": [
@@ -180,20 +183,57 @@ var pipelineDataSyncScriptTemplate = `
 var pipelineJobScriptTemplate = `
 #!/bin/bash
 
-cd {{.RepoPath}}
+cd {{.Workdir}}
 {{.Command}}
 exit $?
 `
 
-func (j *PipelineJob) generateScripts() error {
+func NewKubernetesPipelineJob(serverConfig *config.ServerConfig, jobConfig *PipelineStep) (KubernetesPipelineJob, error) {
+	k := KubernetesPipelineJob{
+		Id: uuid.NewV4().String(),
+	}
 
+	// TODO: fully flesh out the job object before returning
+	return k, nil
 }
 
-func (j *KubernetesPipelineJob) Watch(statuses *chan map[string]interface{}, wg *sync.Waitgroup) {
-	defer wg.Close()
+func (j *KubernetesPipelineJob) SetVisited() {
+	j.Visited = true
+}
+
+func (j *KubernetesPipelineJob) GetVisited() bool {
+	return j.Visited
+}
+ 
+func (j *KubernetesPipelineJob) GetId() string {
+	return j.Id
+}
+
+func (j *KubernetesPipelineJob) GetName() string {
+	return j.Name
+}
+
+func (j *KubernetesPipelineJob) GetChildren() []*PipelineJob {
+	return j.Children
+}
+
+func (j *KubernetesPipelineJob) GetParents() []*PipelineJob {
+	return j.Parents
+}
+
+func (j *KubernetesPipelineJob) AddChild(child *PipelineJob) {
+	j.Children = append(j.Children, child)
+}
+
+func (j *KubernetesPipelineJob) AddParent(parent *PipelineJob) {
+	j.Parents = append(j.Parents, parent)
+}
+
+func (j *KubernetesPipelineJob) Watch(statuses chan *PipelineJobStatus, wg *sync.WaitGroup) {
+	defer wg.Done()
 	// watch for the job to complete
 	// put status on the channel
-	_ := j.Cleanup()
+	_ = j.Cleanup()
 }
 
 func (j *KubernetesPipelineJob) Run() error { 
@@ -201,8 +241,10 @@ func (j *KubernetesPipelineJob) Run() error {
 	// create job storage
 	// create job configuration
 	// start job pod
+	return nil
 }
 
 func (j *KubernetesPipelineJob) Cleanup() error {
 	// delete the pod 
+	return nil
 }

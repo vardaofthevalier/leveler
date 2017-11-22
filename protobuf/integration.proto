@@ -5,8 +5,7 @@ package pipelines;
 message Integration {
 	string name = 1;
 	oneof config {
-		BitbucketAccessConfig bitbucket = 1;
-		GithubAccessConfig github = 2;
+		BitbucketAccessConfig bitbucket = 2;
 		AWSConfig aws = 3;
 		NexusConfig nexus = 4;
 		SlackConfig slack = 5;
@@ -18,21 +17,22 @@ message IntegrationsList {
 }
 
 message BitbucketAccessConfig {
-	
+	string stuff = 1;
 }
 
 message GithubAccessConfig {
-	
+	string stuff = 1;
 }
 
 message AWSConfig {
-	
+	string aws_secret_key = 1;
+	string aws_secret_key_id = 2;
 }
 
 message NexusConfig {
-	
+	string stuff = 1;
 }
 
 message SlackConfig {
-	
-}
+	string stuff = 1;
+}	

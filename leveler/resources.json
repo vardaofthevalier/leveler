@@ -6,19 +6,32 @@
          "ShortDescription": "An integration with a 3rd party service",
          "LongDescription": "An integration with a 3rd party service",
          "SupportedOperations": ["add", "get", "list", "remove", "update"],
+         "Subcommands": [
+            {
+               "Name": "s3",
+               "Usage": "s3",
+               "ShortDescription": "An integration with AWS S3",
+               "LongDescription": "An integration with AWS S3",
+               "Options": [
+                  {
+                     "Name": "aws-secret-key",
+                     "Required": true,
+                     "Description": "AWS secret key used to access S3",
+                  },
+                  {
+                     "Name": "aws-secret-key-id",
+                     "Required": true,
+                     "Description": "AWS secret key id used to access S3"
+                  }
+               ]
+            }
+         ], 
          "Options": [
             {
                "Name": "name",
                "Required": true,
                "Description": "A descriptive name for the integration",
                "IsSecondaryKey": true
-            },
-            {
-               "Name": "type",
-               "Required": true,
-               "Description": "",
-               "IsSecondaryKey": true,
-               "Choices": ["storage", "notification", "scm"]
             }
          ],
          "ProtobufType": "Integration"
@@ -67,5 +80,16 @@
          ],
          "ProtobufType": "Secret",
       },
+      {
+         "Name": "logs",
+         "Usage": "logs",
+         "ShortDescription": "Get logs for a pipeline or job",
+         "LongDescription": "Get logs for a pipeline or job",
+         "SupportedOperations": ["get"],
+         "Options": [
+
+         ],
+         "ProtobufType": "Loggable"
+      }
    ]
 }

@@ -2,6 +2,19 @@ syntax = "proto3";
 
 package config;
 
+message ContainerPlatform {
+	string name = 1;
+	string host = 2;
+	int32 port = 3;
+	oneof opts {
+		KubernetesOptions kubernetes_options = 4;
+	}
+}
+
+message KubernetesOptions {
+	string namespace = 1;
+}
+
 message Database {
 	string type = 1;
 	string host = 2;
@@ -10,7 +23,7 @@ message Database {
 		RedisOptions redis_options = 4;
 		SqlOptions sql_options = 5;
 	}
-	string protocol = 5;
+	string protocol = 6;
 }
 
 message RedisOptions {
@@ -24,8 +37,9 @@ message SqlOptions {
 	string database = 4;
 }
 
-message Config {
+message ServerConfig {
 	string host = 1;
 	int32 port = 2;
 	Database database = 3;
+	ContainerPlatform platform = 4;
 }

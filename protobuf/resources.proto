@@ -40,9 +40,9 @@ service ResourceServer {
 
     rpc GetLogs(Loggable) returns (stream Log) {}
 
-    rpc GetResource (google.protobuf.Any) returns (Resource) {}
-    rpc ListResources (Query) returns ([]google.protobuf.Empty]) {}
-    rpc CreateResource (google.protobuf.Any) returns (Resource) {}
+    rpc GetResource (google.protobuf.Any) returns (google.protobuf.Any) {}
+    rpc ListResources (Query) returns (google.protobuf.Any) {}
+    rpc CreateResource (google.protobuf.Any) returns (google.protobuf.Any) {}
     rpc UpdateResource (google.protobuf.Any) returns (google.protobuf.Empty) {}
     rpc DeleteResource (google.protobuf.Any) returns (google.protobuf.Empty) {}
 }

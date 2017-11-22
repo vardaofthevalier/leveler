@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package pipeline;
+
+import "google/protobuf/any.proto";
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
+
+service BitbucketWebhook {
+	rpc ReceiveEvent (google.protobuf.Any) returns (google.protobuf.Empty) {
+		option (google.api.http) = {
+			post: "/bitbucket/event"
+			body: "*"
+		};
+	}
+}
+
+message BitbucketPush {
+	BitbucketOwner actor = 1;
+	BitbucketRespository repository = 2;
+	BitbucketPushPayload push = 3;
+}
+
+message BitbucketOwner {
+	string type = 1;
+	string username = 2;
+	string display_name = 3;
+	string uuid = 4;
+	map[string]BitbucketLink links = 5;
+}
+
+message BitbucketLink {
+	string href = 1;
+}
+
+message BitbucketCommit {
+	sting type = 1;
+	string hash = 2;
+	string message = 3;
+	BitbucketOwner author = 4;
+	repeated BitbucketLink links = 5;
+}
+
+message BitbucketRef {
+	string type = 1;
+	string hash = 2;
+	BitbucketOwner author = 3;
+	string message = 4;
+	string date = 5;
+	repeated BitbucketRef parents = 6;
+	repeated BitbucketLink links = 7;
+}
+
+message BitbucketRepositoryChange {
+	BitbucketRef new = 1;
+	BitbucketRef old = 2;
+	map[string]BitbucketLink links = 3;
+	bool created = 4;
+	bool closed = 5;
+	bool forced = 6;
+	repeated BitbucketCommit commits = 7;
+	bool truncated = 8;
+}
+
+message BitbucketRepository {
+	string type = 1;
+	string name = 2;
+	string full_name = 3;
+	string uuid = 4;
+	map[string]BitbucketLink links = 5;
+	string project = 6;
+	string website = 7;
+	BitbucketOwner owner = 8;
+	string scm = 9;
+	bool is_private = 10;
+}
+
+message BitbucketPushPayload {
+	repeated BitbucketRepositoryChange changes = 1;	
+}
