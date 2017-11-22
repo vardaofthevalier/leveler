@@ -1,9 +1,8 @@
 package pipelines
 
 import (
-	"fmt"
+	// "fmt"
 	"sync"
-	//"os/exec"
 	"github.com/golang-collections/collections/stack"
 )
 
@@ -39,7 +38,7 @@ type PipelineJobStatus struct {
 	JobSpec *PipelineJob
 }
 
-func (p *Pipeline) HasCycle() bool {
+func (p *Pipeline) hasCycle() bool {
 	s := stack.New()
 
 	for _, r := range p.RootJobs {
@@ -49,7 +48,6 @@ func (p *Pipeline) HasCycle() bool {
 	for s.Len() > 0 {
 		current := s.Pop()
 		value := current.(*PipelineJob)
-		fmt.Println((*value).GetId())
 		if (*value).GetColor() == "grey" {
 			for _, c := range (*value).GetChildren() {
 				if (*c).GetColor() != "black" {
@@ -60,7 +58,6 @@ func (p *Pipeline) HasCycle() bool {
 		} else if (*value).GetColor() == "white" {
 			(*value).SetColor("grey")
 			s.Push(value)
-			fmt.Println((*value).GetChildren())
 			for _, c := range (*value).GetChildren() {
 				s.Push(c)
 			}
@@ -73,10 +70,6 @@ func (p *Pipeline) HasCycle() bool {
 func (p *Pipeline) Run(quit chan bool) map[string]PipelineJobStatus {
 	// IDEA:  quit will be a channel stored in a map, which can be accessed by ID in order to kill a pipeline from the server API
 	// In addition to this, when a cancel command is sent to the server, some initial job killing can occur before the quit message is sent
-
-	if p.HasCycle() {
-		// fatal error
-	}
 
 	scheduler := make(chan *PipelineJob)
 	defer close(scheduler)
@@ -151,4 +144,8 @@ func (p *Pipeline) Run(quit chan bool) map[string]PipelineJobStatus {
 	}
 	
 	return jobStatuses
+}
+
+func (p *Pipeline) Cleanup() error {
+	return nil
 }

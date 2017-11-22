@@ -6,7 +6,7 @@ import (
 	"leveler/config"
 )
 
-func BuildBasicPipelineGraph(serverConfig *config.ServerConfig, pipelineConfig *BasicPipeline) (*Pipeline, error) {
+func NewBasicPipeline(serverConfig *config.ServerConfig, pipelineConfig *BasicPipeline) (*Pipeline, error) {
 	// TODO: validate that integration configurations can be found for the user who submitted this pipeline
 	// if not, return an error to the caller
 
@@ -42,13 +42,17 @@ func BuildBasicPipelineGraph(serverConfig *config.ServerConfig, pipelineConfig *
 		for _, d := range s.DependsOn {
 			parent := allJobs[d]
 			if parent.GetName() == child.GetName() {
-				return p, errors.New("Self loops not allowed!")
+				return p, errors.New(fmt.Sprintf("Job '%s' contains a self loop!", child.GetName()))
 			}
+			
 			child.AddParent(&parent)
 			parent.AddChild(&child)
 		}
 	}
 
-	return p, nil
+	if p.hasCycle() {
+		return p, errors.New("Cycle detected in graph!")
+	}
 
+	return p, nil
 }

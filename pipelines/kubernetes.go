@@ -191,6 +191,7 @@ exit $?
 func NewKubernetesPipelineJob(serverConfig *config.ServerConfig, jobConfig *PipelineStep) (KubernetesPipelineJob, error) {
 	k := KubernetesPipelineJob{
 		Id: uuid.NewV4().String(),
+		Name: jobConfig.Name,
 		Color: "white",
 	}
 

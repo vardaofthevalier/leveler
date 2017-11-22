@@ -52,4 +52,17 @@ message Query {
     string Type = 2;
 }
 
+enum LogProducer {
+    pipeline = 0;
+    job = 1;
+}
+
+message Loggable {
+    LogProducer kind = 1;
+}
+
+message Log {
+    string message = 1;
+}
+
 

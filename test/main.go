@@ -1,6 +1,7 @@
 package main 
 
 import (
+	"os"
 	"fmt"
 	"leveler/config"
 	"leveler/pipelines"
@@ -32,7 +33,7 @@ func main() {
 		Workdir: "foo/bar",
 		Command: "ls -al",
 		Image: "ubuntu",
-		DependsOn: []string{"p1_2"},
+		DependsOn: []string{"p1_1"},
 	}
 
 	p1_3 := &pipelines.PipelineStep{
@@ -47,23 +48,12 @@ func main() {
 		Steps: []*pipelines.PipelineStep{p1_1, p1_2, p1_3},
 	}
 
-	g1, err := pipelines.BuildBasicPipelineGraph(serverConfig, pipelineConfigNoCycle)
+	_, err := pipelines.NewBasicPipeline(serverConfig, pipelineConfigNoCycle)
 
 	if err != nil {
 		fmt.Printf("%v\n", err)
+		os.Exit(1)
 	}
 
-	if g1.HasCycle() {
-		fmt.Printf("Yikes!")
-	}
-
-	// for _, r := range g1.RootJobs {
-	// 	fmt.Printf("%v\n", r)
-	// 	children := (*r).GetChildren()
-	// 	fmt.Printf("%v\n", children)
-	// 	for _, c := range children {
-	// 		fmt.Printf("%v\n", (*c).GetChildren())
-	// 	}
-	// }
-
+	fmt.Println("All good in the neighborhood!")
 }

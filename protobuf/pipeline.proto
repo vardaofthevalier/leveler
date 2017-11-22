@@ -2,63 +2,32 @@ syntax = "proto3";
 
 package pipelines;
 
+import "data.proto"
 import "integration.proto";
 
-enum LogProducer {
-	pipeline = 0;
-	job = 1;
-}
-
-message Loggable {
-	LogProducer kind = 1;
-}
-
-message Log {
-	string message = 1;
-}
-
-message PipelineScmConfig {
-	oneof scm {
-		BitbucketAccessConfig bitbucket = 1;
-		GithubAccessConfig github = 2;
-	}
-}
-
-message PipelineStorageConfig {
-	oneof storage {
-		AWSConfig s3 = 1;
-		NexusConfig nexus = 2;
-	}
-}
-
-message S3Data {
-	string src = 1;
-	string dest = 2;
-}
-
-message NexusData {
-	string src = 1;
-	string dest = 3;
-}
-
 message PipelineInput {
+	string name = 1;
 	oneof input {
-		S3Data s3 = 1;
-		NexusData nexus = 2;
+		S3Data s3 = 2;
+		NexusData nexus = 3;
+		SCMData scm = 4;
+		LocalData local = 5;
 	}	
 }
 
 message PipelineOutput {
+	string name = 1;
 	oneof output {
-		S3Data s3 = 1;
-		NexusData nexus = 2;
+		S3Data s3 = 2;
+		NexusData nexus = 3;
+		LocalData local = 4;
 	}
 }
 
-message PipelineAlertConfig {
-	oneof config {
-		SlackConfig slack = 1;
-	}
+message PipelineDataVolume {
+	string mountPath = 1;
+	int32 sizeGb = 2;
+	bool shared = 3;
 }
 
 message PipelineStep {
@@ -68,25 +37,22 @@ message PipelineStep {
     string image = 4;
     repeated PipelineInput inputs = 5;
     repeated PipelineOutput outputs = 6;
-    int32 timeout = 7;
-    bool skip = 8;
-    repeated string dependsOn = 9;
+    repeated PipelineDataVolume volumes = 7;
+    int32 timeout = 8;
+    bool skip = 9;
+    repeated string dependsOn = 10;
 }
 
 message BasicPipeline {
-	repeated PipelineAlertConfig alerts = 1;
-	repeated PipelineStorageConfig storage = 2;
-	repeated PipelineScmConfig scm = 3;
-	repeated PipelineStep steps = 4;
+	repeated Integration integrations = 1;
+	repeated PipelineStep steps = 2;
 }
 
 message CicdPipeline {
-	repeated PipelineAlertConfig alerts = 1;
-	repeated PipelineStorageConfig storage = 2;
-	repeated PipelineScmConfig scm = 3;
-	repeated PipelineStep quality = 4;
-	repeated PipelineStep build = 5;
-	repeated PipelineStep integration = 6;
-	repeated PipelineStep promote = 7;
+	repeated Integration integrations = 1;
+	repeated PipelineStep quality = 2;
+	repeated PipelineStep build = 3;
+	repeated PipelineStep integration = 4;
+	repeated PipelineStep promote = 5;
 }
 

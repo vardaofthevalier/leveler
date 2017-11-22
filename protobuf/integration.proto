@@ -6,9 +6,10 @@ message Integration {
 	string name = 1;
 	oneof config {
 		BitbucketAccessConfig bitbucket = 2;
-		AWSConfig aws = 3;
-		NexusConfig nexus = 4;
-		SlackConfig slack = 5;
+		GithubAccessConfig github = 3;
+		AWSConfig aws = 4;
+		NexusConfig nexus = 5;
+		SlackConfig slack = 6;
 	}
 }
 
