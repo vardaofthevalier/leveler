@@ -27,7 +27,7 @@ type KubernetesPipelineJob struct {
 	VolumeSizeGi int
 	Parents []*PipelineJob
 	Children []*PipelineJob
-	Visited bool
+	Color string
 }
 
 var pipelineJobPvcTemplate = `
@@ -191,18 +191,19 @@ exit $?
 func NewKubernetesPipelineJob(serverConfig *config.ServerConfig, jobConfig *PipelineStep) (KubernetesPipelineJob, error) {
 	k := KubernetesPipelineJob{
 		Id: uuid.NewV4().String(),
+		Color: "white",
 	}
 
 	// TODO: fully flesh out the job object before returning
 	return k, nil
 }
 
-func (j *KubernetesPipelineJob) SetVisited() {
-	j.Visited = true
+func (j *KubernetesPipelineJob) SetColor(color string) {
+	j.Color = color
 }
 
-func (j *KubernetesPipelineJob) GetVisited() bool {
-	return j.Visited
+func (j *KubernetesPipelineJob) GetColor() string {
+	return j.Color
 }
  
 func (j *KubernetesPipelineJob) GetId() string {

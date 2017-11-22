@@ -22,8 +22,8 @@ type Pipeline struct {
 type PipelineJob interface {
 	GetId() string
 	GetName() string
-	SetVisited() 
-	GetVisited() bool
+	SetColor(string) 
+	GetColor() string
 	GetChildren() []*PipelineJob
 	GetParents() []*PipelineJob
 	AddChild(*PipelineJob)
@@ -50,10 +50,16 @@ func (p *Pipeline) HasCycle() bool {
 		current := s.Pop()
 		value := current.(*PipelineJob)
 		fmt.Println((*value).GetId())
-		if (*value).GetVisited() {
-			return true
-		} else {
-			(*value).SetVisited()
+		if (*value).GetColor() == "grey" {
+			for _, c := range (*value).GetChildren() {
+				if (*c).GetColor() != "black" {
+					return true
+				}
+			}
+			(*value).SetColor("black")
+		} else if (*value).GetColor() == "white" {
+			(*value).SetColor("grey")
+			s.Push(value)
 			fmt.Println((*value).GetChildren())
 			for _, c := range (*value).GetChildren() {
 				s.Push(c)

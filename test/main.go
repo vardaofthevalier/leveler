@@ -32,7 +32,7 @@ func main() {
 		Workdir: "foo/bar",
 		Command: "ls -al",
 		Image: "ubuntu",
-		DependsOn: []string{"p1_1"},
+		DependsOn: []string{"p1_2"},
 	}
 
 	p1_3 := &pipelines.PipelineStep{
