@@ -33,7 +33,7 @@ type PipelineJob interface {
 }
 
 type PipelineJobStatus struct {
-	Status int
+	Status string
 	Message string
 	JobSpec *PipelineJob
 }
@@ -71,6 +71,7 @@ func (p *Pipeline) Run(quit chan bool) map[string]PipelineJobStatus {
 	// IDEA:  quit will be a channel stored in a map, which can be accessed by ID in order to kill a pipeline from the server API
 	// In addition to this, when a cancel command is sent to the server, some initial job killing can occur before the quit message is sent
 
+	// IDEA: to make this work in a distributed system, use central message queues instead of channels
 	scheduler := make(chan *PipelineJob)
 	defer close(scheduler)
 
@@ -79,6 +80,9 @@ func (p *Pipeline) Run(quit chan bool) map[string]PipelineJobStatus {
 
 	var leafStatuses = make(chan *PipelineJobStatus)
 	defer close(leafStatuses)
+
+	var jobQuit = make(chan *PipelineJobStatus)
+	defer close(jobQuit)
 
 	var leaves sync.WaitGroup
 	defer leaves.Done()
@@ -120,7 +124,7 @@ func (p *Pipeline) Run(quit chan bool) map[string]PipelineJobStatus {
 						close(scheduler)
 					}
 
-					go (*j).Run()
+					go (*j).Run(jobQuit)
 
 					if len((*j).GetChildren()) > 0 {
 						for _, c := range (*j).GetChildren() {
@@ -132,6 +136,9 @@ func (p *Pipeline) Run(quit chan bool) map[string]PipelineJobStatus {
 					}
 				}
 			}()
+		case jobQuit <- jq:
+			// TODO: update job status
+			quit <- true
 		case <-quit:
 			break
 		}
@@ -147,5 +154,5 @@ func (p *Pipeline) Run(quit chan bool) map[string]PipelineJobStatus {
 }
 
 func (p *Pipeline) Cleanup() error {
-	return nil
+	return nil // TODO: implement
 }

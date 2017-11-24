@@ -23,16 +23,11 @@ type LocalPipelineJob struct {
 }
 
 func NewLocalPipelineJob(serverConfig *config.ServerConfig, jobConfig *PipelineStep) (LocalPipelineJob, error) {
-	// create workdir under /var/lib/leveler/pipelines/<pipeline-id>/<job-name>
-	// resolve inputs -- i.e., socket locations /var/lib/leveler/pipelines/<pipeline-id>/<dependency-name>/outputs/<output-name>.sock -> /var/lib/leveler/pipelines/<pipeline-id>/<job-name>/inputs/<input-name>.sock
-	// create sockets for outputs in workdir -- /var/lib/leveler/pipelines/<pipeline-id>/<job-name>/outputs/<output-name>.sock
-	// generate script
-	script := fmt.Sprintf(`
-#!/bin/bash
-
-cd %s 
-
-`, foo)
+	// LEVELER_DATA default location:  /var/lib/leveler
+	// create workdir under <LEVELER_DATA>/pipelines/<pipeline-id>/<job-name>
+	// resolve inputs (i.e., create links) <LEVELER_DATA>/pipelines/<pipeline-id>/<dependency-name>/outputs/<output-name> -> /var/lib/leveler/pipelines/<pipeline-id>/<job-name>/inputs/<input-name>
+	// create directory for outputs <LEVELER_DATA>/pipelines/<pipeline-id>/outputs/<output-name>
+	// generate script <LEVELER_DATA>/pipelines/<pipeline-id>/<job-name>/run.sh
 
 	k := LocalPipelineJob{
 		Id: uuid.NewV4().String(),
