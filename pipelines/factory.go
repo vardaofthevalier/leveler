@@ -6,6 +6,8 @@ import (
 	"leveler/config"
 )
 
+// PIPELINE FACTORY
+
 func createJobsMap(serverConfig *config.ServerConfig, pipelineConfig *BasicPipeline) (map[string]PipelineJob, *Pipeline, error) {
 	var p = &Pipeline{}
 	var allJobs = make(map[string]PipelineJob)
@@ -23,18 +25,18 @@ func createJobsMap(serverConfig *config.ServerConfig, pipelineConfig *BasicPipel
 				}
 				allJobs[s.Name] = &j
 
-			// case "docker":
-			// 	j, err := NewDockerPipelineJob(serverConfig, s)
-			// 	if err != nil {
-			// 		return allJobs, p, err
-			// 	}
-			// 	allJobs[s.Name] = &j
+			case "docker":
+				j, err := NewDockerPipelineJob(serverConfig, s)
+				if err != nil {
+					return allJobs, p, err
+				}
+				allJobs[s.Name] = &j
 
-			// case "local":
-			// 	j, err := NewLocalPipelineJob(serverConfig, s)
-			// 	if err != nil {
-			// 		allJobs[s.Name] = &j
-			// 	}
+			case "local":
+				j, err := NewLocalPipelineJob(serverConfig, s)
+				if err != nil {
+					allJobs[s.Name] = &j
+				}
 
 			default:
 				return allJobs, p, errors.New(fmt.Sprintf("Unknown platform '%s'", serverConfig.Platform.Name))
@@ -79,3 +81,9 @@ func NewBasicPipeline(serverConfig *config.ServerConfig, pipelineConfig *BasicPi
 
 	return p, nil
 }
+
+// DATASOURCE FACTORY
+
+
+
+

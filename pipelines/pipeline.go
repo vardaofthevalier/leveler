@@ -3,6 +3,7 @@ package pipelines
 import (
 	// "fmt"
 	"sync"
+	"context"
 	"github.com/golang-collections/collections/stack"
 )
 
@@ -27,13 +28,16 @@ type PipelineJob interface {
 	GetParents() []*PipelineJob
 	AddChild(*PipelineJob)
 	AddParent(*PipelineJob)
-	Run() error 
+	Init() error
+	SyncInputs() error 
+	SyncOutputs() error
+	Run(chan *PipelineJobStatus) error 
 	Watch(chan *PipelineJobStatus, *sync.WaitGroup)
 	Cleanup() error
 }
 
 type PipelineJobStatus struct {
-	Status string
+	Status int
 	Message string
 	JobSpec *PipelineJob
 }
@@ -67,9 +71,9 @@ func (p *Pipeline) hasCycle() bool {
 	return false
 }
 
-func (p *Pipeline) Run(quit chan bool) map[string]PipelineJobStatus {
-	// IDEA:  quit will be a channel stored in a map, which can be accessed by ID in order to kill a pipeline from the server API
-	// In addition to this, when a cancel command is sent to the server, some initial job killing can occur before the quit message is sent
+func (p *Pipeline) Run(ctx context.Context, cancel context.CancelFunc) map[string]PipelineJobStatus {
+	// IDEA:  ctx will be a context.Context (created using WithCancel method) stored in a map, which can be accessed by ID in order to cancel a pipeline from the server API
+	defer cancel()
 
 	// IDEA: to make this work in a distributed system, use central message queues instead of channels
 	scheduler := make(chan *PipelineJob)
@@ -80,9 +84,6 @@ func (p *Pipeline) Run(quit chan bool) map[string]PipelineJobStatus {
 
 	var leafStatuses = make(chan *PipelineJobStatus)
 	defer close(leafStatuses)
-
-	var jobQuit = make(chan *PipelineJobStatus)
-	defer close(jobQuit)
 
 	var leaves sync.WaitGroup
 	defer leaves.Done()
@@ -105,7 +106,7 @@ func (p *Pipeline) Run(quit chan bool) map[string]PipelineJobStatus {
 						defer close(parentStatuses)
 
 						for _, p := range (*j).GetParents() {
-							go (*p).Watch(parentStatuses, &wg)
+							go (*p).Watch(ctx, parentStatuses, &wg)
 						}
 
 						wg.Wait()
@@ -121,10 +122,8 @@ func (p *Pipeline) Run(quit chan bool) map[string]PipelineJobStatus {
 					}
 
 					if len(parentFailures) > 0 {
-						close(scheduler)
+						quit <- true
 					}
-
-					go (*j).Run(jobQuit)
 
 					if len((*j).GetChildren()) > 0 {
 						for _, c := range (*j).GetChildren() {
@@ -132,14 +131,25 @@ func (p *Pipeline) Run(quit chan bool) map[string]PipelineJobStatus {
 						}
 					} else {
 						leaves.Add(1)
-						(*j).Watch(leafStatuses, &leaves)
+						go (*j).Watch(ctx, leafStatuses, &leaves)
+					}
+
+					err = (*j).Init()
+					if err != nil {
+						// TODO:
+					}
+
+					err = (*j).Run()
+					if err != nil {
+						// TODO: create pipeline job status from error
 					}
 				}
 			}()
 		case jobQuit <- jq:
-			// TODO: update job status
+			jobStatuses[(*s.JobSpec).GetId()] = *jq
 			quit <- true
-		case <-quit:
+		case <-ctx.Done():
+			close(scheduler)
 			break
 		}
 	}
@@ -150,9 +160,11 @@ func (p *Pipeline) Run(quit chan bool) map[string]PipelineJobStatus {
 		jobStatuses[(*s.JobSpec).GetId()] = *s
 	}
 	
+	// TODO: run cleanup logic (toggle true/false in config)
 	return jobStatuses
 }
 
 func (p *Pipeline) Cleanup() error {
-	return nil // TODO: implement
+	// TODO: BFS and run the job cleanup function for each job
+	return nil
 }

@@ -21,3 +21,8 @@ message LocalData {
 	string src= 1;
 	string dest = 2;
 }
+
+message StreamData {
+	string src = 1;
+	string dest = 2;
+}

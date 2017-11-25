@@ -7,10 +7,18 @@ import "integration.proto";
 
 message PipelineInput {
 	string name = 1;
+	oneof src {
+		PipelineData external = 2;
+		string pipelineJob = 3;
+	}
 }
 
 message PipelineOutput {
 	string name = 1;
+	oneof dest {
+		PipelineData external = 2;
+		string pipelineJob = 3;
+	}
 }
 
 message PipelineData {
@@ -40,13 +48,13 @@ message PipelineStep {
 
 message BasicPipeline {
 	repeated Integration integrations = 1;
-	repeated PipelineData data = 2;
+	repeated PipelineData sharedData = 2;
 	repeated PipelineStep steps = 3;
 }
 
 message CicdPipeline {
 	repeated Integration integrations = 1;
-	repeated PipelineData data = 2;
+	repeated PipelineData sharedData = 2;
 	repeated PipelineStep quality = 3;
 	repeated PipelineStep build = 4;
 	repeated PipelineStep integration = 5;
