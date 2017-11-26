@@ -4,7 +4,9 @@ import (
 	// "fmt"
 	"sync"
 	"context"
+	"encoding/json"
 	"github.com/golang-collections/collections/stack"
+	"github.com/golang-collections/collections/queue"
 )
 
 const (
@@ -37,9 +39,9 @@ type PipelineJob interface {
 }
 
 type PipelineJobStatus struct {
-	Status int
+	Status int64
 	Message string
-	JobSpec *PipelineJob
+	JobId string
 }
 
 func (p *Pipeline) hasCycle() bool {
@@ -79,7 +81,6 @@ func (p *Pipeline) Run(ctx context.Context, cancel context.CancelFunc) map[strin
 	scheduler := make(chan *PipelineJob)
 	defer close(scheduler)
 
-	var jobStatuses map[string]PipelineJobStatus
 	var parentStatuses chan *PipelineJobStatus
 
 	var leafStatuses = make(chan *PipelineJobStatus)
@@ -97,33 +98,31 @@ func (p *Pipeline) Run(ctx context.Context, cancel context.CancelFunc) map[strin
 		select {
 		case scheduler <- j:
 			go func() {
-				if _, ok := jobStatuses[(*j).GetId()]; !ok {
-					if len((*j).GetParents()) > 0 {
-						var wg sync.WaitGroup
-						wg.Add(len((*j).GetParents()))
+				if len((*j).GetParents()) > 0 {
+					var pg sync.WaitGroup
+					pg.Add(len((*j).GetParents()))
 
-						parentStatuses := make(chan *PipelineJobStatus)
-						defer close(parentStatuses)
-
-						for _, p := range (*j).GetParents() {
-							go (*p).Watch(ctx, parentStatuses, &wg)
-						}
-
-						wg.Wait()
+					parentStatuses = make(chan *PipelineJobStatus)
+					for _, p := range (*j).GetParents() {
+						go (*p).Watch(ctx, parentStatuses, &pg)
 					}
 
-					var parentFailures []int
-					for s := range parentStatuses {
-						if s.Status != SUCCEEDED {
-							parentFailures = append(parentFailures, s.Status)
-						}
+					pg.Wait()
+				}
 
-						jobStatuses[(*s.JobSpec).GetId()] = *s
+				var parentFailures []int64
+				for s := range parentStatuses {
+					if s.Status != SUCCEEDED {
+						parentFailures = append(parentFailures, s.Status)
 					}
+				}
 
-					if len(parentFailures) > 0 {
-						quit <- true
-					}
+				close(parentStatuses)
+
+				if len(parentFailures) > 0 {
+					cancel()
+				} else {
+					go (*j).Run(ctx)
 
 					if len((*j).GetChildren()) > 0 {
 						for _, c := range (*j).GetChildren() {
@@ -133,38 +132,44 @@ func (p *Pipeline) Run(ctx context.Context, cancel context.CancelFunc) map[strin
 						leaves.Add(1)
 						go (*j).Watch(ctx, leafStatuses, &leaves)
 					}
-
-					err = (*j).Init()
-					if err != nil {
-						// TODO:
-					}
-
-					err = (*j).Run()
-					if err != nil {
-						// TODO: create pipeline job status from error
-					}
 				}
 			}()
-		case jobQuit <- jq:
-			jobStatuses[(*s.JobSpec).GetId()] = *jq
-			quit <- true
 		case <-ctx.Done():
-			close(scheduler)
 			break
 		}
 	}
 
 	leaves.Wait()
+}
 
-	for s := range leafStatuses {
-		jobStatuses[(*s.JobSpec).GetId()] = *s
+func (p *Pipeline) Status() ([][]byte, error) {	
+	var node *PipelineJobStatus
+
+	q := queue.New()
+	for _, r := range p.RootJobs {
+		q.Enqueue(r)
 	}
-	
-	// TODO: run cleanup logic (toggle true/false in config)
-	return jobStatuses
+
+	for len(q) > 0 {
+		node = q.Dequeue()
+		for _, c := range node.GetChildren() {
+			q.Enqueue(c)
+		}
+
+		j, err := json.Marshal(r)
+		if err != nil {
+			return results, err
+		}
+
+		fmt.Printf("%s\n", string(j))
+		results = append(results, j)
+	}
+
+	return results, nil
 }
 
 func (p *Pipeline) Cleanup() error {
 	// TODO: BFS and run the job cleanup function for each job
+	// close channels?
 	return nil
 }

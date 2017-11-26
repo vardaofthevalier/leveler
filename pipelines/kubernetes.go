@@ -8,12 +8,12 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
-type NewJobFn func(*config.ServerConfig, *PipelineStep) (PipelineJob, error) 
+// type NewJobFn func(*config.ServerConfig, *PipelineStep) (PipelineJob, error) 
 
-type KubernetesPipelineJobInit struct {
-	Credentials []*ExternalDataProvider
-	Data []*ExternalDataProvider
-}
+// type KubernetesPipelineJobInit struct {
+// 	Credentials []*ExternalDataProvider
+// 	Data []*ExternalDataProvider
+// }
 
 type KubernetesPipelineJob struct {
 	Id string
@@ -23,7 +23,6 @@ type KubernetesPipelineJob struct {
 	Workdir string
 	Script string
 	Env *map[string]string
-	Init *KubernetesPipelineJobInit
 	VolumeSizeGi int
 	Parents []*PipelineJob
 	Children []*PipelineJob
@@ -238,7 +237,19 @@ func (j *KubernetesPipelineJob) Watch(statuses chan *PipelineJobStatus, wg *sync
 	_ = j.Cleanup()
 }
 
-func (j *KubernetesPipelineJob) Run() error { 
+func (j *KubernetesPipelineJob) Init() error {_
+	return nil
+}
+
+func (j *KubernetesPipelineJob) SyncInputs(ctx context.Context) error {
+	return nil 
+}
+
+func (j *KubernetesPipelineJob) SyncOutputs(ctx context.Context) error {
+	return nil
+}
+
+func (j *KubernetesPipelineJob) Run(ctx context.Context) error { 
 	// parameterize job pod, config and storage templates
 	// create job storage
 	// create job configuration

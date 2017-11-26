@@ -1,29 +1,30 @@
 package pipelines
 
 import (
-	"fmt"
+	//"fmt"
+	"context"
 )
 
 type ExternalData interface {
-	Sync() error
+	Sync(context.Context) error
 }
 
-func (data *S3Data) Sync() error {
-
+func (data *S3Data) Sync(ctx context.Context) error {
+	return nil
 }
 
-func (data *NexusData) Sync() error {
-
+func (data *NexusData) Sync(ctx context.Context) error {
+	return nil
 }
 
-func (data *SCMData) Sync() error {
-
+func (data *SCMData) Sync(ctx context.Context) error {
+	return nil
 }
 
-func (data *LocalData) Sync() error {
-
+func (data *LocalData) Sync(ctx context.Context) error {
+	return nil
 }
 
-func (data *StreamData) Sync() error {
-	
+func (data *StreamData) Sync(ctx context.Context) error {
+	return nil	
 }

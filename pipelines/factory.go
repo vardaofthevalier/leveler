@@ -82,8 +82,5 @@ func NewBasicPipeline(serverConfig *config.ServerConfig, pipelineConfig *BasicPi
 	return p, nil
 }
 
-// DATASOURCE FACTORY
-
-
 
 

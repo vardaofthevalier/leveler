@@ -1,12 +1,12 @@
 package pipelines
 
 import (
+	"os"
 	"fmt"
 	"log"
 	"sync"
-	"bytes"
 	"context"
-	"os/exec"
+	//"os/exec"
 	"leveler/config"
 	uuid "github.com/satori/go.uuid"
 	docker "github.com/docker/docker/client"
@@ -17,19 +17,22 @@ import (
 )
 
 type DockerPipelineJob struct {
-	Id string
-	Name string
-	Workdir string
-	Script string
-	Env map[string]string
-	Volumes []volume.volumetypes.VolumesCreateBody
-	Parents []*PipelineJob
-	Children []*PipelineJob
-	DockerContext context.Context
-	DockerClient *docker.Client
-	ContainerId string
-	Config *PipelineStep
-	Color string  // for detecting cycles in the job graph -- not intended to be used within a job
+	Id string 									`json:"id" yaml:"id"`
+	Name string 								`json:"name" yaml:"name"`
+	Parents []*PipelineJob 						`json:"dependencies" yaml:"dependencies"`
+	Children []*PipelineJob 					`json:"dependents" yaml:"dependents"`
+	Inputs []*PipelineInput						`json:"inputs" yaml:"inputs"`
+	Outputs []*PipelineOutput 					`json:"outputs" yaml:"outputs"`
+	DockerContext context.Context 				`json:"-" yaml:"-"`
+	DockerClient *docker.Client  				`json:"-" yaml:"-"`
+	ContainerId string 							`json:"containerId" yaml:"containerId"`
+	Config *PipelineStep 						`json:"-" yaml:"-"`
+	Volumes []types.Volume 						`json:"volumes" yaml:"volumes"`
+	Notifications chan *PipelineJobStatus 		`json:"-" yaml:"-"`
+	Process *os.Process 						`json:"-" yaml:"-"`
+	Logger *log.Logger 							`json:"-" yaml:"-"`
+	Status *PipelineJobStatus 					`json:"status" yaml:"status"`
+	Color string  								`json:"-" yaml:"-"`
 }
 
 func NewDockerPipelineJob(serverConfig *config.ServerConfig, jobConfig *PipelineStep) (DockerPipelineJob, error) {
@@ -45,21 +48,9 @@ func NewDockerPipelineJob(serverConfig *config.ServerConfig, jobConfig *Pipeline
 		return k, err
 	}
 
-	// generate script
-	var script string // TODO
-
-	// generate env map
-	var env map[string]string  // TODO
-
-	// create volume requests
-	var volumes []volume.volumetypes.VolumesCreateBody  // TODO: should include a volume for the script to run
-	
-	k := DockerPipelineJob{
+	k = DockerPipelineJob{
 		Id: uuid.NewV4().String(),
 		Name: jobConfig.Name,
-		Script: script,
-		Env: env,
-		Volumes: volumes,
 		DockerClient: client,
 		DockerContext: context.Background(),
 		Config: jobConfig,
@@ -101,97 +92,144 @@ func (j *DockerPipelineJob) AddParent(parent *PipelineJob) {
 	j.Parents = append(j.Parents, parent)
 }
 
-func (j *DockerPipelineJob) Watch(statuses chan *PipelineJobStatus, wg *sync.WaitGroup) {
-	defer wg.Done()
-	var jobStatus = &PipelineJobStatus{
-		Config: j.Config,
-	}
-	// wait for the container -- TODO: apply a timeout to the context
-	status, err := j.DockerClient.ContainerWait(j.DockerContext, j.ContainerId, container.WaitConditionNextExit)
+func (j *DockerPipelineJob) Init() error {
+	// generate script
+	var script string // TODO
 
-	if err != nil {
-		jobStatus.Status = status.StatusCode
-		jobStatus.Message = status.Error
-		statuses <- jobStatus
-		wg.Done()
-	}
-
-	jobStatus.Status = status.StatusCode
-
-	// get logs for the container
-	logsOptions := types.ContainerLogsOptions{
-		ShowStdout: true,
-		ShowStderr: true,
-		Timestamps: true,
-		Details: true,
-	}
-
-	logs, error := j.DockerClient.ContainerLogs(j.DockerContext, j.ContainerId, logsOptions)
-	if err != nil {
-		jobStatus.Message = fmt.Sprintf("WARNING: couldn't get logs for job: %v", err)
-	} else {
-		buf := new(bytes.Buffer)
-	    buf.ReadFrom(logs)
-		jobStatus.Message = buf.String()
-	}
-
-	// put status on the channel
-	statuses <- jobStatus
-}
-
-func (j *DockerPipelineJob) Run(quit chan *PipelineJobStatus) { 
-	var errorResponse *PipelineJobStatus
-	var quitPipeline = func(err error) {
-		errorResponse.Status = err.StatusCode
-		errorResponse.Message = err.Error
-		quit <- errorResponse
-		return
-	}
-
-	// create new volumes for outputs
-	var volumes []types.Volume
-	for _, v := range j.Volumes {
-		newVolume, err := j.DockerClient.VolumeCreate(j.DockerContext, v)
-		if err != nil {
-			quitPipeline(err)
-		}
-
-		volumes = append(volumes, newVolumes)
-	}
-
-	// TODO: sync data to volumes using info from PipelineData and Integrations
-	// The integration name should map to a type of PipelineData and we should provide standard images for using those integrations 
-	// The name of the pipeline data should map to input and output names
-	// if errors occur, quitPipeline
-
-
-	// start docker container using info in j and volume info
+	// generate env map
+	var env map[string]string  // TODO
+	
+	// create configuration
 	containerConfig := &container.Config{
-		Env:
-		Cmd:
-		Image:
-		Volumes:
-		WorkingDir:
+		// TODO:
+		// Env:
+		// Cmd:
+		// Image:
+		// Volumes:
+		// WorkingDir:
 	}
 
 	hostConfig := &container.HostConfig{
-
+		// TODO
 	}
 
 	networkConfig := &network.NetworkConfig{
-
+		// TODO
 	}
 
 	c, err := j.DockerClient.ContainerCreate(j.DockerContext, containerConfig, hostConfig, networkConfig, fmt.Sprintf("%s-%s", j.Name, j.Id))
 	if err != nil {
-		quitPipeline(err)
+		return err
 	}
 
 	j.ContainerId = c.ID
+}
+
+func (j *DockerPipelineJob) SyncInputs() error {
+	// TODO: create new volumes for new inputs and attach integration containers to volumes to perform download
+	var volumes []types.Volume
+	var volumeCreate volume.VolumesCreateBody
+	for _, v := range j.Volumes {
+		newVolume, err := j.DockerClient.VolumeCreate(j.DockerContext, v)
+		if err != nil {
+			return err
+		}
+
+		volumes = append(volumes, newVolumes)
+	}
+}
+
+func (j *DockerPipelineJob) SyncOutputs() error {
+	// TODO: attach integration containers to output volumes to perform upload
+
+	return nil
+}
+
+func (j *DockerPipelineJob) Run(ctx context.Context) { 
+	var quit= func() {
+		j.Status.Status = FAILED
+		j.Logger.Println(j.Status.Message)
+		j.Notifications <- j.Status
+		return
+	}
+
+	err = j.SyncInputs(ctx)
+	if err != nil {
+		j.Status.Message = fmt.Sprintf("[runner] Error syncing inputs: %v", err)
+		quit()
+	}
+
+	err := j.Init()
+	if err != nil {
+		j.Status.Message = fmt.Sprintf("[runner] Error initializing job: %v", err)
+		quit()
+	}
 
 	err = j.DockerClient.ContainerStart(j.DockerContext, j.ContainerId, &types.ContainerStartOptions{})
 
 	if err != nil {
-		quitPipeline(err)
+		j.Status.Message = fmt.Sprintf("[runner] Error starting container: %v", err)
+		quit()
 	}
+
+	// TODO: apply timeout?
+	resultC, errC := j.DockerClient.ContainerWait(j.DockerContext, j.ContainerId, container.WaitConditionNextExit)
+	j.Status.Status = RUNNING
+
+	for {
+		select {
+        case errC <- err:
+        	result := <-resultC
+			j.Status.Status = FAILED
+			j.Status.Message = fmt.Sprintf("[runner] Job failed: %v", result.Error.Message)
+			break
+        case resultC <- result:
+        	j.Status.Status = SUCCEEDED
+        	j.Status.Message = "[runner] OK"
+        	break
+        case <-ctx.Done():
+			j.Status.Status = CANCELLED
+        	j.Status.Message = "[watcher] Job cancelled!"
+
+        	err := j.DockerClient.ContainerKill(j.DockerContext, j.ContainerId, "KILL")
+        	if err != nil {
+        		j.Status.Message += fmt.Sprintf(" Also couldn't kill the job's container: %v", err)
+        	}
+        	break
+		}
+	}
+
+	j.Logger.Println(j.Status.Message)
+	j.Notifications <- j.Status
+}
+
+func (j *DockerPipelineJob) Watch(report chan *PipelineJobStatus, wg *sync.WaitGroup) {
+	defer wg.Done()
+	defer close(j.Notifications)
+
+	// watch for the job to complete
+	var status *PipelineJobStatus
+	for {
+        select {
+        case j.Notifications <- n:
+        	report <- n
+        	return
+        }
+    }
+}
+
+func (j *DockerPipelineJob) Cleanup() error {
+	// TODO: decide when this will run and how volumes and links should be treated
+	removeOpts := &types.ContainerRemoveOptions{
+        		RemoveVolumes: false,
+        		RemoveLinks: false,
+        		Force: false,
+        	}
+
+   	err := j.DockerClient.ContainerRemove(j.DockerContext, j.ContainerId, removeOpts)
+   	if err != nil {
+   		return err
+   	}
+
+	return nil 
 }

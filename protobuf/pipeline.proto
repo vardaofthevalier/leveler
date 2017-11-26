@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package pipelines;
 
-import "data.proto"
+import "data.proto";
 import "integration.proto";
 
 message PipelineInput {
