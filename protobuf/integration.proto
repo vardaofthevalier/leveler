@@ -10,6 +10,8 @@ message Integration {
 		AWSConfig aws = 4;
 		NexusConfig nexus = 5;
 		SlackConfig slack = 6;
+		LocalConfig local = 7;
+		StreamConfig stream = 8;
 	}
 }
 
@@ -37,3 +39,7 @@ message NexusConfig {
 message SlackConfig {
 	string stuff = 1;
 }	
+
+message LocalConfig {
+	
+}

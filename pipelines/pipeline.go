@@ -31,13 +31,14 @@ type PipelineJob interface {
 	GetChildren() []*PipelineJob
 	GetParents() []*PipelineJob
 	GetConfig() *PipelineStep
+	GetStatus() *PipelineJobStatus
 	AddChild(*PipelineJob)
 	AddParent(*PipelineJob)
 	Init() error
 	SyncInputs(context.Context) error 
 	SyncOutputs(context.Context) error
 	Run(context.Context)
-	Watch(chan *PipelineJobStatus, *sync.WaitGroup)
+	Watch(*sync.WaitGroup)
 	Cleanup() error
 }
 
@@ -82,68 +83,59 @@ func (p *Pipeline) Run(ctx context.Context, cancel context.CancelFunc) {
 
 	// IDEA: to make this work in a distributed system, use central message queues instead of channels
 	scheduler := make(chan *PipelineJob)
-	defer close(scheduler)
-
-	var parentStatuses chan *PipelineJobStatus
-
-	var leafStatuses = make(chan *PipelineJobStatus)
-	defer close(leafStatuses)
 
 	var leaves sync.WaitGroup
-	defer leaves.Done()
 	
 	go func() {
-		for _, j := range p.RootJobs {
-			fmt.Printf("Scheduling job: %+v\n", j)
-			scheduler <- j
+		q := []*PipelineJob{}
+
+		for _, r := range p.RootJobs {
+			q = append(q, r)
 		}
+
+		for len(q) > 0 {
+			current := q[0]
+			q = q[1:]
+
+			fmt.Printf("Scheduling job: Id=%+v, Name=%v\n", (*current).GetId(), (*current).GetName())
+			scheduler <- current
+			for _, c := range (*current).GetChildren() {
+				q = append(q, c)
+			}
+		}
+
+		close(scheduler)
 	}()
 
-	for {
-		select {
-		case j := <-scheduler:
-			fmt.Printf("Received job: %+v\n", j)
-			go func() {
-				if len((*j).GetParents()) > 0 {
-					var pg sync.WaitGroup
-					pg.Add(len((*j).GetParents()))
-
-					parentStatuses = make(chan *PipelineJobStatus)
-					for _, p := range (*j).GetParents() {
-						go (*p).Watch(parentStatuses, &pg)
-					}
-			
-					pg.Wait()
-
-					var parentFailures []int64
-					for s := range parentStatuses {
-						if s.Status != SUCCEEDED {
-							parentFailures = append(parentFailures, s.Status)
-						}
-					}
-
-					close(parentStatuses)
-
-					if len(parentFailures) > 0 {
-						cancel()
-					}
-				}
-
-				go (*j).Run(ctx)
-
-				if len((*j).GetChildren()) > 0 {
-					for _, c := range (*j).GetChildren() {
-						scheduler <- c
-					}
-				} else {
-					leaves.Add(1)
-					go (*j).Watch(leafStatuses, &leaves)
-				}
-			}()
-		case <-ctx.Done():
-			fmt.Println("Cancelled!")
-			break
+	for j := range scheduler {
+		if len((*j).GetChildren()) == 0 {
+			leaves.Add(1)
+			go (*j).Watch(&leaves)
 		}
+		
+		go func() {
+			fmt.Println("made it")
+			if len((*j).GetParents()) > 0 {
+				var pg sync.WaitGroup
+				pg.Add(len((*j).GetParents()))
+
+				for _, p := range (*j).GetParents() {
+					go (*p).Watch(&pg)
+				}
+		
+				pg.Wait()
+
+				for _, p := range (*j).GetParents() {
+					if (*p).GetStatus().Status != SUCCEEDED {
+						cancel()
+						return
+					}
+				}
+			}
+
+			fmt.Println("heyooo")
+			go (*j).Run(ctx)
+		}()
 	}
 
 	leaves.Wait()

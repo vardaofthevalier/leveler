@@ -4,13 +4,13 @@ import (
 	"os"
 	"fmt"
 	"log"
-	"time"
 	"sync"
 	"errors"
 	"context"
 	"os/exec"
 	"path/filepath"
 	"leveler/config"
+	"leveler/util"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -58,6 +58,8 @@ func NewLocalPipelineJob(serverConfig *config.ServerConfig, jobName string, jobC
 		Config: jobConfig,
 		Inputs: inputs,
 		Outputs: outputs,
+		Children: []*PipelineJob{},
+		Parents: []*PipelineJob{},
 		Command: jobConfig.Command,
 		Datadir: filepath.Join(serverConfig.Datadir, "pipelines/jobs", jobId),
 		Notifications: make(chan *PipelineJobStatus),
@@ -96,6 +98,10 @@ func (j *LocalPipelineJob) GetConfig() *PipelineStep {
 	return j.Config
 }
 
+func (j *LocalPipelineJob) GetStatus() *PipelineJobStatus {
+	return j.Status
+}
+
 func (j *LocalPipelineJob) AddChild(child *PipelineJob) {
 	j.Children = append(j.Children, child)
 }
@@ -123,11 +129,11 @@ func (j *LocalPipelineJob) Init() error {
 }
 
 func (j *LocalPipelineJob) SyncInputs(ctx context.Context) error {
-	(*j.Logger).Println("[init] Syncing inputs...")
+	(*j.Logger).Println("[data] Syncing inputs...")
 	done := make(chan *SyncStatus)
 
-	for name, config := range j.Inputs {
-		go func() {
+	go func() {
+		for name, config := range j.Inputs {
 			status := &SyncStatus{
 				Name: name,
 			}
@@ -139,6 +145,15 @@ func (j *LocalPipelineJob) SyncInputs(ctx context.Context) error {
 					status.Status = FAILED 
 					status.Message = fmt.Sprintf("Couldn't create symlink: %v", err)
 					done <- status
+					return
+				}
+			} else if config.Integration == "local" {
+				err := util.CopyFile(config.From, filepath.Join(j.Datadir, name))
+				if err != nil {
+					status.Status = FAILED 
+					status.Message = fmt.Sprintf("Couldn't copy local input file: %v", err)
+					done <- status
+					return
 				}
 			} else {
 				// download the input using the integration data
@@ -149,8 +164,12 @@ func (j *LocalPipelineJob) SyncInputs(ctx context.Context) error {
 				// 	done <- status
 				// }
 			}
-		}()
-	}
+
+			status.Status = SUCCEEDED
+			done <- status
+		}
+		close(done)
+	}()
 
 	for s := range done {
 		if s.Status == FAILED {
@@ -165,13 +184,21 @@ func (j *LocalPipelineJob) SyncOutputs(ctx context.Context) error {
 	(*j.Logger).Println("[data] Syncing outputs...")
 	done := make(chan *SyncStatus)
 
-	for name, config := range j.Outputs {
-		go func() {
+	go func() {
+		for name, config := range j.Outputs {
 			status := &SyncStatus{
 				Name: name,
 			}
 
-			if len(config.Integration) != 0 {
+			if config.Integration == "local" {
+				err := util.CopyFile(filepath.Join(j.Datadir, name), config.To)
+				if err != nil {
+					status.Status = FAILED 
+					status.Message = fmt.Sprintf("Couldn't copy local output file: %v", err)
+					done <- status
+					return
+				}
+			} else if len(config.Integration) != 0 {
 				// upload the output using the integration data
 				// err := i.GetExternal().Sync(ctx)
 				// if err != nil {
@@ -179,13 +206,14 @@ func (j *LocalPipelineJob) SyncOutputs(ctx context.Context) error {
 				// 	status.Message = fmt.Sprintf("Couldn't sync external data: %v", err)
 				// 	done <- status
 				// }
-			} else {
-				status.Status = SUCCEEDED
-				status.Message = fmt.Sprintf("No integration specified... nothing to do!")
-				done <- status
-			}
-		}()
-	}
+			} 
+			status.Status = SUCCEEDED
+			status.Message = fmt.Sprintf("No integration specified... nothing to do!")
+			done <- status
+			
+		}
+		close(done)
+	}()
 
 	for s := range done {
 		if s.Status == FAILED {
@@ -197,12 +225,14 @@ func (j *LocalPipelineJob) SyncOutputs(ctx context.Context) error {
 }
 
 func (j *LocalPipelineJob) Run(ctx context.Context) { 
+	defer close(j.Notifications)
 	var quit = func() {
 		(*j.Status).Status = FAILED
 		if j.Logger != nil {
 			(*j.Logger).Println((*j.Status).Message)
 		}
 		j.Notifications <- j.Status
+		close(j.Notifications)
 		return 
 	}
 
@@ -220,14 +250,14 @@ func (j *LocalPipelineJob) Run(ctx context.Context) {
 		quit()
 	}
 
-
-	proc := exec.Command("bash", "-c", j.Command)
+	proc := exec.Command("/bin/bash", "-c", j.Command)
 	err = proc.Start()
 	if err != nil {
 		(*j.Status).Message = fmt.Sprintf("[runner] Error executing command: %v", err)
 		quit()
 	}
 
+	(*j.Logger).Println("[runner] Job started!")
 	(*j.Status).Status = RUNNING
 
 	waiter := make(chan *ProcessStatus)
@@ -239,6 +269,7 @@ func (j *LocalPipelineJob) Run(ctx context.Context) {
 		}
 
 		waiter <- status
+		close(waiter)
 	}()
 
 	for {
@@ -253,6 +284,7 @@ func (j *LocalPipelineJob) Run(ctx context.Context) {
 
         	j.Logger.Println((*j.Status).Message)
         	j.Notifications <- j.Status
+        	close(j.Notifications)
         	return
         case status := <-waiter:
         	if status.State.Exited() {
@@ -263,14 +295,13 @@ func (j *LocalPipelineJob) Run(ctx context.Context) {
         			break
         		} else {
         			(*j.Status).Status = FAILED
-        			(*j.Status).Message = fmt.Sprintf("[runner] Job failed: %v", status.Error)
+        			(*j.Status).Message = fmt.Sprintf("[runner] Job failed: status=%+v, error=%v", status.State, status.Error)
         			j.Logger.Println((*j.Status).Message)
         			j.Notifications <- j.Status
-        			return
+        			quit()
         		}
         	}
 		}
-		time.Sleep(time.Duration(1)*time.Second)
 	}
 
 	err = j.SyncOutputs(ctx)
@@ -284,15 +315,14 @@ func (j *LocalPipelineJob) Run(ctx context.Context) {
 	j.Notifications <- j.Status
 }
 
-func (j *LocalPipelineJob) Watch(report chan *PipelineJobStatus, wg *sync.WaitGroup) {
+func (j *LocalPipelineJob) Watch(wg *sync.WaitGroup) {
 	defer wg.Done()
-	defer close(j.Notifications)
 
 	// watch for the job to complete
 	for {
         select {
-        case n:= <-j.Notifications:
-        	report <- n
+        case <-j.Notifications:
+        	fmt.Println("watch")
         	return
         }
     }
