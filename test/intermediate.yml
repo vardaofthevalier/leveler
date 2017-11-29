@@ -1,0 +1,19 @@
+integrations:
+  my_bitbucket:
+
+inputs:
+  go_project:
+    integration: my_bitbucket
+    from: https://bitbucket.org/level11consulting/leveler.git
+outputs:
+  go_build.out:
+    from: go_build
+steps:
+  - name: foo1
+    workdir: ./go_project/test
+    command: |
+      go build
+    inputs:
+      - go_project
+    outputs:
+      - go_build.out

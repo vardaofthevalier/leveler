@@ -1,0 +1,17 @@
+inputs:
+  foo1.inp:
+    integration: local
+    from: /home/abby/testfile
+outputs:
+  foo1.out:
+    integration: local
+    to: /home/abby/foo1.out
+steps:
+  foo1:
+    workdir: .
+    command: |
+      cat foo1.inp > foo1.out && echo "hello from foo1!" >> foo1.out 
+    inputs:
+      - foo1.inp
+    outputs:
+      - foo1.out

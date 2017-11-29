@@ -12,145 +12,54 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
-type S3Data struct {
-	Src  string `protobuf:"bytes,1,opt,name=src" json:"src,omitempty"`
-	Dest string `protobuf:"bytes,2,opt,name=dest" json:"dest,omitempty"`
+type DataIntegration int32
+
+const (
+	DataIntegration_s3        DataIntegration = 0
+	DataIntegration_nexus     DataIntegration = 1
+	DataIntegration_bitbucket DataIntegration = 2
+	DataIntegration_github    DataIntegration = 3
+	DataIntegration_local     DataIntegration = 4
+	DataIntegration_stream    DataIntegration = 5
+)
+
+var DataIntegration_name = map[int32]string{
+	0: "s3",
+	1: "nexus",
+	2: "bitbucket",
+	3: "github",
+	4: "local",
+	5: "stream",
+}
+var DataIntegration_value = map[string]int32{
+	"s3":        0,
+	"nexus":     1,
+	"bitbucket": 2,
+	"github":    3,
+	"local":     4,
+	"stream":    5,
 }
 
-func (m *S3Data) Reset()                    { *m = S3Data{} }
-func (m *S3Data) String() string            { return proto.CompactTextString(m) }
-func (*S3Data) ProtoMessage()               {}
-func (*S3Data) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{0} }
-
-func (m *S3Data) GetSrc() string {
-	if m != nil {
-		return m.Src
-	}
-	return ""
+func (x DataIntegration) String() string {
+	return proto.EnumName(DataIntegration_name, int32(x))
 }
-
-func (m *S3Data) GetDest() string {
-	if m != nil {
-		return m.Dest
-	}
-	return ""
-}
-
-type NexusData struct {
-	Src  string `protobuf:"bytes,1,opt,name=src" json:"src,omitempty"`
-	Dest string `protobuf:"bytes,2,opt,name=dest" json:"dest,omitempty"`
-}
-
-func (m *NexusData) Reset()                    { *m = NexusData{} }
-func (m *NexusData) String() string            { return proto.CompactTextString(m) }
-func (*NexusData) ProtoMessage()               {}
-func (*NexusData) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{1} }
-
-func (m *NexusData) GetSrc() string {
-	if m != nil {
-		return m.Src
-	}
-	return ""
-}
-
-func (m *NexusData) GetDest() string {
-	if m != nil {
-		return m.Dest
-	}
-	return ""
-}
-
-type SCMData struct {
-	Src  string `protobuf:"bytes,1,opt,name=src" json:"src,omitempty"`
-	Dest string `protobuf:"bytes,2,opt,name=dest" json:"dest,omitempty"`
-}
-
-func (m *SCMData) Reset()                    { *m = SCMData{} }
-func (m *SCMData) String() string            { return proto.CompactTextString(m) }
-func (*SCMData) ProtoMessage()               {}
-func (*SCMData) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{2} }
-
-func (m *SCMData) GetSrc() string {
-	if m != nil {
-		return m.Src
-	}
-	return ""
-}
-
-func (m *SCMData) GetDest() string {
-	if m != nil {
-		return m.Dest
-	}
-	return ""
-}
-
-type LocalData struct {
-	Src  string `protobuf:"bytes,1,opt,name=src" json:"src,omitempty"`
-	Dest string `protobuf:"bytes,2,opt,name=dest" json:"dest,omitempty"`
-}
-
-func (m *LocalData) Reset()                    { *m = LocalData{} }
-func (m *LocalData) String() string            { return proto.CompactTextString(m) }
-func (*LocalData) ProtoMessage()               {}
-func (*LocalData) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{3} }
-
-func (m *LocalData) GetSrc() string {
-	if m != nil {
-		return m.Src
-	}
-	return ""
-}
-
-func (m *LocalData) GetDest() string {
-	if m != nil {
-		return m.Dest
-	}
-	return ""
-}
-
-type StreamData struct {
-	Src  string `protobuf:"bytes,1,opt,name=src" json:"src,omitempty"`
-	Dest string `protobuf:"bytes,2,opt,name=dest" json:"dest,omitempty"`
-}
-
-func (m *StreamData) Reset()                    { *m = StreamData{} }
-func (m *StreamData) String() string            { return proto.CompactTextString(m) }
-func (*StreamData) ProtoMessage()               {}
-func (*StreamData) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{4} }
-
-func (m *StreamData) GetSrc() string {
-	if m != nil {
-		return m.Src
-	}
-	return ""
-}
-
-func (m *StreamData) GetDest() string {
-	if m != nil {
-		return m.Dest
-	}
-	return ""
-}
+func (DataIntegration) EnumDescriptor() ([]byte, []int) { return fileDescriptor2, []int{0} }
 
 func init() {
-	proto.RegisterType((*S3Data)(nil), "pipelines.S3Data")
-	proto.RegisterType((*NexusData)(nil), "pipelines.NexusData")
-	proto.RegisterType((*SCMData)(nil), "pipelines.SCMData")
-	proto.RegisterType((*LocalData)(nil), "pipelines.LocalData")
-	proto.RegisterType((*StreamData)(nil), "pipelines.StreamData")
+	proto.RegisterEnum("pipelines.DataIntegration", DataIntegration_name, DataIntegration_value)
 }
 
 func init() { proto.RegisterFile("data.proto", fileDescriptor2) }
 
 var fileDescriptor2 = []byte{
-	// 130 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x4a, 0x49, 0x2c, 0x49,
-	0xd4, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0xe2, 0x2c, 0xc8, 0x2c, 0x48, 0xcd, 0xc9, 0xcc, 0x4b,
-	0x2d, 0x56, 0xd2, 0xe3, 0x62, 0x0b, 0x36, 0x76, 0x49, 0x2c, 0x49, 0x14, 0x12, 0xe0, 0x62, 0x2e,
-	0x2e, 0x4a, 0x96, 0x60, 0x54, 0x60, 0xd4, 0xe0, 0x0c, 0x02, 0x31, 0x85, 0x84, 0xb8, 0x58, 0x52,
-	0x52, 0x8b, 0x4b, 0x24, 0x98, 0xc0, 0x42, 0x60, 0xb6, 0x92, 0x21, 0x17, 0xa7, 0x5f, 0x6a, 0x45,
-	0x69, 0x31, 0x09, 0x5a, 0xf4, 0xb9, 0xd8, 0x83, 0x9d, 0x7d, 0x49, 0xb3, 0xc3, 0x27, 0x3f, 0x39,
-	0x31, 0x87, 0x04, 0x2d, 0x46, 0x5c, 0x5c, 0xc1, 0x25, 0x45, 0xa9, 0x89, 0xb9, 0xc4, 0xeb, 0x49,
-	0x62, 0x03, 0x07, 0x86, 0x31, 0x20, 0x00, 0x00, 0xff, 0xff, 0x22, 0x29, 0xd5, 0x8e, 0x1a, 0x01,
-	0x00, 0x00,
+	// 132 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x1c, 0xcd, 0x41, 0x0a, 0x02, 0x31,
+	0x0c, 0x40, 0x51, 0x1d, 0x9d, 0x42, 0x03, 0x62, 0xc8, 0x31, 0x5c, 0xb8, 0x99, 0x2b, 0xb8, 0xf1,
+	0x02, 0xee, 0xd3, 0x31, 0x8c, 0xc1, 0xda, 0x96, 0x36, 0x05, 0x8f, 0x2f, 0x75, 0xfb, 0xf9, 0xf0,
+	0x00, 0x9e, 0x6c, 0x7c, 0x2d, 0x35, 0x5b, 0x26, 0x5f, 0xb4, 0x48, 0xd4, 0x24, 0xed, 0xf2, 0x80,
+	0xf3, 0x8d, 0x8d, 0xef, 0xc9, 0x64, 0xab, 0x6c, 0x9a, 0x13, 0x39, 0x98, 0xda, 0x82, 0x3b, 0xf2,
+	0x30, 0x27, 0xf9, 0xf6, 0x86, 0x7b, 0x3a, 0x81, 0x0f, 0x6a, 0xa1, 0xaf, 0x6f, 0x31, 0x9c, 0x08,
+	0xc0, 0x6d, 0x6a, 0xaf, 0x1e, 0xf0, 0x30, 0xae, 0x98, 0x57, 0x8e, 0x78, 0x1c, 0xb9, 0x59, 0x15,
+	0xfe, 0xe0, 0x1c, 0xdc, 0x5f, 0x5a, 0x7e, 0x01, 0x00, 0x00, 0xff, 0xff, 0x3b, 0x8d, 0x3a, 0x91,
+	0x77, 0x00, 0x00, 0x00,
 }

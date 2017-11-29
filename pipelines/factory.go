@@ -13,37 +13,49 @@ func createJobsMap(serverConfig *config.ServerConfig, pipelineConfig *BasicPipel
 	var allJobs = make(map[string]PipelineJob)
 
 	// process jobs into a map for O(1) lookup later on, and also to verify that no duplicate names are found
-	for _, s := range pipelineConfig.Steps {
-		if _, ok := allJobs[s.Name]; ok {
+	for name, s := range pipelineConfig.Steps {
+		inputs := make(map[string]*PipelineInput)
+		for _, inp := range s.Inputs {
+			inputs[inp] = pipelineConfig.Inputs[inp]
+		}
+
+		outputs := make(map[string]*PipelineOutput)
+		for _, out := range s.Outputs {
+			outputs[out] = pipelineConfig.Outputs[out]
+		}
+
+		if _, ok := allJobs[name]; ok {
 			return allJobs, p, errors.New("Duplicate job names found in pipeline!")
 		} else {
 			switch serverConfig.Platform.Name {
-			case "kubernetes":
-				j, err := NewKubernetesPipelineJob(serverConfig, s)
-				if err != nil {
-					return allJobs, p, err
-				}
-				allJobs[s.Name] = &j
+			// case "kubernetes":
+			// 	j, err := NewKubernetesPipelineJob(serverConfig, name, s, inputs, outputs)
+			// 	if err != nil {
+			// 		return allJobs, p, err
+			// 	}
+			// 	allJobs[name] = &j
 
-			case "docker":
-				j, err := NewDockerPipelineJob(serverConfig, s)
-				if err != nil {
-					return allJobs, p, err
-				}
-				allJobs[s.Name] = &j
+			// case "docker":
+			// 	j, err := NewDockerPipelineJob(serverConfig, name, s, inputs, outputs)
+			// 	if err != nil {
+			// 		return allJobs, p, err
+			// 	}
+			// 	allJobs[name] = &j
 
 			case "local":
-				j, err := NewLocalPipelineJob(serverConfig, s)
+				j, err := NewLocalPipelineJob(serverConfig, name, s, inputs, outputs)
 				if err != nil {
-					allJobs[s.Name] = &j
+					return allJobs, p, err
 				}
+
+				allJobs[name] = &j
 
 			default:
 				return allJobs, p, errors.New(fmt.Sprintf("Unknown platform '%s'", serverConfig.Platform.Name))
 			}
 			
 			if len(s.DependsOn) == 0 {
-				ptr := allJobs[s.Name]
+				ptr := allJobs[name]
 				p.RootJobs = append(p.RootJobs, &ptr)
 			}
 		}
@@ -61,10 +73,16 @@ func NewBasicPipeline(serverConfig *config.ServerConfig, pipelineConfig *BasicPi
 	if err != nil {
 		return p, err
 	}
-
-	for _, s := range pipelineConfig.Steps {
-		child := allJobs[s.Name]
-		for _, d := range s.DependsOn {
+ 
+	for name, s := range pipelineConfig.Steps {
+		child := allJobs[name]
+		var dependencies []string
+		for _, i := range s.Inputs {
+			if info, ok := pipelineConfig.Outputs[i]; ok {
+				dependencies = append(dependencies, info.From)
+			}
+		}
+		for _, d := range dependencies {
 			parent := allJobs[d]
 			if parent.GetName() == child.GetName() {
 				return p, errors.New(fmt.Sprintf("Job '%s' contains a self loop!", child.GetName()))

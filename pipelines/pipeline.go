@@ -1,8 +1,9 @@
 package pipelines
 
 import (
-	// "fmt"
+	"fmt"
 	"sync"
+	"errors"
 	"context"
 	"encoding/json"
 	"github.com/golang-collections/collections/stack"
@@ -10,7 +11,8 @@ import (
 )
 
 const (
-	RUNNING = iota;
+	INITIALIZING = iota;
+	RUNNING
 	SUCCEEDED
 	FAILED
 	CANCELLED
@@ -28,12 +30,13 @@ type PipelineJob interface {
 	GetColor() string
 	GetChildren() []*PipelineJob
 	GetParents() []*PipelineJob
+	GetConfig() *PipelineStep
 	AddChild(*PipelineJob)
 	AddParent(*PipelineJob)
 	Init() error
-	SyncInputs() error 
-	SyncOutputs() error
-	Run(chan *PipelineJobStatus) error 
+	SyncInputs(context.Context) error 
+	SyncOutputs(context.Context) error
+	Run(context.Context)
 	Watch(chan *PipelineJobStatus, *sync.WaitGroup)
 	Cleanup() error
 }
@@ -73,7 +76,7 @@ func (p *Pipeline) hasCycle() bool {
 	return false
 }
 
-func (p *Pipeline) Run(ctx context.Context, cancel context.CancelFunc) map[string]PipelineJobStatus {
+func (p *Pipeline) Run(ctx context.Context, cancel context.CancelFunc) {
 	// IDEA:  ctx will be a context.Context (created using WithCancel method) stored in a map, which can be accessed by ID in order to cancel a pipeline from the server API
 	defer cancel()
 
@@ -89,14 +92,17 @@ func (p *Pipeline) Run(ctx context.Context, cancel context.CancelFunc) map[strin
 	var leaves sync.WaitGroup
 	defer leaves.Done()
 	
-	for _, j := range p.RootJobs {
-		scheduler <- j
-	}
+	go func() {
+		for _, j := range p.RootJobs {
+			fmt.Printf("Scheduling job: %+v\n", j)
+			scheduler <- j
+		}
+	}()
 
-	var j *PipelineJob
 	for {
 		select {
-		case scheduler <- j:
+		case j := <-scheduler:
+			fmt.Printf("Received job: %+v\n", j)
 			go func() {
 				if len((*j).GetParents()) > 0 {
 					var pg sync.WaitGroup
@@ -104,37 +110,38 @@ func (p *Pipeline) Run(ctx context.Context, cancel context.CancelFunc) map[strin
 
 					parentStatuses = make(chan *PipelineJobStatus)
 					for _, p := range (*j).GetParents() {
-						go (*p).Watch(ctx, parentStatuses, &pg)
+						go (*p).Watch(parentStatuses, &pg)
 					}
-
+			
 					pg.Wait()
-				}
 
-				var parentFailures []int64
-				for s := range parentStatuses {
-					if s.Status != SUCCEEDED {
-						parentFailures = append(parentFailures, s.Status)
-					}
-				}
-
-				close(parentStatuses)
-
-				if len(parentFailures) > 0 {
-					cancel()
-				} else {
-					go (*j).Run(ctx)
-
-					if len((*j).GetChildren()) > 0 {
-						for _, c := range (*j).GetChildren() {
-							scheduler <- c
+					var parentFailures []int64
+					for s := range parentStatuses {
+						if s.Status != SUCCEEDED {
+							parentFailures = append(parentFailures, s.Status)
 						}
-					} else {
-						leaves.Add(1)
-						go (*j).Watch(ctx, leafStatuses, &leaves)
 					}
+
+					close(parentStatuses)
+
+					if len(parentFailures) > 0 {
+						cancel()
+					}
+				}
+
+				go (*j).Run(ctx)
+
+				if len((*j).GetChildren()) > 0 {
+					for _, c := range (*j).GetChildren() {
+						scheduler <- c
+					}
+				} else {
+					leaves.Add(1)
+					go (*j).Watch(leafStatuses, &leaves)
 				}
 			}()
 		case <-ctx.Done():
+			fmt.Println("Cancelled!")
 			break
 		}
 	}
@@ -143,26 +150,33 @@ func (p *Pipeline) Run(ctx context.Context, cancel context.CancelFunc) map[strin
 }
 
 func (p *Pipeline) Status() ([][]byte, error) {	
-	var node *PipelineJobStatus
+	var results [][]byte
 
 	q := queue.New()
 	for _, r := range p.RootJobs {
 		q.Enqueue(r)
 	}
 
-	for len(q) > 0 {
-		node = q.Dequeue()
-		for _, c := range node.GetChildren() {
-			q.Enqueue(c)
-		}
+	for q.Len() > 0 {
+		node := q.Dequeue()
 
-		j, err := json.Marshal(r)
-		if err != nil {
-			return results, err
-		}
+		switch node.(type) {
+		case *PipelineJob:
+			for _, c := range node.(PipelineJob).GetChildren() {
+				q.Enqueue(c)
+			}
 
-		fmt.Printf("%s\n", string(j))
-		results = append(results, j)
+			j, err := json.Marshal(node)
+			if err != nil {
+				return results, err
+			}
+
+			fmt.Printf("%s\n", string(j))
+			results = append(results, j)
+		default:
+			return results, errors.New("Malformed pipeline job!") 
+		}
+		
 	}
 
 	return results, nil

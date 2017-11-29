@@ -2,27 +2,11 @@ syntax = "proto3";
 
 package pipelines;
 
-message S3Data {
-	string src = 1;
-	string dest = 2;
-}
-
-message NexusData {
-	string src = 1;
-	string dest = 2;
-}
-
-message SCMData {
-	string src = 1;
-	string dest = 2;
-}
-
-message LocalData {
-	string src= 1;
-	string dest = 2;
-}
-
-message StreamData {
-	string src = 1;
-	string dest = 2;
+enum DataIntegration {
+	s3 = 0;
+	nexus = 1;
+	bitbucket = 2;
+	github = 3;
+	local = 4;
+	stream = 5;
 }

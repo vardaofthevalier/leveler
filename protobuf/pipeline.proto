@@ -6,58 +6,30 @@ import "data.proto";
 import "integration.proto";
 
 message PipelineInput {
-	string name = 1;
-	oneof src {
-		PipelineData external = 2;
-		string pipelineJob = 3;
-	}
+	string from = 1;
+	string integration = 2;
 }
 
 message PipelineOutput {
-	string name = 1;
-	oneof dest {
-		PipelineData external = 2;
-		string pipelineJob = 3;
-	}
-}
-
-message PipelineData {
-	string name = 1;
-	bool isFile = 2;
-	bool isDirectory = 3;
-	bool shared = 4;
-	oneof datamap {
-		S3Data s3 = 5;
-		NexusData nexus = 6;
-		SCMData scm = 7;
-		LocalData local = 8;
-	}
+	string to = 1;
+	string from = 2;
+	string integration = 3;
 }
 
 message PipelineStep {
-	string name = 1;
-    string workdir = 2;
-    string command = 3;
-    string image = 4;
-    repeated PipelineInput inputs = 5;
-    repeated PipelineOutput outputs = 6;
-    int32 timeout = 8;
-    bool skip = 9;
-    repeated string dependsOn = 10;
+    string workdir = 1;
+    string command = 2;
+    string image = 3;
+    repeated string inputs = 4;
+    repeated string outputs = 5;
+    int32 timeout = 6;
+    bool skip = 7;
+    repeated string dependsOn = 8;
 }
 
 message BasicPipeline {
-	repeated Integration integrations = 1;
-	repeated PipelineData sharedData = 2;
-	repeated PipelineStep steps = 3;
-}
-
-message CicdPipeline {
-	repeated Integration integrations = 1;
-	repeated PipelineData sharedData = 2;
-	repeated PipelineStep quality = 3;
-	repeated PipelineStep build = 4;
-	repeated PipelineStep integration = 5;
-	repeated PipelineStep promote = 6;
+	map<string,PipelineInput> inputs = 1;
+	map<string,PipelineOutput> outputs = 2;
+	map<string,PipelineStep> steps = 3;
 }
 

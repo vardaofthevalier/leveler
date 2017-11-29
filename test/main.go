@@ -3,57 +3,48 @@ package main
 import (
 	"os"
 	"fmt"
+	"context"
+	"io/ioutil"
 	"leveler/config"
 	"leveler/pipelines"
+	"github.com/ghodss/yaml"
 )
 
 func main() {
 	serverConfig := &config.ServerConfig{
+		Datadir: "/home/abby/.leveler",
 		Platform: &config.ContainerPlatform{
-			Name: "kubernetes",
-			Host: "localhost",
-			Port: 8001,
-			Opts: &config.ContainerPlatform_KubernetesOptions{
-				KubernetesOptions: &config.KubernetesOptions{
-					Namespace: "jobs",
-				},
-			},
+			Name: "local",
+			// Host: "localhost",
+			// Port: 8001,
+			// Opts: &config.ContainerPlatform_KubernetesOptions{
+			// 	KubernetesOptions: &config.KubernetesOptions{
+			// 		Namespace: "jobs",
+			// 	},
+			// },
 		},
 	}
 
-	p1_1 := &pipelines.PipelineStep{
-		Name: "p1_1",
-		Workdir: "foo/bar",
-		Command: "ls -al",
-		Image: "ubuntu",
+	contents, err := ioutil.ReadFile("tiny.yml")
+	if err != nil {
+		fmt.Printf("%v\n", err)
+		os.Exit(1)
 	}
 
-	p1_2 := &pipelines.PipelineStep{
-		Name: "p1_2",
-		Workdir: "foo/bar",
-		Command: "ls -al",
-		Image: "ubuntu",
-		DependsOn: []string{"p1_1"},
-	}
+	pipelineConfig := &pipelines.BasicPipeline{}
+	err = yaml.Unmarshal(contents, pipelineConfig)
+	if err != nil {
+		fmt.Printf("%v\n", err)
+		os.Exit(1)
+	} 
 
-	p1_3 := &pipelines.PipelineStep{
-		Name: "p1_3",
-		Workdir: "foo/bar",
-		Command: "ls -al",
-		Image: "ubuntu",
-		DependsOn: []string{"p1_1", "p1_2"},
-	}
-
-	pipelineConfigNoCycle := &pipelines.BasicPipeline{
-		Steps: []*pipelines.PipelineStep{p1_1, p1_2, p1_3},
-	}
-
-	_, err := pipelines.NewBasicPipeline(serverConfig, pipelineConfigNoCycle)
+	p, err := pipelines.NewBasicPipeline(serverConfig, pipelineConfig)
 
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Println("All good in the neighborhood!")
+	context, cancel := context.WithCancel(context.Background())
+	p.Run(context, cancel)
 }
