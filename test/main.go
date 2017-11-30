@@ -3,7 +3,6 @@ package main
 import (
 	"os"
 	"fmt"
-	"context"
 	"io/ioutil"
 	"leveler/config"
 	"leveler/pipelines"
@@ -25,7 +24,7 @@ func main() {
 		},
 	}
 
-	contents, err := ioutil.ReadFile("tiny.yml")
+	contents, err := ioutil.ReadFile("advanced-2.yml")
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		os.Exit(1)
@@ -44,7 +43,8 @@ func main() {
 		fmt.Printf("%v\n", err)
 		os.Exit(1)
 	}
+	
+	p.Run(make(chan int8))
 
-	context, cancel := context.WithCancel(context.Background())
-	p.Run(context, cancel)
+	p.PrettyPrint()
 }

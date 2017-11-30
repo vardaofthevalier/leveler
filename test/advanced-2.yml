@@ -3,8 +3,11 @@ inputs:
     integration: local
     from: /home/abby/testfile1
   foo2.inp:
+    integration: local
+    from: /home/abby/testfile2
+  foo3.inp1:
     from: foo1.out
-  foo3.inp:
+  foo3.inp2:
     from: foo2.out
 outputs:
   foo1.out:
@@ -18,7 +21,7 @@ steps:
   foo1:
     workdir: .
     command: |
-      cat foo1.inp > foo1.out && echo "hello from foo1!" >> foo1.out 
+      ls > contents && pwd > wd && cat foo1.inp > foo1.out && echo "hello from foo1!" >> foo1.out 
     inputs:
       - foo1.inp
     outputs:
@@ -34,8 +37,9 @@ steps:
   foo3:
     workdir: .
     command: |
-      cat foo3.inp > foo3.out && echo "hello from foo3!" >> foo3.out
+      cat foo3.inp1 foo3.inp2 > foo3.out && echo "hello from foo3!" >> foo3.out
     inputs:
-      - foo3.inp
+      - foo3.inp1
+      - foo3.inp2
     outputs:
       - foo3.out

@@ -41,5 +41,9 @@ message SlackConfig {
 }	
 
 message LocalConfig {
-	
+	string stuff = 1;
+}
+
+message StreamConfig {
+	string stuff = 1;
 }

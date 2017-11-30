@@ -1,36 +1,40 @@
 package pipelines
 
 import (
+	"io"
 	"os"
 	"fmt"
 	"log"
 	"sync"
 	"errors"
-	"context"
+	"strings"
 	"os/exec"
+	"io/ioutil"
+	"encoding/json"
 	"path/filepath"
 	"leveler/config"
-	"leveler/util"
 	uuid "github.com/satori/go.uuid"
 )
 
 type LocalPipelineJob struct {
-	Id string 								`json:"id" yaml:"id"`
-	Name string 							`json:"name" yaml:"name"`
-	Datadir string 							`json:"data_directory" yaml:"data_directory"`
-	Workdir string 							`json:"working_directory" yaml:"working_directory"`
-	Command string 							`json:"command" yaml:"command"`
-	Env map[string]string 					`json:"env" yaml:"env"`
-	Inputs map[string]*PipelineInput		`json:"inputs" yaml:"inputs"`
-	Outputs map[string]*PipelineOutput 		`json:"outputs" yaml:"outputs"`
-	Parents []*PipelineJob 					`json:"dependencies" yaml:"dependencies"`
-	Children []*PipelineJob 				`json:"dependents" yaml:"dependents"`
-	Notifications chan *PipelineJobStatus 	`json:"-" yaml:"-"`
-	Process *os.Process 					`json:"-" yaml:"-"`
-	Logger *log.Logger 						`json:"-" yaml:"-"`
-	Status *PipelineJobStatus 				`json:"status" yaml:"status"`
-	Color string  							`json:"-" yaml:"-"`
-	Config *PipelineStep					`json:"-" yaml:"-"`
+	Id string 										`json:"id" yaml:"id"`
+	Name string 									`json:"name" yaml:"name"`
+	Datadir string 									`json:"data_directory" yaml:"data_directory"`
+	Workdir string 									`json:"working_directory" yaml:"working_directory"`
+	Command string 									`json:"command" yaml:"command"`
+	Env map[string]string 							`json:"env" yaml:"env"`
+	Inputs map[string]*PipelineInputMapping			`json:"inputs" yaml:"inputs"`
+	Outputs map[string]*PipelineOutputMapping 		`json:"outputs" yaml:"outputs"`
+	ParentsList []string 							`json:"dependencies" yaml:"dependencies"`
+	Parents []*PipelineJob 							`json:"-" yaml:"-"`
+	ChildrenList []string 							`json:"dependents" yaml:"dependents"`
+	Children []*PipelineJob 						`json:"-" yaml:"-"`
+	Notifications chan *PipelineJobStatus 			`json:"-" yaml:"-"`
+	Process *os.Process 							`json:"-" yaml:"-"`
+	Logger *log.Logger 								`json:"-" yaml:"-"`
+	Status *PipelineJobStatus 						`json:"status" yaml:"status"`
+	Color string  									`json:"-" yaml:"-"`
+	Config *PipelineStep							`json:"-" yaml:"-"`
 } 
 
 type SyncStatus struct {
@@ -42,9 +46,11 @@ type SyncStatus struct {
 type ProcessStatus struct {
 	State *os.ProcessState
 	Error error
+	Stdout string
+	Stderr string
 }
 
-func NewLocalPipelineJob(serverConfig *config.ServerConfig, jobName string, jobConfig *PipelineStep, inputs map[string]*PipelineInput, outputs map[string]*PipelineOutput) (LocalPipelineJob, error) {
+func NewLocalPipelineJob(serverConfig *config.ServerConfig, pipelineId string, jobName string, jobConfig *PipelineStep, inputs map[string]*PipelineInputMapping, outputs map[string]*PipelineOutputMapping) (LocalPipelineJob, error) {
 	// LEVELER_DATA default location:  /var/lib/leveler
 	// create workdir under <LEVELER_DATA>/pipelines/jobs/<job-id>/
 	// resolve inputs (i.e., create links) <LEVELER_DATA>/pipelines/jobs/<dependency-id>/outputs/<output-name> -> /var/lib/leveler/pipelines/jobs/<job-id>/inputs/<input-name>
@@ -61,13 +67,24 @@ func NewLocalPipelineJob(serverConfig *config.ServerConfig, jobName string, jobC
 		Children: []*PipelineJob{},
 		Parents: []*PipelineJob{},
 		Command: jobConfig.Command,
-		Datadir: filepath.Join(serverConfig.Datadir, "pipelines/jobs", jobId),
+		Datadir: filepath.Join(serverConfig.Datadir, "pipelines", pipelineId, jobName),
 		Notifications: make(chan *PipelineJobStatus),
 		Status: &PipelineJobStatus{},
 		Color: "white",   // for cycle detection -- not meant to be used within a job
 	}
 
 	return k, nil
+}
+
+func (j *LocalPipelineJob) Quit(status int64, message string) {
+	(*j.Status).Status = status
+	(*j.Status).Message = message
+	if j.Logger != nil {
+		(*j.Logger).Println((*j.Status).Message)
+	}
+
+	j.Notifications <- j.Status
+	close(j.Notifications)
 }
 
 func (j *LocalPipelineJob) SetColor(color string) {
@@ -94,8 +111,25 @@ func (j *LocalPipelineJob) GetParents() []*PipelineJob {
 	return j.Parents
 }
 
+func (j *LocalPipelineJob) GetInputs() map[string]*PipelineInputMapping {
+	return j.Inputs
+}
+
+func (j *LocalPipelineJob) GetOutputs() map[string]*PipelineOutputMapping {
+	return j.Outputs
+}
+
 func (j *LocalPipelineJob) GetConfig() *PipelineStep {
 	return j.Config
+}
+
+func (j *LocalPipelineJob) GetJson() (string, error) {
+	js, err := json.MarshalIndent(j, "", "	")
+	if err != nil {
+		return fmt.Sprintf("%s", js), err
+	}
+
+	return fmt.Sprintf("%s", js), nil
 }
 
 func (j *LocalPipelineJob) GetStatus() *PipelineJobStatus {
@@ -104,15 +138,15 @@ func (j *LocalPipelineJob) GetStatus() *PipelineJobStatus {
 
 func (j *LocalPipelineJob) AddChild(child *PipelineJob) {
 	j.Children = append(j.Children, child)
+	j.ChildrenList = append(j.ChildrenList, (*child).GetName())
 }
 
 func (j *LocalPipelineJob) AddParent(parent *PipelineJob) {
 	j.Parents = append(j.Parents, parent)
+	j.ParentsList = append(j.ParentsList, (*parent).GetName())
 }
 
 func (j *LocalPipelineJob) Init() error {
-	fmt.Printf("Inititializing job: %+v\n", j.Name)
-	
 	err := os.MkdirAll(j.Datadir, 0700)
 	if err != nil {
 		return err
@@ -128,7 +162,7 @@ func (j *LocalPipelineJob) Init() error {
 	return nil
 }
 
-func (j *LocalPipelineJob) SyncInputs(ctx context.Context) error {
+func (j *LocalPipelineJob) SyncInputs(quit chan int8) error {
 	(*j.Logger).Println("[data] Syncing inputs...")
 	done := make(chan *SyncStatus)
 
@@ -139,21 +173,43 @@ func (j *LocalPipelineJob) SyncInputs(ctx context.Context) error {
 			}
 
 			if len(config.Integration) == 0 {
-				// the input is from another job -- need to test that the file exists and create a symlink
-				err := os.Symlink(filepath.Join(filepath.Dir(j.Datadir), j.Outputs[config.From].From, config.From), filepath.Join(j.Datadir, name))
-				if err != nil {
-					status.Status = FAILED 
-					status.Message = fmt.Sprintf("Couldn't create symlink: %v", err)
-					done <- status
-					return
+				if config.Link {
+					err := os.Symlink(config.SrcPath, config.DestPath)
+					if err != nil {
+						status.Status = FAILED 
+						status.Message = fmt.Sprintf("Couldn't create symlink: %v", err)
+						done <- status
+					} else {
+						status.Status = SUCCEEDED 
+						done <- status
+					}
+				} else {
+					cmd := exec.Command("cp", "-R", config.SrcPath, config.DestPath)
+					out, err := cmd.CombinedOutput()
+					if err != nil {
+						status.Status = FAILED
+						status.Message = fmt.Sprintf("Couldn't copy input from upstream job: %s", out)
+						done <- status
+					} else {
+						status.Status = SUCCEEDED 
+						done <- status
+					}
 				}
+				
 			} else if config.Integration == "local" {
-				err := util.CopyFile(config.From, filepath.Join(j.Datadir, name))
+				cmd := exec.Command("cp", "-R", config.SrcPath, config.DestPath)
+				out, err := cmd.CombinedOutput()
 				if err != nil {
 					status.Status = FAILED 
-					status.Message = fmt.Sprintf("Couldn't copy local input file: %v", err)
+					status.Message = fmt.Sprintf("Couldn't copy local input: %s", out)
 					done <- status
-					return
+				} else {
+					_, err := os.Stat(config.DestPath)
+					if err != nil {
+						fmt.Println("stat error! %s", err)
+					}
+					status.Status = SUCCEEDED 
+					done <- status
 				}
 			} else {
 				// download the input using the integration data
@@ -163,24 +219,33 @@ func (j *LocalPipelineJob) SyncInputs(ctx context.Context) error {
 				// 	status.Message = fmt.Sprintf("Couldn't sync external data: %v", err)
 				// 	done <- status
 				// }
+
+				status.Status = FAILED 
+				status.Message = "Integration logic not yet implemented!"
+				done <- status
 			}
 
-			status.Status = SUCCEEDED
-			done <- status
+			// status.Status = SUCCEEDED
+			// done <- status
 		}
 		close(done)
 	}()
 
+	var messages = []string{}
 	for s := range done {
 		if s.Status == FAILED {
-			return errors.New(s.Message)
+			messages = append(messages, s.Message)
 		}
 	}
 
-	return nil
+	if len(messages) > 0 {
+		return errors.New(strings.Join(messages, "\n"))	
+	} else {
+		return nil
+	}
 }
 
-func (j *LocalPipelineJob) SyncOutputs(ctx context.Context) error {
+func (j *LocalPipelineJob) SyncOutputs(quit chan int8) error {
 	(*j.Logger).Println("[data] Syncing outputs...")
 	done := make(chan *SyncStatus)
 
@@ -191,12 +256,13 @@ func (j *LocalPipelineJob) SyncOutputs(ctx context.Context) error {
 			}
 
 			if config.Integration == "local" {
-				err := util.CopyFile(filepath.Join(j.Datadir, name), config.To)
+				cmd := exec.Command("cp", "-R", config.SrcPath, config.DestPath)
+				out, err := cmd.CombinedOutput()
 				if err != nil {
-					status.Status = FAILED 
-					status.Message = fmt.Sprintf("Couldn't copy local output file: %v", err)
+					status.Status = FAILED
+					status.Message = fmt.Sprintf("Couldn't copy output to local destination: %s", out)
 					done <- status
-					return
+					break
 				}
 			} else if len(config.Integration) != 0 {
 				// upload the output using the integration data
@@ -206,113 +272,129 @@ func (j *LocalPipelineJob) SyncOutputs(ctx context.Context) error {
 				// 	status.Message = fmt.Sprintf("Couldn't sync external data: %v", err)
 				// 	done <- status
 				// }
-			} 
-			status.Status = SUCCEEDED
-			status.Message = fmt.Sprintf("No integration specified... nothing to do!")
-			done <- status
-			
+				status.Status = FAILED 
+				status.Message = "Integration logic not yet implemented!"
+				done <- status
+				break
+			} else {
+				status.Status = SUCCEEDED
+				status.Message = fmt.Sprintf("No integration specified... nothing to do!")
+				done <- status
+			}
 		}
 		close(done)
 	}()
 
+	var messages = []string{}
 	for s := range done {
 		if s.Status == FAILED {
-			return errors.New(s.Message)
+			messages = append(messages, s.Message)
 		}
 	}
 
-	return nil
+	if len(messages) > 0 {
+		return errors.New(strings.Join(messages, "\n"))	
+	} else {
+		return nil
+	}
 }
 
-func (j *LocalPipelineJob) Run(ctx context.Context) { 
-	defer close(j.Notifications)
-	var quit = func() {
-		(*j.Status).Status = FAILED
-		if j.Logger != nil {
-			(*j.Logger).Println((*j.Status).Message)
-		}
-		j.Notifications <- j.Status
-		close(j.Notifications)
-		return 
-	}
-
+func (j *LocalPipelineJob) Run(cancel chan int8) { 
 	(*j.Status).Status = INITIALIZING
 
 	err := j.Init()
 	if err != nil {
-		(*j.Status).Message = fmt.Sprintf("[runner] Error initializing job: %v", err)
-		quit()
+		j.Quit(FAILED, fmt.Sprintf("[runner] Error initializing job: %v", err))
+		return
 	}
 
-	err = j.SyncInputs(ctx)
+	err = j.SyncInputs(cancel)
 	if err != nil {
-		(*j.Status).Message = fmt.Sprintf("[runner] Error syncing inputs: %v", err)
-		quit()
+		j.Quit(FAILED, fmt.Sprintf("[runner] Error syncing inputs: %v", err))
+		return
 	}
 
 	proc := exec.Command("/bin/bash", "-c", j.Command)
+	stderr, err := proc.StderrPipe()
+	if err != nil {
+		j.Quit(FAILED, fmt.Sprintf("[runner] Error attaching to stderr pipe: %v", err))
+		return
+	}
+
+	stdout, err := proc.StdoutPipe()
+	if err != nil {
+		j.Quit(FAILED, fmt.Sprintf("[runner] Error attaching to stdout pipe: %v", err))
+		return
+	}
+
+	proc.Dir = filepath.Join(j.Datadir, j.Workdir)
+
 	err = proc.Start()
 	if err != nil {
-		(*j.Status).Message = fmt.Sprintf("[runner] Error executing command: %v", err)
-		quit()
+		j.Quit(FAILED, fmt.Sprintf("[runner] Error executing command: %v", err))
+		return
 	}
 
 	(*j.Logger).Println("[runner] Job started!")
 	(*j.Status).Status = RUNNING
 
 	waiter := make(chan *ProcessStatus)
-	go func() {
+	go func(stdout, stderr io.ReadCloser) {
 		state, err := proc.Process.Wait()
+
+		stdoutBytes, _ := ioutil.ReadAll(stdout)
+		stderrBytes, _ := ioutil.ReadAll(stderr)
+
 		status := &ProcessStatus{
 			State: state,
 			Error: err,
+			Stdout: fmt.Sprintf("%s", stdoutBytes),
+			Stderr: fmt.Sprintf("%s", stderrBytes),
 		}
 
 		waiter <- status
 		close(waiter)
-	}()
+	}(stdout, stderr)
 
+	var breakFor bool
 	for {
-		select {
-		case <-ctx.Done():
-			(*j.Status).Status = CANCELLED
-        	(*j.Status).Message = "[runner] Job cancelled!"
-        	err := proc.Process.Kill()
-        	if err != nil {
-        		(*j.Status).Message += fmt.Sprintf(" Also couldn't kill the underlying process: %v", err)
-        	}
-
-        	j.Logger.Println((*j.Status).Message)
-        	j.Notifications <- j.Status
-        	close(j.Notifications)
-        	return
-        case status := <-waiter:
-        	if status.State.Exited() {
-        		if status.State.Success() {
-        			(*j.Status).Message = "[runner] Job succeeded!"
-        			j.Logger.Println((*j.Status).Message)
-        			j.Notifications <- j.Status
-        			break
-        		} else {
-        			(*j.Status).Status = FAILED
-        			(*j.Status).Message = fmt.Sprintf("[runner] Job failed: status=%+v, error=%v", status.State, status.Error)
-        			j.Logger.Println((*j.Status).Message)
-        			j.Notifications <- j.Status
-        			quit()
-        		}
-        	}
+		if breakFor {
+			break
+		} else {
+			select {
+			case <-cancel:
+				fmt.Println("made it")
+	        	m := "[runner] Job cancelled!"
+	        	err := proc.Process.Kill()
+	        	if err != nil {
+	        		m += fmt.Sprintf(" Also couldn't kill the underlying process: %v", err)
+	        	}
+	        	j.Quit(CANCELLED, m)
+	        	return
+	        case status, ok := <-waiter:
+	        	if ok {
+	        		if status.State.Exited() {
+		        		if status.State.Success() {
+		        			j.Logger.Println("[runner] Job succeeded!")
+		        			breakFor = true
+		        			break
+		        		} else {
+		        			j.Quit(FAILED, fmt.Sprintf("[runner] Job failed: status=%+v, error=%v, stdout=%s, stderr=%s", status.State, status.Error, status.Stdout, status.Stderr))
+		        			return
+		        		}
+		        	} 
+	        	}
+			}
 		}
 	}
 
-	err = j.SyncOutputs(ctx)
+	err = j.SyncOutputs(cancel)
 	if err != nil {
-		(*j.Status).Message = fmt.Sprintf("[runner] Error syncing outputs: %v", err)
-		quit()
+		j.Quit(FAILED, fmt.Sprintf("[runner] Error syncing outputs: %v", err))
+		return
 	}
 
-	(*j.Status).Status = SUCCEEDED
-	(*j.Status).Message = "[runner] OK"
-	j.Notifications <- j.Status
+	j.Quit(SUCCEEDED, "[runner] OK")
 }
 
 func (j *LocalPipelineJob) Watch(wg *sync.WaitGroup) {
@@ -322,7 +404,6 @@ func (j *LocalPipelineJob) Watch(wg *sync.WaitGroup) {
 	for {
         select {
         case <-j.Notifications:
-        	fmt.Println("watch")
         	return
         }
     }

@@ -2,10 +2,14 @@ inputs:
   foo1.inp:
     integration: local
     from: /home/abby/testfile1
+  foo2.inp:
+    from: foo1.out
 outputs:
   foo1.out:
+    from: foo1
+  foo2.out:
     integration: local
-    to: /home/abby/foo1.out
+    to: /home/abby/foo2.out
 steps:
   foo1:
     workdir: .
@@ -15,3 +19,11 @@ steps:
       - foo1.inp
     outputs:
       - foo1.out
+  foo2:
+    workdir: .
+    command: |
+      cat foo2.inp > foo2.out && echo "hello from foo2!" >> foo2.out
+    inputs:
+      - foo2.inp
+    outputs:
+      - foo2.out

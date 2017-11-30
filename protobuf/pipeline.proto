@@ -2,12 +2,10 @@ syntax = "proto3";
 
 package pipelines;
 
-import "data.proto";
-import "integration.proto";
-
 message PipelineInput {
 	string from = 1;
 	string integration = 2;
+	bool link = 3;
 }
 
 message PipelineOutput {
