@@ -13,18 +13,16 @@ func main() {
 	serverConfig := &config.ServerConfig{
 		Datadir: "/home/abby/.leveler",
 		Platform: &config.ContainerPlatform{
-			Name: "local",
+			Name: "docker",
 			// Host: "localhost",
-			// Port: 8001,
-			// Opts: &config.ContainerPlatform_KubernetesOptions{
-			// 	KubernetesOptions: &config.KubernetesOptions{
-			// 		Namespace: "jobs",
-			// 	},
+			// Port: 8080,
+			// Opts: &config.ContainerPlatform_DockerOptions{
+			// 	DockerOptions: &config.DockerOptions{},
 			// },
 		},
 	}
 
-	contents, err := ioutil.ReadFile("advanced-2.yml")
+	contents, err := ioutil.ReadFile("tiny-docker.yml")
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		os.Exit(1)

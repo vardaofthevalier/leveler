@@ -32,9 +32,11 @@ type LocalPipelineJob struct {
 	Notifications chan *PipelineJobStatus 			`json:"-" yaml:"-"`
 	Process *os.Process 							`json:"-" yaml:"-"`
 	Logger *log.Logger 								`json:"-" yaml:"-"`
+	LogLock *sync.Mutex 							`json:"-" yaml:"-"`
 	Status *PipelineJobStatus 						`json:"status" yaml:"status"`
 	Color string  									`json:"-" yaml:"-"`
-	Config *PipelineStep							`json:"-" yaml:"-"`
+	JobConfig *PipelineStep							`json:"-" yaml:"-"`
+	ServerConfig *config.ServerConfig 				`json:"-" yaml:"-"`
 } 
 
 type SyncStatus struct {
@@ -50,18 +52,26 @@ type ProcessStatus struct {
 	Stderr string
 }
 
-func NewLocalPipelineJob(serverConfig *config.ServerConfig, pipelineId string, jobName string, jobConfig *PipelineStep, inputs map[string]*PipelineInputMapping, outputs map[string]*PipelineOutputMapping) (LocalPipelineJob, error) {
-	// LEVELER_DATA default location:  /var/lib/leveler
-	// create workdir under <LEVELER_DATA>/pipelines/jobs/<job-id>/
-	// resolve inputs (i.e., create links) <LEVELER_DATA>/pipelines/jobs/<dependency-id>/outputs/<output-name> -> /var/lib/leveler/pipelines/jobs/<job-id>/inputs/<input-name>
-	// create directory for outputs <LEVELER_DATA>/pipelines/jobs/<job-id>/outputs/<output-name>
-	// generate script <LEVELER_DATA>/pipelines/jobs/<job-id>/run.sh
-	jobId := uuid.NewV4().String()
+
+func NewLocalPipelineJob(serverConfig *config.ServerConfig, pipelineId string, jobName string, jobConfig *PipelineStep, pipelineInputs []*PipelineInput, pipelineOutputs []*PipelineOutput) (LocalPipelineJob, error) {
+	jobDataDir := filepath.Join(serverConfig.Datadir, "pipelines", "local", pipelineId, jobName)
+
+	inputs, err := GenerateInputMapping(jobDataDir, jobSpec, pipelineInputs, pipelineOutputs)
+	if err != nil {
+		return err, nil
+	}
+
+	outputs, err := GenerateOutputMapping(jobDataDir, jobSpec, pipelineOutputs)
+	if err != nil {
+		return err, nil
+	}
 
 	k := LocalPipelineJob{
-		Id: jobId,
+		Id: uuid.NewV4().String(),
+		PipelineId: pipelineId,
 		Name: jobName,
-		Config: jobConfig,
+		JobConfig: jobConfig,
+		ServerConfig: serverConfig,
 		Inputs: inputs,
 		Outputs: outputs,
 		Children: []*PipelineJob{},
@@ -70,6 +80,7 @@ func NewLocalPipelineJob(serverConfig *config.ServerConfig, pipelineId string, j
 		Datadir: filepath.Join(serverConfig.Datadir, "pipelines", pipelineId, jobName),
 		Notifications: make(chan *PipelineJobStatus),
 		Status: &PipelineJobStatus{},
+		LogLock: &sync.Mutex{},
 		Color: "white",   // for cycle detection -- not meant to be used within a job
 	}
 
@@ -117,10 +128,6 @@ func (j *LocalPipelineJob) GetInputs() map[string]*PipelineInputMapping {
 
 func (j *LocalPipelineJob) GetOutputs() map[string]*PipelineOutputMapping {
 	return j.Outputs
-}
-
-func (j *LocalPipelineJob) GetConfig() *PipelineStep {
-	return j.Config
 }
 
 func (j *LocalPipelineJob) GetJson() (string, error) {
@@ -224,9 +231,6 @@ func (j *LocalPipelineJob) SyncInputs(quit chan int8) error {
 				status.Message = "Integration logic not yet implemented!"
 				done <- status
 			}
-
-			// status.Status = SUCCEEDED
-			// done <- status
 		}
 		close(done)
 	}()
@@ -249,6 +253,8 @@ func (j *LocalPipelineJob) SyncOutputs(quit chan int8) error {
 	(*j.Logger).Println("[data] Syncing outputs...")
 	done := make(chan *SyncStatus)
 
+	// broadcaster := make(map[string]*chan int8)
+
 	go func() {
 		for name, config := range j.Outputs {
 			status := &SyncStatus{
@@ -265,6 +271,7 @@ func (j *LocalPipelineJob) SyncOutputs(quit chan int8) error {
 					break
 				}
 			} else if len(config.Integration) != 0 {
+				// add channel to broadcaster for propagating quit messages to downloaders
 				// upload the output using the integration data
 				// err := i.GetExternal().Sync(ctx)
 				// if err != nil {
@@ -363,7 +370,6 @@ func (j *LocalPipelineJob) Run(cancel chan int8) {
 		} else {
 			select {
 			case <-cancel:
-				fmt.Println("made it")
 	        	m := "[runner] Job cancelled!"
 	        	err := proc.Process.Kill()
 	        	if err != nil {
@@ -409,9 +415,23 @@ func (j *LocalPipelineJob) Watch(wg *sync.WaitGroup) {
     }
 }
 
+// func (j *LocalPipelineJob) Logs(stream *io.Pipe) error {
+	
+// 		// TODO:
+// 		// - check if logfile still exists; 
+// 		//   - if not, stream from Fluentd (or error if fluentd isn't integrated yet)
+// 		//   - otherwise grab the mutex lock; tail log file; lock file again
+// 		//   - need to have a reasonable timeout for this
+	
+// 	return nil
+// }
+
 func (j *LocalPipelineJob) Cleanup() error {
-	// delete working directory
+	
+	j.LogLock.Lock()
 	err := os.RemoveAll(j.Datadir)
+	j.LogLock.Unlock()
+
 	if err != nil {
 		return err
 	}

@@ -8,11 +8,16 @@ message ContainerPlatform {
 	int32 port = 3;
 	oneof opts {
 		KubernetesOptions kubernetes_options = 4;
+		DockerOptions docker_options = 5;
 	}
 }
 
 message KubernetesOptions {
-	string namespace = 1;
+	string job_namespace = 1;
+}
+
+message DockerOptions {
+	string stuff = 1;
 }
 
 message Database {

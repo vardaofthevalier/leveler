@@ -3,8 +3,6 @@ package pipelines
 import (
 	"fmt"
 	"sync"
-	"errors"
-	"reflect"
 	"github.com/golang-collections/collections/stack"
 	"github.com/golang-collections/collections/queue"
 )
@@ -22,6 +20,7 @@ const (
 type Pipeline struct {
 	Id string
 	RootJobs []*PipelineJob
+	JobsMap map[string]*PipelineJob
 }
 
 type PipelineJob interface {
@@ -34,17 +33,14 @@ type PipelineJob interface {
 	GetParents() []*PipelineJob
 	GetInputs() map[string]*PipelineInputMapping
 	GetOutputs() map[string]*PipelineOutputMapping
-	GetConfig() *PipelineStep
 	GetStatus() *PipelineJobStatus
 	GetJson() (string, error)
 	AddChild(*PipelineJob)
 	AddParent(*PipelineJob)
-	Init() error
-	SyncInputs(chan int8) error 
-	SyncOutputs(chan int8) error
 	Run(chan int8)
 	Watch(*sync.WaitGroup)
 	Cleanup() error
+	Logs(*io.ReadWriter)
 }
 
 type PipelineJobStatus struct {
@@ -87,22 +83,25 @@ func (p *Pipeline) Run(quit chan int8) {
 
 	// IDEA: to make this work in a distributed system, use central message queues instead of channels to coordinate waiting (?)
 	scheduler := make(chan *PipelineJob)
+	broadcaster := map[string]*chan int8
 
 	var leaves sync.WaitGroup
 	
 	var scheduled = make(map[string]string)
 	go func() {
-		q := []*PipelineJob{}
+		q := queue.New()
 
 		for _, r := range p.RootJobs {
-			q = append(q, r)
+			q.Enqueue(r)
 		}
 
-		for len(q) > 0 {
-			current := q[0]
-			q = q[1:]
+		for q.Len() > 0 {
+			current := q.Dequeue().(*PipelineJob)
 			
 			if _, ok := scheduled[(*current).GetId()]; !ok {
+				ch := make(chan int8)
+				broadcaster[(*current).GetId()] = &ch
+
 				scheduler <- current
 				scheduled[(*current).GetId()] = ""	
 
@@ -112,7 +111,7 @@ func (p *Pipeline) Run(quit chan int8) {
 
 				} else {
 					for _, c := range (*current).GetChildren() {
-						q = append(q, c)
+						q.Enqueue(c)
 					}
 				}		
 			}
@@ -129,6 +128,10 @@ func (p *Pipeline) Run(quit chan int8) {
 
 		select {
 			case <-quit:
+				for _, ch := range broadcaster {
+					ch <- 1
+					close(ch)
+				}
 				breakFor = true
 				break
 			case j, ok := <-scheduler:
@@ -150,7 +153,7 @@ func (p *Pipeline) Run(quit chan int8) {
 								}
 							}
 						}
-						(*j).Run(quit)
+						(*j).Run(broadcaster[(*j).GetId()])
 					}(j)
 				} else {
 					breakFor = true
@@ -171,28 +174,20 @@ func (p *Pipeline) Status() ([]string, error) {
 	}
 
 	for q.Len() > 0 {
-		node := q.Dequeue()
+		node := q.Dequeue().(*PipelineJob)
 
-		switch node.(type) {
-		case *PipelineJob:
-			ptr := node.(*PipelineJob)
+		j, err := (*node).GetJson()
+		if err != nil {
+			return results, err
+		}
+		
+		results = append(results, j)
 
-			j, err := (*ptr).GetJson()
-			if err != nil {
-				return results, err
+		for _, c := range (*node).GetChildren() {
+			if _, ok := found[(*c).GetName()]; !ok {
+				found[(*c).GetName()] = ""
+				q.Enqueue(c)
 			}
-			
-			results = append(results, j)
-
-			for _, c := range (*ptr).GetChildren() {
-				if _, ok := found[(*c).GetName()]; !ok {
-					found[(*c).GetName()] = ""
-					q.Enqueue(c)
-				}
-			}
-
-		default:
-			return results, errors.New(fmt.Sprintf("Expected pipeline job, received %s!", reflect.TypeOf(node))) 
 		}
 	}
 
@@ -212,6 +207,6 @@ func (p *Pipeline) PrettyPrint() {
 
 func (p *Pipeline) Cleanup() error {
 	// TODO: BFS and run the job cleanup function for each job
-	// close channels?
+	
 	return nil
 }

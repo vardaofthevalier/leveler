@@ -26,7 +26,7 @@ type PipelineOutputMapping struct {
 	Integration string
 }
 
-func generateInputMappings(serverConfig *config.ServerConfig, pipelineId string, jobName string, jobSpec *PipelineStep, inputs map[string]*PipelineInput, outputs map[string]*PipelineOutput) (map[string]*PipelineInputMapping, error) {
+func GenerateInputMappings(datadir string, jobSpec *PipelineStep, inputs map[string]*PipelineInput, outputs map[string]*PipelineOutput) (map[string]*PipelineInputMapping, error) {
 	var mappings = make(map[string]*PipelineInputMapping)
 
 	for _, name := range jobSpec.Inputs {
@@ -41,7 +41,7 @@ func generateInputMappings(serverConfig *config.ServerConfig, pipelineId string,
 
 		if inputSpec, ok := inputs[name]; ok {
 			mapping.Integration = inputSpec.Integration
-			mapping.DestPath = filepath.Join(serverConfig.Datadir, "pipelines", pipelineId, jobName, name)
+			mapping.DestPath = filepath.Join(datadir, name)
 
 			if len(inputSpec.Integration) > 0 {
 				mapping.SrcPath = inputSpec.From
@@ -49,7 +49,7 @@ func generateInputMappings(serverConfig *config.ServerConfig, pipelineId string,
 			} else {
 				if srcJob, ok := outputs[inputSpec.From]; ok {
 					mapping.SrcJob = srcJob.From
-					mapping.SrcPath = filepath.Join(serverConfig.Datadir, "pipelines", pipelineId, srcJob.From, inputSpec.From)
+					mapping.SrcPath = filepath.Join(datadir, pipelineId, srcJob.From, inputSpec.From)
 				} else {
 					return mappings, errors.New(fmt.Sprintf("Input specified for dependent job '%s' doesn't exist in outputs map!", name))
 				}
@@ -69,7 +69,7 @@ func generateInputMappings(serverConfig *config.ServerConfig, pipelineId string,
 	return mappings, nil
 }
 
-func generateOutputMappings(serverConfig *config.ServerConfig, pipelineId string, jobName string, jobSpec *PipelineStep, outputs map[string]*PipelineOutput) (map[string]*PipelineOutputMapping, error) {
+func GenerateOutputMappings(datadir string, jobSpec *PipelineStep, outputs map[string]*PipelineOutput) (map[string]*PipelineOutputMapping, error) {
 	var mappings = make(map[string]*PipelineOutputMapping)
 
 	for _, name := range jobSpec.Outputs {
@@ -84,7 +84,7 @@ func generateOutputMappings(serverConfig *config.ServerConfig, pipelineId string
 		if outputSpec, ok := outputs[name]; ok {
 			mapping.Integration = outputSpec.Integration 
 			mapping.DestPath = outputSpec.To 
-			mapping.SrcPath = filepath.Join(serverConfig.Datadir, "pipelines", pipelineId, jobName, name)
+			mapping.SrcPath = filepath.Join(datadir, name)
 
 		} else {
 			return mappings, errors.New(fmt.Sprintf("Output specified for job '%s' doesn't exist in outputs map!", name))
@@ -96,22 +96,12 @@ func generateOutputMappings(serverConfig *config.ServerConfig, pipelineId string
 	return mappings, nil
 }
 
-func createJobsMap(serverConfig *config.ServerConfig, pipelineId string, pipelineConfig *BasicPipeline) (map[string]PipelineJob, *Pipeline, error) {
+func createJobsMap(serverConfig *config.ServerConfig, pipelineId string, pipelineConfig *BasicPipeline) (map[string]PipelineJob, error) {
 	var p = &Pipeline{}
 	var allJobs = make(map[string]PipelineJob)
 
 	// process jobs into a map for O(1) lookup later on, and also to verify that no duplicate names are found
 	for name, s := range pipelineConfig.Steps {
-		inputs, err := generateInputMappings(serverConfig, pipelineId, name, s, pipelineConfig.Inputs, pipelineConfig.Outputs)
-		if err != nil {
-			return allJobs, p, err
-		}
-	
-		outputs, err := generateOutputMappings(serverConfig, pipelineId, name, s, pipelineConfig.Outputs)
-		if err != nil {
-			return allJobs, p, err
-		}
-		
 		if _, ok := allJobs[name]; ok {
 			return allJobs, p, errors.New("Duplicate job names found in pipeline!")
 		} else {
@@ -123,15 +113,20 @@ func createJobsMap(serverConfig *config.ServerConfig, pipelineId string, pipelin
 			// 	}
 			// 	allJobs[name] = &j
 
-			// case "docker":
-			// 	j, err := NewDockerPipelineJob(serverConfig, name, s, inputs, outputs)
-			// 	if err != nil {
-			// 		return allJobs, p, err
-			// 	}
-			// 	allJobs[name] = &j
+			case "docker":
+				client, err := docker.NewEnvClient()
+				if err != nil {
+					return k, err
+				}
+
+				j, err := NewDockerPipelineJob(serverConfig, pipelineId, name, s, pipelineConfig.Inputs, pipelineConfig.Outputs, client)
+				if err != nil {
+					return allJobs, p, err
+				}
+				allJobs[name] = &j
 
 			case "local":
-				j, err := NewLocalPipelineJob(serverConfig, pipelineId, name, s, inputs, outputs)
+				j, err := NewLocalPipelineJob(serverConfig, pipelineId, name, s, pipelineConfig.Inputs, pipelineConfig.Outputs)
 				if err != nil {
 					return allJobs, p, err
 				}
@@ -144,20 +139,22 @@ func createJobsMap(serverConfig *config.ServerConfig, pipelineId string, pipelin
 		}
 	}
 
-	return allJobs, p, nil
+	return allJobs, nil
 }
 
 func NewBasicPipeline(serverConfig *config.ServerConfig, pipelineConfig *BasicPipeline) (*Pipeline, error) {
 	// TODO: validate that integration configurations can be found for the user who submitted this pipeline
 	// if not, return an error to the caller
 	pipelineId := uuid.NewV4().String()
+	p := &Pipeline{}
 	
-	allJobs, p, err := createJobsMap(serverConfig, pipelineId, pipelineConfig)
+	allJobs, err := createJobsMap(serverConfig, pipelineId, pipelineConfig)
 	if err != nil {
 		return p, err
 	}
 
-	// TODO: recalculate dependencies using info from the functions above
+	pipeline.Id = pipelineId
+	pipeline.JobsMap = allJobs
  
 	for name, s := range pipelineConfig.Steps {
 		child := allJobs[name]
