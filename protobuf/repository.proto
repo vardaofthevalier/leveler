@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package resources;
+
+message Repository {
+	string url = 1;
+}
+
+message RepositoriesList {
+	repeated Repository results = 1;
+}

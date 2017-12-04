@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package resources;
+
+message User {
+	string email = 1;
+	UserCredentials credentials = 2;
+}
+
+message UserCredentials {
+	string stuff = 1;
+}

@@ -1,9 +1,9 @@
 syntax = "proto3";
 
-package pipelines;
+package resources;
 
 enum DataIntegration {
-	s3 = 0;
+	aws = 0;
 	nexus = 1;
 	bitbucket = 2;
 	github = 3;

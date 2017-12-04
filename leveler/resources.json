@@ -1,39 +1,104 @@
 {
+   "Version": "v1",
    "Resources": [
       {
          "Name": "integration",
          "Usage": "integration",
-         "ShortDescription": "An integration with a 3rd party service",
-         "LongDescription": "An integration with a 3rd party service",
-         "SupportedOperations": ["add", "get", "list", "remove", "update"],
-         "Subcommands": [
-            {
-               "Name": "s3",
-               "Usage": "s3",
-               "ShortDescription": "An integration with AWS S3",
-               "LongDescription": "An integration with AWS S3",
-               "Options": [
-                  {
-                     "Name": "aws-secret-key",
-                     "Required": true,
-                     "Description": "AWS secret key used to access S3",
-                  },
-                  {
-                     "Name": "aws-secret-key-id",
-                     "Required": true,
-                     "Description": "AWS secret key id used to access S3"
-                  }
-               ]
-            }
-         ], 
+         "ShortDescription": "Manage an integration with a 3rd party service",
+         "LongDescription": "Manage an integration with a 3rd party service.  This enables the system to act on your behalf in order to access 3rd party resources.",
+         "SupportedOperations": ["add", "get", "list", "remove"],
          "Options": [
             {
                "Name": "name",
-               "Required": true,
-               "Description": "A descriptive name for the integration",
-               "IsSecondaryKey": true
-            }
+               "Required": ["add", "get", "remove", "update"],
+               "Description": "A descriptive name for the integration"
+            },
          ],
+         "Subcommands": [
+            {
+               "Name": "aws",
+               "Usage": "aws",
+               "ShortDescription": "An integration with AWS",
+               "LongDescription": "An integration with AWS",
+               "Options": [
+                  {
+                     "Name": "aws_secret_key",
+                     "Required": ["add"],
+                     "Description": "AWS secret key used to access S3",
+                     "Type": "string"
+                  },
+                  {
+                     "Name": "aws_secret_key_id",
+                     "Required": ["add"],
+                     "Description": "AWS secret key id used to access S3"
+                  }
+               ],
+               "ProtobufType": "AWSAccessConfig"
+            },
+            {
+               "Name": "nexus",
+               "Usage": "nexus",
+               "ShortDescription": "An integration with Sonatype Nexus",
+               "LongDescription": "An integration with Sonatype Nexus",
+               "Options": [
+                  {
+                     "Name": "nexus_username",
+                     "Required": ["add"],
+                     "Description": "Username for accessing Nexus",
+                     "Type": "string"
+                  },
+                  {
+                     "Name": "nexus_password",
+                     "Required": ["add"],
+                     "Description": "Password for accessing Nexus",
+                     "Type": "string"
+                  },
+                  {
+                     "Name": "nexus_host",
+                     "Required": ["add"],
+                     "Description": "The Nexus host to use for this integration",
+                     "Type": "string"
+                  },
+                  {
+                     "Name": "nexus_port",
+                     "Required": ["add"],
+                     "Description": "The port where Nexus is running",
+                     "Type": "string"
+                  }
+               ],
+               "ProtobufType": "NexusAccessConfig"
+            },
+            {
+               "Name": "bitbucket",
+               "Usage": "bitbucket",
+               "ShortDescription": "An integration with Bitbucket",
+               "LongDescription": "An integration with Bitbucket",
+               "Options": [
+                  // TODO: add more here!  All data should map to BitbucketAccessConfig in integration.proto
+               ],
+               "ProtobufType": "BitbucketAccessConfig"
+            },
+            {
+               "Name": "github",
+               "Usage": "github",
+               "ShortDescription": "An integration with Github",
+               "LongDescription": "An integration with Github",
+               "Options": [
+                  // TODO: add more here! All data should map to GithubAccessConfig in integration.proto
+               ],
+               "ProtobufType": "GithubAccessConfig"
+            },
+            {
+               "Name": "slack",
+               "Usage": "slack",
+               "ShortDescription": "An integration with Slack",
+               "LongDescription": "An integration with Slack",
+               "Options": [
+                  // TODO: add more here! All data should map to SlackAccessConfig in integration.proto
+               ],
+               "ProtobufType": "SlackAccessConfig"
+            }
+         ], 
          "ProtobufType": "Integration"
       },
       {
@@ -43,20 +108,9 @@
          "LongDescription": "An SCM repository",
          "SupportedOperations": ["add", "get", "list", "remove"],
          "Options": [
-
+            // TODO: more here!
          ],
          "ProtobufType": "Repository",
-      },
-      {
-         "Name": "secret",
-         "Usage": "secret",
-         "ShortDescription": "Represents a blob of secret data to store securely",
-         "LongDescription": "Represents a blob of secret data to store securely",
-         "SupportedOperations": ["add", "get", "list", "remove"],
-         "Options": [
-
-         ],
-         "ProtobufType": "Secret",
       },
       {
          "Name": "pipeline",
@@ -65,9 +119,22 @@
          "LongDescription": "A pipeline to run on the cluster",
          "SupportedOperations": ["run", "get", "list", "cancel"],
          "Options": [
-
+            {
+               "Name": "id",
+               "Required": ["get", "cancel"],
+               "Description": "The ID of the pipeline of interest",
+               "Type": "string"
+            }
          ],
-         "ProtobufType": "Secret",
+         "FileOptions": [
+            {
+               "Name": "file",
+               "Required": ["run"],
+               "Description": "A local file containing the pipeline definition to run",
+               "Type": "string"
+            }
+         ],
+         "ProtobufType": "Pipeline",
       },
       {
          "Name": "job",
@@ -76,9 +143,14 @@
          "LongDescription": "A pipeline to run on the cluster",
          "SupportedOperations": ["get", "list"],
          "Options": [
-
+            {
+               "Name": "id",
+               "Required": ["get"],
+               "Description": "The ID of the job of interest",
+               "Type": "string"
+            },
          ],
-         "ProtobufType": "Secret",
+         "ProtobufType": "none",
       },
       {
          "Name": "logs",
@@ -87,7 +159,18 @@
          "LongDescription": "Get logs for a pipeline or job",
          "SupportedOperations": ["get"],
          "Options": [
-
+            {
+               "Name": "id",
+               "Required": ["get"],
+               "Description": "The ID of the loggable object of interest",
+               "Type": "string"
+            },
+            {
+               "Name": "type",
+               "Required": ["get"],
+               "Description": "The type of the loggable object of interest",
+               "Type": "string"
+            }
          ],
          "ProtobufType": "Loggable"
       }

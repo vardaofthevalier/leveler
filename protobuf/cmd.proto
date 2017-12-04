@@ -2,8 +2,6 @@ syntax = "proto2";
 
 package resources;
 
-import "resources.proto";
-
 enum Operation {
 	create = 0;
 	get = 1;
@@ -12,10 +10,15 @@ enum Operation {
 	patch = 4;
 	delete = 5;
 	apply = 6;	
+	add = 7;
+	remove = 8;
+	run = 9;
+	cancel = 10;
 }
 
 message ResourceCmdConfig {
-	repeated CmdConfig Resources = 1;
+	required string Version = 1;
+	repeated CmdConfig Resources = 2;
 }
 
 message CmdConfig {
@@ -24,11 +27,33 @@ message CmdConfig {
 	required string ShortDescription = 3;
 	required string LongDescription = 4;
 	repeated Operation SupportedOperations = 5;
-	required ResourceSpec Spec = 6; 
+	repeated Option Options = 6;
+	repeated FileOption FileOptions = 7;
+	repeated SubCmdConfig Subcommands = 8;
+	required string ProtobufType = 9;
 }
 
-message ResourceSpec {
-	repeated StringDetail StringOptions = 2;
-	repeated BoolDetail BoolOptions = 3;
-	repeated Int64Detail Int64Options = 4;
+message SubCmdConfig {
+	required string Name = 1;
+	required string Usage = 2;
+	required string ShortDescription = 3;
+	required string LongDescription = 4;
+	repeated Option Options = 5;
+	repeated FileOption FileOptions = 6;
+	required string ProtobufType = 7;
+}
+
+message Option {
+	required string Name = 1;
+	repeated string Required = 2;
+	required string Description = 3;
+	required string Type = 4;
+	optional string Default = 5;
+}
+
+message FileOption {
+	required string name = 1;
+	required string Required = 2;
+	required string Description = 3;
+	required string ProtobufType = 4;
 }

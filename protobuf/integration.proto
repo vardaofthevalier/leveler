@@ -1,17 +1,26 @@
 syntax = "proto3";
 
-package pipelines;
+package resources;
+
+enum Language {
+	java = 0;
+	golang = 1;
+	python = 2;
+}
+
+enum BuildTool {
+	mvn = 0;
+	gradle = 1;
+}
 
 message Integration {
 	string name = 1;
 	oneof config {
-		BitbucketAccessConfig bitbucket = 2;
-		GithubAccessConfig github = 3;
-		AWSConfig aws = 4;
-		NexusConfig nexus = 5;
-		SlackConfig slack = 6;
-		LocalConfig local = 7;
-		StreamConfig stream = 8;
+		BitbucketAccessConfig bitbucket = 4;
+		GithubAccessConfig github = 5;
+		AWSAccessConfig aws = 6;
+		NexusAccessConfig nexus = 7;
+		SlackAccessConfig slack = 8;
 	}
 }
 
@@ -27,23 +36,24 @@ message GithubAccessConfig {
 	string stuff = 1;
 }
 
-message AWSConfig {
+message AWSAccessConfig {
 	string aws_secret_key = 1;
 	string aws_secret_key_id = 2;
 }
 
-message NexusConfig {
-	string stuff = 1;
+message BuildEnvironmentConfig {
+	Language language = 1;
+	BuildTool build_tool = 2;
 }
 
-message SlackConfig {
-	string stuff = 1;
-}	
-
-message LocalConfig {
-	string stuff = 1;
+message NexusAccessConfig {
+	string nexus_username = 1;
+	string nexus_password = 2;
+	string nexus_host = 3;
+	string nexus_port = 4;
+	BuildEnvironmentConfig environment = 5;
 }
 
-message StreamConfig {
+message SlackAccessConfig {
 	string stuff = 1;
 }

@@ -69,6 +69,14 @@ func GenerateInputMappings(datadir string, jobSpec *PipelineStep, inputs map[str
 	return mappings, nil
 }
 
+func GenerateInputSyncScript(datadir string, integration *PipelineIntegration, input *PipelineInputMapping) (string, error) {
+
+}
+
+func GenerateOutputSyncScript(datadir string, integration *PipelineIntegration, output *PipelineInputMapping) (string, error) {
+
+}
+
 func GenerateOutputMappings(datadir string, jobSpec *PipelineStep, outputs map[string]*PipelineOutput) (map[string]*PipelineOutputMapping, error) {
 	var mappings = make(map[string]*PipelineOutputMapping)
 
@@ -107,6 +115,7 @@ func createJobsMap(serverConfig *config.ServerConfig, pipelineId string, pipelin
 		} else {
 			switch serverConfig.Platform.Name {
 			// case "kubernetes":
+			//  TODO: create instance of k8s client
 			// 	j, err := NewKubernetesPipelineJob(serverConfig, name, s, inputs, outputs)
 			// 	if err != nil {
 			// 		return allJobs, p, err
@@ -143,8 +152,6 @@ func createJobsMap(serverConfig *config.ServerConfig, pipelineId string, pipelin
 }
 
 func NewBasicPipeline(serverConfig *config.ServerConfig, pipelineConfig *BasicPipeline) (*Pipeline, error) {
-	// TODO: validate that integration configurations can be found for the user who submitted this pipeline
-	// if not, return an error to the caller
 	pipelineId := uuid.NewV4().String()
 	p := &Pipeline{}
 	

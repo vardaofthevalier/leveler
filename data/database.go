@@ -8,3 +8,11 @@ type Database interface {
 	Delete(string, string) error
 	Flush(string) error
 }
+
+type SecretStore interface {
+	Create(string, map[string]interface{}) error
+	Get(string) error
+	List() error
+	Update(string, map[string]interface{}) error
+	Delete(string) error
+}

@@ -6,7 +6,7 @@ package resources
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import google_protobuf "github.com/golang/protobuf/ptypes/any"
+import _ "github.com/golang/protobuf/ptypes/any"
 import google_protobuf1 "github.com/golang/protobuf/ptypes/empty"
 
 import (
@@ -19,6 +19,27 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
+type LogProducer int32
+
+const (
+	LogProducer_pipeline LogProducer = 0
+	LogProducer_job      LogProducer = 1
+)
+
+var LogProducer_name = map[int32]string{
+	0: "pipeline",
+	1: "job",
+}
+var LogProducer_value = map[string]int32{
+	"pipeline": 0,
+	"job":      1,
+}
+
+func (x LogProducer) String() string {
+	return proto.EnumName(LogProducer_name, int32(x))
+}
+func (LogProducer) EnumDescriptor() ([]byte, []int) { return fileDescriptor5, []int{0} }
+
 type Query struct {
 	Query string `protobuf:"bytes,1,opt,name=Query" json:"Query,omitempty"`
 	Type  string `protobuf:"bytes,2,opt,name=Type" json:"Type,omitempty"`
@@ -27,7 +48,7 @@ type Query struct {
 func (m *Query) Reset()                    { *m = Query{} }
 func (m *Query) String() string            { return proto.CompactTextString(m) }
 func (*Query) ProtoMessage()               {}
-func (*Query) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
+func (*Query) Descriptor() ([]byte, []int) { return fileDescriptor5, []int{0} }
 
 func (m *Query) GetQuery() string {
 	if m != nil {
@@ -43,229 +64,51 @@ func (m *Query) GetType() string {
 	return ""
 }
 
-type Resource struct {
-	Id      string                 `protobuf:"bytes,1,opt,name=Id" json:"Id,omitempty"`
-	Type    string                 `protobuf:"bytes,2,opt,name=Type" json:"Type,omitempty"`
-	Details []*google_protobuf.Any `protobuf:"bytes,3,rep,name=Details" json:"Details,omitempty"`
+type Loggable struct {
+	Kind LogProducer `protobuf:"varint,1,opt,name=kind,enum=resources.LogProducer" json:"kind,omitempty"`
+	Id   string      `protobuf:"bytes,2,opt,name=id" json:"id,omitempty"`
 }
 
-func (m *Resource) Reset()                    { *m = Resource{} }
-func (m *Resource) String() string            { return proto.CompactTextString(m) }
-func (*Resource) ProtoMessage()               {}
-func (*Resource) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{1} }
+func (m *Loggable) Reset()                    { *m = Loggable{} }
+func (m *Loggable) String() string            { return proto.CompactTextString(m) }
+func (*Loggable) ProtoMessage()               {}
+func (*Loggable) Descriptor() ([]byte, []int) { return fileDescriptor5, []int{1} }
 
-func (m *Resource) GetId() string {
+func (m *Loggable) GetKind() LogProducer {
+	if m != nil {
+		return m.Kind
+	}
+	return LogProducer_pipeline
+}
+
+func (m *Loggable) GetId() string {
 	if m != nil {
 		return m.Id
 	}
 	return ""
 }
 
-func (m *Resource) GetType() string {
+type Log struct {
+	Message string `protobuf:"bytes,1,opt,name=message" json:"message,omitempty"`
+}
+
+func (m *Log) Reset()                    { *m = Log{} }
+func (m *Log) String() string            { return proto.CompactTextString(m) }
+func (*Log) ProtoMessage()               {}
+func (*Log) Descriptor() ([]byte, []int) { return fileDescriptor5, []int{2} }
+
+func (m *Log) GetMessage() string {
 	if m != nil {
-		return m.Type
+		return m.Message
 	}
 	return ""
-}
-
-func (m *Resource) GetDetails() []*google_protobuf.Any {
-	if m != nil {
-		return m.Details
-	}
-	return nil
-}
-
-type StringDetail struct {
-	Name           string `protobuf:"bytes,1,opt,name=Name" json:"Name,omitempty"`
-	Value          string `protobuf:"bytes,2,opt,name=Value" json:"Value,omitempty"`
-	Required       bool   `protobuf:"varint,3,opt,name=Required" json:"Required,omitempty"`
-	Description    string `protobuf:"bytes,4,opt,name=Description" json:"Description,omitempty"`
-	Default        string `protobuf:"bytes,5,opt,name=Default" json:"Default,omitempty"`
-	IsSecondaryKey bool   `protobuf:"varint,6,opt,name=IsSecondaryKey" json:"IsSecondaryKey,omitempty"`
-}
-
-func (m *StringDetail) Reset()                    { *m = StringDetail{} }
-func (m *StringDetail) String() string            { return proto.CompactTextString(m) }
-func (*StringDetail) ProtoMessage()               {}
-func (*StringDetail) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{2} }
-
-func (m *StringDetail) GetName() string {
-	if m != nil {
-		return m.Name
-	}
-	return ""
-}
-
-func (m *StringDetail) GetValue() string {
-	if m != nil {
-		return m.Value
-	}
-	return ""
-}
-
-func (m *StringDetail) GetRequired() bool {
-	if m != nil {
-		return m.Required
-	}
-	return false
-}
-
-func (m *StringDetail) GetDescription() string {
-	if m != nil {
-		return m.Description
-	}
-	return ""
-}
-
-func (m *StringDetail) GetDefault() string {
-	if m != nil {
-		return m.Default
-	}
-	return ""
-}
-
-func (m *StringDetail) GetIsSecondaryKey() bool {
-	if m != nil {
-		return m.IsSecondaryKey
-	}
-	return false
-}
-
-type BoolDetail struct {
-	Name           string `protobuf:"bytes,1,opt,name=Name" json:"Name,omitempty"`
-	Value          bool   `protobuf:"varint,2,opt,name=Value" json:"Value,omitempty"`
-	Required       bool   `protobuf:"varint,3,opt,name=Required" json:"Required,omitempty"`
-	Description    string `protobuf:"bytes,4,opt,name=Description" json:"Description,omitempty"`
-	Default        bool   `protobuf:"varint,5,opt,name=Default" json:"Default,omitempty"`
-	IsSecondaryKey bool   `protobuf:"varint,6,opt,name=IsSecondaryKey" json:"IsSecondaryKey,omitempty"`
-}
-
-func (m *BoolDetail) Reset()                    { *m = BoolDetail{} }
-func (m *BoolDetail) String() string            { return proto.CompactTextString(m) }
-func (*BoolDetail) ProtoMessage()               {}
-func (*BoolDetail) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{3} }
-
-func (m *BoolDetail) GetName() string {
-	if m != nil {
-		return m.Name
-	}
-	return ""
-}
-
-func (m *BoolDetail) GetValue() bool {
-	if m != nil {
-		return m.Value
-	}
-	return false
-}
-
-func (m *BoolDetail) GetRequired() bool {
-	if m != nil {
-		return m.Required
-	}
-	return false
-}
-
-func (m *BoolDetail) GetDescription() string {
-	if m != nil {
-		return m.Description
-	}
-	return ""
-}
-
-func (m *BoolDetail) GetDefault() bool {
-	if m != nil {
-		return m.Default
-	}
-	return false
-}
-
-func (m *BoolDetail) GetIsSecondaryKey() bool {
-	if m != nil {
-		return m.IsSecondaryKey
-	}
-	return false
-}
-
-type Int64Detail struct {
-	Name           string `protobuf:"bytes,1,opt,name=Name" json:"Name,omitempty"`
-	Value          int64  `protobuf:"varint,2,opt,name=Value" json:"Value,omitempty"`
-	Required       bool   `protobuf:"varint,3,opt,name=Required" json:"Required,omitempty"`
-	Description    string `protobuf:"bytes,4,opt,name=Description" json:"Description,omitempty"`
-	Default        int64  `protobuf:"varint,5,opt,name=Default" json:"Default,omitempty"`
-	IsSecondaryKey bool   `protobuf:"varint,6,opt,name=IsSecondaryKey" json:"IsSecondaryKey,omitempty"`
-}
-
-func (m *Int64Detail) Reset()                    { *m = Int64Detail{} }
-func (m *Int64Detail) String() string            { return proto.CompactTextString(m) }
-func (*Int64Detail) ProtoMessage()               {}
-func (*Int64Detail) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{4} }
-
-func (m *Int64Detail) GetName() string {
-	if m != nil {
-		return m.Name
-	}
-	return ""
-}
-
-func (m *Int64Detail) GetValue() int64 {
-	if m != nil {
-		return m.Value
-	}
-	return 0
-}
-
-func (m *Int64Detail) GetRequired() bool {
-	if m != nil {
-		return m.Required
-	}
-	return false
-}
-
-func (m *Int64Detail) GetDescription() string {
-	if m != nil {
-		return m.Description
-	}
-	return ""
-}
-
-func (m *Int64Detail) GetDefault() int64 {
-	if m != nil {
-		return m.Default
-	}
-	return 0
-}
-
-func (m *Int64Detail) GetIsSecondaryKey() bool {
-	if m != nil {
-		return m.IsSecondaryKey
-	}
-	return false
-}
-
-type ResourceList struct {
-	Results []*Resource `protobuf:"bytes,1,rep,name=Results" json:"Results,omitempty"`
-}
-
-func (m *ResourceList) Reset()                    { *m = ResourceList{} }
-func (m *ResourceList) String() string            { return proto.CompactTextString(m) }
-func (*ResourceList) ProtoMessage()               {}
-func (*ResourceList) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{5} }
-
-func (m *ResourceList) GetResults() []*Resource {
-	if m != nil {
-		return m.Results
-	}
-	return nil
 }
 
 func init() {
 	proto.RegisterType((*Query)(nil), "resources.Query")
-	proto.RegisterType((*Resource)(nil), "resources.Resource")
-	proto.RegisterType((*StringDetail)(nil), "resources.StringDetail")
-	proto.RegisterType((*BoolDetail)(nil), "resources.BoolDetail")
-	proto.RegisterType((*Int64Detail)(nil), "resources.Int64Detail")
-	proto.RegisterType((*ResourceList)(nil), "resources.ResourceList")
+	proto.RegisterType((*Loggable)(nil), "resources.Loggable")
+	proto.RegisterType((*Log)(nil), "resources.Log")
+	proto.RegisterEnum("resources.LogProducer", LogProducer_name, LogProducer_value)
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -276,231 +119,815 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// Client API for ResourceEndpoint service
+// Client API for UsersEndpoint service
 
-type ResourceEndpointClient interface {
-	GetResource(ctx context.Context, in *Resource, opts ...grpc.CallOption) (*Resource, error)
-	ListResources(ctx context.Context, in *Query, opts ...grpc.CallOption) (*ResourceList, error)
-	CreateResource(ctx context.Context, in *Resource, opts ...grpc.CallOption) (*Resource, error)
-	UpdateResource(ctx context.Context, in *Resource, opts ...grpc.CallOption) (*google_protobuf1.Empty, error)
-	DeleteResource(ctx context.Context, in *Resource, opts ...grpc.CallOption) (*google_protobuf1.Empty, error)
+type UsersEndpointClient interface {
+	Add(ctx context.Context, in *User, opts ...grpc.CallOption) (*UserCredentials, error)
 }
 
-type resourceEndpointClient struct {
+type usersEndpointClient struct {
 	cc *grpc.ClientConn
 }
 
-func NewResourceEndpointClient(cc *grpc.ClientConn) ResourceEndpointClient {
-	return &resourceEndpointClient{cc}
+func NewUsersEndpointClient(cc *grpc.ClientConn) UsersEndpointClient {
+	return &usersEndpointClient{cc}
 }
 
-func (c *resourceEndpointClient) GetResource(ctx context.Context, in *Resource, opts ...grpc.CallOption) (*Resource, error) {
-	out := new(Resource)
-	err := grpc.Invoke(ctx, "/resources.ResourceEndpoint/GetResource", in, out, c.cc, opts...)
+func (c *usersEndpointClient) Add(ctx context.Context, in *User, opts ...grpc.CallOption) (*UserCredentials, error) {
+	out := new(UserCredentials)
+	err := grpc.Invoke(ctx, "/resources.UsersEndpoint/Add", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *resourceEndpointClient) ListResources(ctx context.Context, in *Query, opts ...grpc.CallOption) (*ResourceList, error) {
-	out := new(ResourceList)
-	err := grpc.Invoke(ctx, "/resources.ResourceEndpoint/ListResources", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+// Server API for UsersEndpoint service
+
+type UsersEndpointServer interface {
+	Add(context.Context, *User) (*UserCredentials, error)
 }
 
-func (c *resourceEndpointClient) CreateResource(ctx context.Context, in *Resource, opts ...grpc.CallOption) (*Resource, error) {
-	out := new(Resource)
-	err := grpc.Invoke(ctx, "/resources.ResourceEndpoint/CreateResource", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+func RegisterUsersEndpointServer(s *grpc.Server, srv UsersEndpointServer) {
+	s.RegisterService(&_UsersEndpoint_serviceDesc, srv)
 }
 
-func (c *resourceEndpointClient) UpdateResource(ctx context.Context, in *Resource, opts ...grpc.CallOption) (*google_protobuf1.Empty, error) {
-	out := new(google_protobuf1.Empty)
-	err := grpc.Invoke(ctx, "/resources.ResourceEndpoint/UpdateResource", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *resourceEndpointClient) DeleteResource(ctx context.Context, in *Resource, opts ...grpc.CallOption) (*google_protobuf1.Empty, error) {
-	out := new(google_protobuf1.Empty)
-	err := grpc.Invoke(ctx, "/resources.ResourceEndpoint/DeleteResource", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// Server API for ResourceEndpoint service
-
-type ResourceEndpointServer interface {
-	GetResource(context.Context, *Resource) (*Resource, error)
-	ListResources(context.Context, *Query) (*ResourceList, error)
-	CreateResource(context.Context, *Resource) (*Resource, error)
-	UpdateResource(context.Context, *Resource) (*google_protobuf1.Empty, error)
-	DeleteResource(context.Context, *Resource) (*google_protobuf1.Empty, error)
-}
-
-func RegisterResourceEndpointServer(s *grpc.Server, srv ResourceEndpointServer) {
-	s.RegisterService(&_ResourceEndpoint_serviceDesc, srv)
-}
-
-func _ResourceEndpoint_GetResource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Resource)
+func _UsersEndpoint_Add_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(User)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ResourceEndpointServer).GetResource(ctx, in)
+		return srv.(UsersEndpointServer).Add(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/resources.ResourceEndpoint/GetResource",
+		FullMethod: "/resources.UsersEndpoint/Add",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ResourceEndpointServer).GetResource(ctx, req.(*Resource))
+		return srv.(UsersEndpointServer).Add(ctx, req.(*User))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ResourceEndpoint_ListResources_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Query)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ResourceEndpointServer).ListResources(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/resources.ResourceEndpoint/ListResources",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ResourceEndpointServer).ListResources(ctx, req.(*Query))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ResourceEndpoint_CreateResource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Resource)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ResourceEndpointServer).CreateResource(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/resources.ResourceEndpoint/CreateResource",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ResourceEndpointServer).CreateResource(ctx, req.(*Resource))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ResourceEndpoint_UpdateResource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Resource)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ResourceEndpointServer).UpdateResource(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/resources.ResourceEndpoint/UpdateResource",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ResourceEndpointServer).UpdateResource(ctx, req.(*Resource))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ResourceEndpoint_DeleteResource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Resource)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ResourceEndpointServer).DeleteResource(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/resources.ResourceEndpoint/DeleteResource",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ResourceEndpointServer).DeleteResource(ctx, req.(*Resource))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-var _ResourceEndpoint_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "resources.ResourceEndpoint",
-	HandlerType: (*ResourceEndpointServer)(nil),
+var _UsersEndpoint_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "resources.UsersEndpoint",
+	HandlerType: (*UsersEndpointServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetResource",
-			Handler:    _ResourceEndpoint_GetResource_Handler,
-		},
-		{
-			MethodName: "ListResources",
-			Handler:    _ResourceEndpoint_ListResources_Handler,
-		},
-		{
-			MethodName: "CreateResource",
-			Handler:    _ResourceEndpoint_CreateResource_Handler,
-		},
-		{
-			MethodName: "UpdateResource",
-			Handler:    _ResourceEndpoint_UpdateResource_Handler,
-		},
-		{
-			MethodName: "DeleteResource",
-			Handler:    _ResourceEndpoint_DeleteResource_Handler,
+			MethodName: "Add",
+			Handler:    _UsersEndpoint_Add_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "resources.proto",
 }
 
-func init() { proto.RegisterFile("resources.proto", fileDescriptor1) }
+// Client API for IntegrationsEndpoint service
 
-var fileDescriptor1 = []byte{
-	// 423 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x94, 0xdf, 0x8a, 0xd3, 0x40,
-	0x14, 0xc6, 0x4d, 0xb2, 0x7f, 0xb2, 0x27, 0x6b, 0x5c, 0xc6, 0x45, 0xc7, 0x78, 0x13, 0x72, 0x21,
-	0xbd, 0x31, 0x8b, 0xab, 0x08, 0x82, 0x22, 0x6a, 0x17, 0x09, 0x8a, 0x60, 0x56, 0xbd, 0x14, 0xd2,
-	0xe6, 0xb4, 0x04, 0xd2, 0x99, 0x38, 0x33, 0xb9, 0xc8, 0x8b, 0xa9, 0xef, 0xe0, 0x4b, 0x49, 0x26,
-	0x99, 0x5a, 0x6a, 0x60, 0xdb, 0x42, 0xef, 0x66, 0xbe, 0xf3, 0x7d, 0xe7, 0xfc, 0x2e, 0xe6, 0x0c,
-	0xdc, 0x11, 0x28, 0x79, 0x2d, 0xa6, 0x28, 0xe3, 0x4a, 0x70, 0xc5, 0xc9, 0xc9, 0x52, 0x08, 0x1e,
-	0xcc, 0x39, 0x9f, 0x97, 0x78, 0xa1, 0x0b, 0x93, 0x7a, 0x76, 0x91, 0xb1, 0xa6, 0x73, 0x05, 0x0f,
-	0xd7, 0x4b, 0xb8, 0xa8, 0x54, 0x5f, 0x8c, 0x9e, 0xc0, 0xe1, 0xe7, 0x1a, 0x45, 0x43, 0xce, 0xfb,
-	0x03, 0xb5, 0x42, 0x6b, 0x74, 0x92, 0xf6, 0x2a, 0x81, 0x83, 0x2f, 0x4d, 0x85, 0xd4, 0xd6, 0xa2,
-	0x3e, 0x47, 0xdf, 0xc1, 0x4d, 0xfb, 0xb9, 0xc4, 0x07, 0x3b, 0xc9, 0xfb, 0x88, 0x9d, 0xe4, 0x43,
-	0x7e, 0x12, 0xc3, 0xf1, 0x18, 0x55, 0x56, 0x94, 0x92, 0x3a, 0xa1, 0x33, 0xf2, 0x2e, 0xcf, 0xe3,
-	0x8e, 0x28, 0x36, 0x44, 0xf1, 0x1b, 0xd6, 0xa4, 0xc6, 0x14, 0xfd, 0xb6, 0xe0, 0xf4, 0x5a, 0x89,
-	0x82, 0xcd, 0x3b, 0xa5, 0x6d, 0xfa, 0x29, 0x5b, 0x60, 0x3f, 0x46, 0x9f, 0x5b, 0xdc, 0x6f, 0x59,
-	0x59, 0x9b, 0x49, 0xdd, 0x85, 0x04, 0x2d, 0xda, 0x8f, 0xba, 0x10, 0x98, 0x53, 0x27, 0xb4, 0x46,
-	0x6e, 0xba, 0xbc, 0x93, 0x10, 0xbc, 0x31, 0xca, 0xa9, 0x28, 0x2a, 0x55, 0x70, 0x46, 0x0f, 0x74,
-	0x6e, 0x55, 0x22, 0xb4, 0x05, 0x9d, 0x65, 0x75, 0xa9, 0xe8, 0xa1, 0xae, 0x9a, 0x2b, 0x79, 0x04,
-	0x7e, 0x22, 0xaf, 0x71, 0xca, 0x59, 0x9e, 0x89, 0xe6, 0x03, 0x36, 0xf4, 0x48, 0x77, 0x5f, 0x53,
-	0xa3, 0x9f, 0x16, 0xc0, 0x5b, 0xce, 0xcb, 0x4d, 0xc1, 0xdd, 0xbd, 0x80, 0xbb, 0xdb, 0x83, 0xff,
-	0xb2, 0xc0, 0x4b, 0x98, 0x7a, 0xfe, 0x6c, 0x53, 0x72, 0x67, 0x2f, 0xe4, 0xce, 0xf6, 0xe4, 0xaf,
-	0xe0, 0xd4, 0xbc, 0xc6, 0x8f, 0x85, 0x54, 0xe4, 0x31, 0x1c, 0xa7, 0x28, 0xeb, 0x52, 0x49, 0x6a,
-	0xe9, 0xd7, 0x76, 0x37, 0xfe, 0xb7, 0x36, 0xc6, 0x99, 0x1a, 0xcf, 0xe5, 0x1f, 0x1b, 0xce, 0x8c,
-	0x7a, 0xc5, 0xf2, 0x8a, 0x17, 0x4c, 0x91, 0x17, 0xe0, 0xbd, 0x47, 0xb5, 0x7c, 0xe4, 0x43, 0x1d,
-	0x82, 0x21, 0x31, 0xba, 0x45, 0x5e, 0xc2, 0xed, 0x16, 0xc3, 0x28, 0x92, 0x9c, 0xad, 0xf8, 0xf4,
-	0x4e, 0x05, 0xf7, 0x07, 0x92, 0x6d, 0x46, 0xa7, 0xfd, 0x77, 0x02, 0x33, 0x85, 0x3b, 0xcd, 0x7e,
-	0x0d, 0xfe, 0xd7, 0x2a, 0xbf, 0x31, 0x7d, 0xef, 0xbf, 0xf5, 0xbb, 0x6a, 0x3f, 0x84, 0xae, 0xc1,
-	0x18, 0x4b, 0xdc, 0xb9, 0xc1, 0xe4, 0x48, 0x2b, 0x4f, 0xff, 0x06, 0x00, 0x00, 0xff, 0xff, 0xbf,
-	0xa9, 0xa6, 0x87, 0xaa, 0x04, 0x00, 0x00,
+type IntegrationsEndpointClient interface {
+	Add(ctx context.Context, in *Integration, opts ...grpc.CallOption) (*google_protobuf1.Empty, error)
+	Get(ctx context.Context, in *Integration, opts ...grpc.CallOption) (*Integration, error)
+	List(ctx context.Context, in *Query, opts ...grpc.CallOption) (*IntegrationList, error)
+	Update(ctx context.Context, in *Integration, opts ...grpc.CallOption) (*google_protobuf1.Empty, error)
+	Remove(ctx context.Context, in *Integration, opts ...grpc.CallOption) (*google_protobuf1.Empty, error)
+}
+
+type integrationsEndpointClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewIntegrationsEndpointClient(cc *grpc.ClientConn) IntegrationsEndpointClient {
+	return &integrationsEndpointClient{cc}
+}
+
+func (c *integrationsEndpointClient) Add(ctx context.Context, in *Integration, opts ...grpc.CallOption) (*google_protobuf1.Empty, error) {
+	out := new(google_protobuf1.Empty)
+	err := grpc.Invoke(ctx, "/resources.IntegrationsEndpoint/Add", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *integrationsEndpointClient) Get(ctx context.Context, in *Integration, opts ...grpc.CallOption) (*Integration, error) {
+	out := new(Integration)
+	err := grpc.Invoke(ctx, "/resources.IntegrationsEndpoint/Get", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *integrationsEndpointClient) List(ctx context.Context, in *Query, opts ...grpc.CallOption) (*IntegrationList, error) {
+	out := new(IntegrationList)
+	err := grpc.Invoke(ctx, "/resources.IntegrationsEndpoint/List", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *integrationsEndpointClient) Update(ctx context.Context, in *Integration, opts ...grpc.CallOption) (*google_protobuf1.Empty, error) {
+	out := new(google_protobuf1.Empty)
+	err := grpc.Invoke(ctx, "/resources.IntegrationsEndpoint/Update", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *integrationsEndpointClient) Remove(ctx context.Context, in *Integration, opts ...grpc.CallOption) (*google_protobuf1.Empty, error) {
+	out := new(google_protobuf1.Empty)
+	err := grpc.Invoke(ctx, "/resources.IntegrationsEndpoint/Remove", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Server API for IntegrationsEndpoint service
+
+type IntegrationsEndpointServer interface {
+	Add(context.Context, *Integration) (*google_protobuf1.Empty, error)
+	Get(context.Context, *Integration) (*Integration, error)
+	List(context.Context, *Query) (*IntegrationList, error)
+	Update(context.Context, *Integration) (*google_protobuf1.Empty, error)
+	Remove(context.Context, *Integration) (*google_protobuf1.Empty, error)
+}
+
+func RegisterIntegrationsEndpointServer(s *grpc.Server, srv IntegrationsEndpointServer) {
+	s.RegisterService(&_IntegrationsEndpoint_serviceDesc, srv)
+}
+
+func _IntegrationsEndpoint_Add_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Integration)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IntegrationsEndpointServer).Add(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/resources.IntegrationsEndpoint/Add",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IntegrationsEndpointServer).Add(ctx, req.(*Integration))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _IntegrationsEndpoint_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Integration)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IntegrationsEndpointServer).Get(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/resources.IntegrationsEndpoint/Get",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IntegrationsEndpointServer).Get(ctx, req.(*Integration))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _IntegrationsEndpoint_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Query)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IntegrationsEndpointServer).List(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/resources.IntegrationsEndpoint/List",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IntegrationsEndpointServer).List(ctx, req.(*Query))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _IntegrationsEndpoint_Update_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Integration)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IntegrationsEndpointServer).Update(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/resources.IntegrationsEndpoint/Update",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IntegrationsEndpointServer).Update(ctx, req.(*Integration))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _IntegrationsEndpoint_Remove_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Integration)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IntegrationsEndpointServer).Remove(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/resources.IntegrationsEndpoint/Remove",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IntegrationsEndpointServer).Remove(ctx, req.(*Integration))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _IntegrationsEndpoint_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "resources.IntegrationsEndpoint",
+	HandlerType: (*IntegrationsEndpointServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Add",
+			Handler:    _IntegrationsEndpoint_Add_Handler,
+		},
+		{
+			MethodName: "Get",
+			Handler:    _IntegrationsEndpoint_Get_Handler,
+		},
+		{
+			MethodName: "List",
+			Handler:    _IntegrationsEndpoint_List_Handler,
+		},
+		{
+			MethodName: "Update",
+			Handler:    _IntegrationsEndpoint_Update_Handler,
+		},
+		{
+			MethodName: "Remove",
+			Handler:    _IntegrationsEndpoint_Remove_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "resources.proto",
+}
+
+// Client API for RepositoriesEndpoint service
+
+type RepositoriesEndpointClient interface {
+	Add(ctx context.Context, in *Repository, opts ...grpc.CallOption) (*google_protobuf1.Empty, error)
+	Get(ctx context.Context, in *Repository, opts ...grpc.CallOption) (*Repository, error)
+	List(ctx context.Context, in *Query, opts ...grpc.CallOption) (*RepositoryList, error)
+	Remove(ctx context.Context, in *Repository, opts ...grpc.CallOption) (*google_protobuf1.Empty, error)
+}
+
+type repositoriesEndpointClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewRepositoriesEndpointClient(cc *grpc.ClientConn) RepositoriesEndpointClient {
+	return &repositoriesEndpointClient{cc}
+}
+
+func (c *repositoriesEndpointClient) Add(ctx context.Context, in *Repository, opts ...grpc.CallOption) (*google_protobuf1.Empty, error) {
+	out := new(google_protobuf1.Empty)
+	err := grpc.Invoke(ctx, "/resources.RepositoriesEndpoint/Add", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *repositoriesEndpointClient) Get(ctx context.Context, in *Repository, opts ...grpc.CallOption) (*Repository, error) {
+	out := new(Repository)
+	err := grpc.Invoke(ctx, "/resources.RepositoriesEndpoint/Get", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *repositoriesEndpointClient) List(ctx context.Context, in *Query, opts ...grpc.CallOption) (*RepositoryList, error) {
+	out := new(RepositoryList)
+	err := grpc.Invoke(ctx, "/resources.RepositoriesEndpoint/List", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *repositoriesEndpointClient) Remove(ctx context.Context, in *Repository, opts ...grpc.CallOption) (*google_protobuf1.Empty, error) {
+	out := new(google_protobuf1.Empty)
+	err := grpc.Invoke(ctx, "/resources.RepositoriesEndpoint/Remove", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Server API for RepositoriesEndpoint service
+
+type RepositoriesEndpointServer interface {
+	Add(context.Context, *Repository) (*google_protobuf1.Empty, error)
+	Get(context.Context, *Repository) (*Repository, error)
+	List(context.Context, *Query) (*RepositoryList, error)
+	Remove(context.Context, *Repository) (*google_protobuf1.Empty, error)
+}
+
+func RegisterRepositoriesEndpointServer(s *grpc.Server, srv RepositoriesEndpointServer) {
+	s.RegisterService(&_RepositoriesEndpoint_serviceDesc, srv)
+}
+
+func _RepositoriesEndpoint_Add_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Repository)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RepositoriesEndpointServer).Add(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/resources.RepositoriesEndpoint/Add",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RepositoriesEndpointServer).Add(ctx, req.(*Repository))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RepositoriesEndpoint_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Repository)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RepositoriesEndpointServer).Get(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/resources.RepositoriesEndpoint/Get",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RepositoriesEndpointServer).Get(ctx, req.(*Repository))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RepositoriesEndpoint_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Query)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RepositoriesEndpointServer).List(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/resources.RepositoriesEndpoint/List",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RepositoriesEndpointServer).List(ctx, req.(*Query))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RepositoriesEndpoint_Remove_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Repository)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RepositoriesEndpointServer).Remove(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/resources.RepositoriesEndpoint/Remove",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RepositoriesEndpointServer).Remove(ctx, req.(*Repository))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _RepositoriesEndpoint_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "resources.RepositoriesEndpoint",
+	HandlerType: (*RepositoriesEndpointServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Add",
+			Handler:    _RepositoriesEndpoint_Add_Handler,
+		},
+		{
+			MethodName: "Get",
+			Handler:    _RepositoriesEndpoint_Get_Handler,
+		},
+		{
+			MethodName: "List",
+			Handler:    _RepositoriesEndpoint_List_Handler,
+		},
+		{
+			MethodName: "Remove",
+			Handler:    _RepositoriesEndpoint_Remove_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "resources.proto",
+}
+
+// Client API for PipelinesEndpoint service
+
+type PipelinesEndpointClient interface {
+	Get(ctx context.Context, in *Pipeline, opts ...grpc.CallOption) (*Pipeline, error)
+	List(ctx context.Context, in *Query, opts ...grpc.CallOption) (*PipelineList, error)
+	Run(ctx context.Context, in *Pipeline, opts ...grpc.CallOption) (*Pipeline, error)
+	Cancel(ctx context.Context, in *Pipeline, opts ...grpc.CallOption) (*google_protobuf1.Empty, error)
+}
+
+type pipelinesEndpointClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewPipelinesEndpointClient(cc *grpc.ClientConn) PipelinesEndpointClient {
+	return &pipelinesEndpointClient{cc}
+}
+
+func (c *pipelinesEndpointClient) Get(ctx context.Context, in *Pipeline, opts ...grpc.CallOption) (*Pipeline, error) {
+	out := new(Pipeline)
+	err := grpc.Invoke(ctx, "/resources.PipelinesEndpoint/Get", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *pipelinesEndpointClient) List(ctx context.Context, in *Query, opts ...grpc.CallOption) (*PipelineList, error) {
+	out := new(PipelineList)
+	err := grpc.Invoke(ctx, "/resources.PipelinesEndpoint/List", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *pipelinesEndpointClient) Run(ctx context.Context, in *Pipeline, opts ...grpc.CallOption) (*Pipeline, error) {
+	out := new(Pipeline)
+	err := grpc.Invoke(ctx, "/resources.PipelinesEndpoint/Run", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *pipelinesEndpointClient) Cancel(ctx context.Context, in *Pipeline, opts ...grpc.CallOption) (*google_protobuf1.Empty, error) {
+	out := new(google_protobuf1.Empty)
+	err := grpc.Invoke(ctx, "/resources.PipelinesEndpoint/Cancel", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Server API for PipelinesEndpoint service
+
+type PipelinesEndpointServer interface {
+	Get(context.Context, *Pipeline) (*Pipeline, error)
+	List(context.Context, *Query) (*PipelineList, error)
+	Run(context.Context, *Pipeline) (*Pipeline, error)
+	Cancel(context.Context, *Pipeline) (*google_protobuf1.Empty, error)
+}
+
+func RegisterPipelinesEndpointServer(s *grpc.Server, srv PipelinesEndpointServer) {
+	s.RegisterService(&_PipelinesEndpoint_serviceDesc, srv)
+}
+
+func _PipelinesEndpoint_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Pipeline)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PipelinesEndpointServer).Get(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/resources.PipelinesEndpoint/Get",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PipelinesEndpointServer).Get(ctx, req.(*Pipeline))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PipelinesEndpoint_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Query)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PipelinesEndpointServer).List(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/resources.PipelinesEndpoint/List",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PipelinesEndpointServer).List(ctx, req.(*Query))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PipelinesEndpoint_Run_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Pipeline)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PipelinesEndpointServer).Run(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/resources.PipelinesEndpoint/Run",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PipelinesEndpointServer).Run(ctx, req.(*Pipeline))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PipelinesEndpoint_Cancel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Pipeline)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PipelinesEndpointServer).Cancel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/resources.PipelinesEndpoint/Cancel",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PipelinesEndpointServer).Cancel(ctx, req.(*Pipeline))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _PipelinesEndpoint_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "resources.PipelinesEndpoint",
+	HandlerType: (*PipelinesEndpointServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Get",
+			Handler:    _PipelinesEndpoint_Get_Handler,
+		},
+		{
+			MethodName: "List",
+			Handler:    _PipelinesEndpoint_List_Handler,
+		},
+		{
+			MethodName: "Run",
+			Handler:    _PipelinesEndpoint_Run_Handler,
+		},
+		{
+			MethodName: "Cancel",
+			Handler:    _PipelinesEndpoint_Cancel_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "resources.proto",
+}
+
+// Client API for JobsEndpoint service
+
+type JobsEndpointClient interface {
+	Get(ctx context.Context, in *Job, opts ...grpc.CallOption) (*Job, error)
+	List(ctx context.Context, in *Query, opts ...grpc.CallOption) (*JobList, error)
+}
+
+type jobsEndpointClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewJobsEndpointClient(cc *grpc.ClientConn) JobsEndpointClient {
+	return &jobsEndpointClient{cc}
+}
+
+func (c *jobsEndpointClient) Get(ctx context.Context, in *Job, opts ...grpc.CallOption) (*Job, error) {
+	out := new(Job)
+	err := grpc.Invoke(ctx, "/resources.JobsEndpoint/Get", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *jobsEndpointClient) List(ctx context.Context, in *Query, opts ...grpc.CallOption) (*JobList, error) {
+	out := new(JobList)
+	err := grpc.Invoke(ctx, "/resources.JobsEndpoint/List", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Server API for JobsEndpoint service
+
+type JobsEndpointServer interface {
+	Get(context.Context, *Job) (*Job, error)
+	List(context.Context, *Query) (*JobList, error)
+}
+
+func RegisterJobsEndpointServer(s *grpc.Server, srv JobsEndpointServer) {
+	s.RegisterService(&_JobsEndpoint_serviceDesc, srv)
+}
+
+func _JobsEndpoint_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Job)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(JobsEndpointServer).Get(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/resources.JobsEndpoint/Get",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(JobsEndpointServer).Get(ctx, req.(*Job))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _JobsEndpoint_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Query)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(JobsEndpointServer).List(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/resources.JobsEndpoint/List",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(JobsEndpointServer).List(ctx, req.(*Query))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _JobsEndpoint_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "resources.JobsEndpoint",
+	HandlerType: (*JobsEndpointServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Get",
+			Handler:    _JobsEndpoint_Get_Handler,
+		},
+		{
+			MethodName: "List",
+			Handler:    _JobsEndpoint_List_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "resources.proto",
+}
+
+// Client API for LogsEndpoint service
+
+type LogsEndpointClient interface {
+	Get(ctx context.Context, in *Loggable, opts ...grpc.CallOption) (LogsEndpoint_GetClient, error)
+}
+
+type logsEndpointClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewLogsEndpointClient(cc *grpc.ClientConn) LogsEndpointClient {
+	return &logsEndpointClient{cc}
+}
+
+func (c *logsEndpointClient) Get(ctx context.Context, in *Loggable, opts ...grpc.CallOption) (LogsEndpoint_GetClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_LogsEndpoint_serviceDesc.Streams[0], c.cc, "/resources.LogsEndpoint/Get", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &logsEndpointGetClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type LogsEndpoint_GetClient interface {
+	Recv() (*Log, error)
+	grpc.ClientStream
+}
+
+type logsEndpointGetClient struct {
+	grpc.ClientStream
+}
+
+func (x *logsEndpointGetClient) Recv() (*Log, error) {
+	m := new(Log)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// Server API for LogsEndpoint service
+
+type LogsEndpointServer interface {
+	Get(*Loggable, LogsEndpoint_GetServer) error
+}
+
+func RegisterLogsEndpointServer(s *grpc.Server, srv LogsEndpointServer) {
+	s.RegisterService(&_LogsEndpoint_serviceDesc, srv)
+}
+
+func _LogsEndpoint_Get_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(Loggable)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(LogsEndpointServer).Get(m, &logsEndpointGetServer{stream})
+}
+
+type LogsEndpoint_GetServer interface {
+	Send(*Log) error
+	grpc.ServerStream
+}
+
+type logsEndpointGetServer struct {
+	grpc.ServerStream
+}
+
+func (x *logsEndpointGetServer) Send(m *Log) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+var _LogsEndpoint_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "resources.LogsEndpoint",
+	HandlerType: (*LogsEndpointServer)(nil),
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Get",
+			Handler:       _LogsEndpoint_Get_Handler,
+			ServerStreams: true,
+		},
+	},
+	Metadata: "resources.proto",
+}
+
+func init() { proto.RegisterFile("resources.proto", fileDescriptor5) }
+
+var fileDescriptor5 = []byte{
+	// 517 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x54, 0xd1, 0x6e, 0xd3, 0x30,
+	0x14, 0x4d, 0xda, 0xd2, 0x6d, 0x97, 0xd2, 0x75, 0xa6, 0x8c, 0x2e, 0x3c, 0x80, 0x22, 0x24, 0xd0,
+	0x1e, 0x32, 0x9a, 0xc1, 0x26, 0xf6, 0x80, 0x84, 0xa6, 0x82, 0x98, 0xf2, 0x30, 0x2a, 0xf6, 0x01,
+	0x49, 0x73, 0xb1, 0x0c, 0xad, 0x1d, 0xd9, 0x0e, 0x52, 0xff, 0x8c, 0x3f, 0xe2, 0x13, 0x78, 0x45,
+	0x4d, 0x9c, 0x26, 0x2d, 0xc9, 0xa4, 0xed, 0x2d, 0x3e, 0x3e, 0xe7, 0xde, 0x73, 0x4e, 0xad, 0xc2,
+	0xbe, 0x44, 0x25, 0x52, 0x39, 0x43, 0xe5, 0x25, 0x52, 0x68, 0x41, 0xf6, 0xd6, 0x80, 0x03, 0xa9,
+	0x42, 0x99, 0xc3, 0xce, 0x01, 0xe3, 0x1a, 0xa9, 0x0c, 0x35, 0x13, 0xdc, 0x40, 0xfd, 0x84, 0x25,
+	0x38, 0x67, 0x1c, 0xcd, 0x79, 0x20, 0x31, 0x11, 0x8a, 0x69, 0x21, 0x97, 0x06, 0x39, 0xa2, 0x42,
+	0xd0, 0x39, 0x9e, 0x64, 0xa7, 0x28, 0xfd, 0x7e, 0x12, 0xf2, 0xe2, 0xea, 0xd9, 0xf6, 0x15, 0x2e,
+	0x12, 0x6d, 0x2e, 0xdd, 0x31, 0x3c, 0xf8, 0x9a, 0xa2, 0x5c, 0x92, 0xa1, 0xf9, 0x18, 0xd9, 0x2f,
+	0xec, 0xd7, 0x7b, 0x53, 0x83, 0x12, 0xe8, 0x7c, 0x5b, 0x26, 0x38, 0x6a, 0x65, 0x60, 0xf6, 0xed,
+	0x7e, 0x82, 0xdd, 0x40, 0x50, 0x1a, 0x46, 0x73, 0x24, 0xc7, 0xd0, 0xf9, 0xc9, 0x78, 0x9c, 0x89,
+	0xfa, 0xfe, 0xa1, 0x57, 0x46, 0x0c, 0x04, 0xbd, 0x96, 0x22, 0x4e, 0x67, 0x28, 0xa7, 0x19, 0x87,
+	0xf4, 0xa1, 0xc5, 0x62, 0x33, 0xa9, 0xc5, 0x62, 0xf7, 0x39, 0xb4, 0x03, 0x41, 0xc9, 0x08, 0x76,
+	0x16, 0xa8, 0x54, 0x48, 0xd1, 0xac, 0x2e, 0x8e, 0xc7, 0x2f, 0xe1, 0x61, 0x65, 0x0a, 0xe9, 0xc1,
+	0x6e, 0x51, 0xc3, 0xc0, 0x22, 0x3b, 0xd0, 0xfe, 0x21, 0xa2, 0x81, 0xed, 0x4f, 0xe0, 0xd1, 0x8d,
+	0x42, 0xa9, 0x26, 0x3c, 0x4e, 0x04, 0xe3, 0x9a, 0xbc, 0x85, 0xf6, 0xc7, 0x38, 0x26, 0xfb, 0x15,
+	0x33, 0x2b, 0x82, 0xe3, 0x6c, 0x01, 0x97, 0x12, 0x63, 0xe4, 0x9a, 0x85, 0x73, 0xe5, 0x5a, 0xfe,
+	0xef, 0x16, 0x0c, 0xbf, 0x94, 0xc5, 0x97, 0xe3, 0xce, 0xf3, 0x71, 0xd5, 0x6c, 0x15, 0x9e, 0x73,
+	0xe8, 0xe5, 0xf5, 0x7a, 0x45, 0xbd, 0xde, 0x64, 0x55, 0xaf, 0x6b, 0xad, 0x84, 0x9f, 0x51, 0xdf,
+	0x22, 0xac, 0xc5, 0x5d, 0x8b, 0x9c, 0x41, 0x27, 0x60, 0x4a, 0x93, 0x41, 0x85, 0x91, 0xfd, 0x1c,
+	0x1b, 0x11, 0x2a, 0x9a, 0x15, 0xdb, 0xb5, 0xc8, 0x05, 0x74, 0x6f, 0x92, 0x38, 0xd4, 0x78, 0x0f,
+	0xb3, 0x17, 0xd0, 0x9d, 0xe2, 0x42, 0xfc, 0xba, 0x87, 0xd6, 0xff, 0x6b, 0xc3, 0x70, 0x5a, 0x3c,
+	0x48, 0x86, 0x65, 0x75, 0x67, 0x79, 0x75, 0x4f, 0x2a, 0x13, 0xd7, 0xbc, 0xe5, 0x2d, 0x66, 0xde,
+	0xe5, 0xcd, 0x35, 0xe8, 0xea, 0xe1, 0x4c, 0xd6, 0xd4, 0xdb, 0x51, 0xad, 0xc4, 0xd4, 0xf6, 0x7e,
+	0x1d, 0xfd, 0xae, 0x46, 0xfd, 0x3f, 0x36, 0x1c, 0x5c, 0x9b, 0x37, 0x59, 0xc6, 0x1e, 0xe7, 0xf6,
+	0x1f, 0x57, 0xa6, 0x15, 0x24, 0xa7, 0x0e, 0x74, 0x2d, 0x72, 0xda, 0x68, 0xfd, 0x69, 0x8d, 0xc0,
+	0x18, 0x1f, 0x43, 0x7b, 0x9a, 0xf2, 0x3b, 0xed, 0x39, 0x87, 0xee, 0x65, 0xc8, 0x67, 0x38, 0xaf,
+	0x57, 0x35, 0x27, 0xa5, 0xd0, 0xbb, 0x12, 0x51, 0x99, 0xf1, 0x55, 0x9e, 0xb1, 0x5f, 0x99, 0x72,
+	0x25, 0x22, 0x67, 0xeb, 0xec, 0x5a, 0xc4, 0x6b, 0x4c, 0x46, 0x36, 0xb9, 0x79, 0x28, 0xff, 0x03,
+	0xf4, 0x02, 0x41, 0xcb, 0x45, 0xde, 0xff, 0x65, 0x16, 0xff, 0x3e, 0x1b, 0xdb, 0x02, 0x41, 0x5d,
+	0xeb, 0x8d, 0x1d, 0x75, 0x33, 0xeb, 0xa7, 0xff, 0x02, 0x00, 0x00, 0xff, 0xff, 0x35, 0x0b, 0x29,
+	0x9b, 0x6e, 0x05, 0x00, 0x00,
 }

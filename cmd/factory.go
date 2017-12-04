@@ -7,14 +7,32 @@ import (
 	"bytes"
 	"io/ioutil"
 	"path/filepath"
+	"leveler/resources"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
-	resources "leveler/resources"
-	jsonpb "github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
 )
 
 var opts []grpc.DialOption
 var resourceList = buildResourceClientList()
+
+
+func AddOptions(options []*resources.Option, cmd *cobra.Command) {
+	// process string options
+	for _, f := range options {
+		if f.Type == "string" {
+			cmd.PersistentFlags().StringVarP(new(string), f.Name, string(f.Name[0]), string(f.Default), f.Description)
+		} else if f.Type == "bool" {
+			cmd.PersistentFlags().BoolVarP(new(bool), f.Name, string(f.Name[0]), bool(f.Default), f.Description)
+		} else if f.Type == "int64" {
+			cmd.PersistentFlags().Int64VarP(new(int64), f.Name, string(f.Name[0]), int64(f.Default), f.Description)
+		} else {
+			// TODO: handle error situation (unimplemented type)
+			// also... implement more types!
+		}
+	}
+}
 
 func AddCommands(parent *cobra.Command) {
 	var supported bool
@@ -41,12 +59,39 @@ func AddCommands(parent *cobra.Command) {
 							Short: resource.ShortDescription(),
 							Long: resource.LongDescription(),
 							Run: func(cmd *cobra.Command, args []string) {
-								resource.CreateRequest(cmd)
+								resource.CreateRequest(cmd)  // TODO: when subcommands are present, need to move this to the innermost command
 							},
 						}
 
-						resource.AddOptions(create)
+						if resource.CmdConfig.Options != nil {
+							AddOptions(create, resource.cmdConfig.Options)
+						}
+
+						if resource.CmdConfig.Subcommands != nil {
+							resource.AddSubcommands(create, resource.CmdConfig.Subcommands)
+						}
+
 						parent.AddCommand(create)
+
+					case "add":
+						var add = &cobra.Command{
+							Use:   resource.Usage(),
+							Short: resource.ShortDescription(),
+							Long: resource.LongDescription(),
+							Run: func(cmd *cobra.Command, args []string) {
+								resource.AddRequest(cmd)
+							},
+						}
+
+						if resource.CmdConfig.Options != nil {
+							AddOptions(add, resource.cmdConfig.Options)
+						}
+
+						if resource.CmdConfig.Subcommands != nil {
+							resource.AddSubcommands(add, resource.CmdConfig.Subcommands)
+						}
+
+						parent.AddCommand(add)
 
 					case "get": 
 						var get = &cobra.Command{
@@ -56,6 +101,14 @@ func AddCommands(parent *cobra.Command) {
 							Run: func(cmd *cobra.Command, args []string) {
 								resource.GetRequest(cmd)
 							},
+						}
+
+						if resource.CmdConfig.Options != nil {
+							AddOptions(get, resource.cmdConfig.Options)
+						}
+
+						if resource.CmdConfig.Subcommands != nil {
+							resource.AddSubcommands(get, resource.CmdConfig.Subcommands)
 						}
 
 						parent.AddCommand(get)
@@ -70,7 +123,17 @@ func AddCommands(parent *cobra.Command) {
 							},
 						}
 
+						// SPECIAL CASE: the list operation is implemented to take in a query for all types
 						list.PersistentFlags().StringVarP(new(string), "query", "q", "", "A query for filtering list results")
+
+						if resource.CmdConfig.Options != nil {
+							AddOptions(list, resource.cmdConfig.Options)
+						}
+
+						if resource.CmdConfig.Subcommands != nil {
+							resource.AddSubcommands(list, resource.CmdConfig.Subcommands)
+						}
+
 						parent.AddCommand(list)
 
 					case "update":
@@ -83,7 +146,14 @@ func AddCommands(parent *cobra.Command) {
 							},
 						}
 
-						resource.AddOptions(update)
+						if resource.CmdConfig.Options != nil {
+							AddOptions(update, resource.cmdConfig.Options)
+						}
+
+						if resource.CmdConfig.Subcommands != nil {
+							resource.AddSubcommands(update, resource.CmdConfig.Subcommands)
+						}
+
 						parent.AddCommand(update)
 
 					case "patch":  // TODO: fully implement the patch operation
@@ -97,8 +167,35 @@ func AddCommands(parent *cobra.Command) {
 							},
 						}
 
-						resource.AddOptions(patch)
+						if resource.CmdConfig.Options != nil {
+							AddOptions(patch, resource.cmdConfig.Options)
+						}
+
+						if resource.CmdConfig.Subcommands != nil {
+							resource.AddSubcommands(patch, resource.CmdConfig.Subcommands)
+						}
+
 						parent.AddCommand(patch)
+
+					case "remove": 
+						var remove = &cobra.Command{
+							Use:   resource.Usage(),
+							Short: resource.ShortDescription(),
+							Long: resource.LongDescription(),
+							Run: func(cmd *cobra.Command, args []string) {
+								resource.RemoveRequest(cmd)
+							},
+						}
+
+						if resource.CmdConfig.Options != nil {
+							AddOptions(remove, resource.cmdConfig.Options)
+						}
+
+						if resource.CmdConfig.Subcommands != nil {
+							resource.AddSubcommands(remove, resource.CmdConfig.Subcommands)
+						}
+
+						parent.AddCommand(remove)
 
 					case "delete":
 						var delete = &cobra.Command{
@@ -108,6 +205,14 @@ func AddCommands(parent *cobra.Command) {
 							Run: func(cmd *cobra.Command, args []string) {
 								resource.DeleteRequest(cmd)
 							},
+						}
+
+						if resource.CmdConfig.Options != nil {
+							AddOptions(delete, resource.cmdConfig.Options)
+						}
+
+						if resource.CmdConfig.Subcommands != nil {
+							resource.AddSubcommands(delete, resource.CmdConfig.Subcommands)
 						}
 
 						parent.AddCommand(delete)
@@ -123,7 +228,55 @@ func AddCommands(parent *cobra.Command) {
 							},
 						}
 
+						if resource.CmdConfig.Options != nil {
+							AddOptions(apply, resource.cmdConfig.Options)
+						}
+
+						if resource.CmdConfig.Subcommands != nil {
+							resource.AddSubcommands(apply, resource.CmdConfig.Subcommands)
+						}
+
 						parent.AddCommand(apply)
+
+					case "run": 
+						var run = &cobra.Command{
+							Use:   resource.Usage(),
+							Short: resource.ShortDescription(),
+							Long: resource.LongDescription(),
+							Run: func(cmd *cobra.Command, args []string) {
+								resource.RunRequest(cmd)
+							},
+						}
+
+						if resource.CmdConfig.Options != nil {
+							AddOptions(run, resource.cmdConfig.Options)
+						}
+
+						if resource.CmdConfig.Subcommands != nil {
+							resource.AddSubcommands(run, resource.CmdConfig.Subcommands)
+						}
+
+						parent.AddCommand(run)
+
+					case "cancel":
+						var cancel = &cobra.Command{
+							Use:   resource.Usage(),
+							Short: resource.ShortDescription(),
+							Long: resource.LongDescription(),
+							Run: func(cmd *cobra.Command, args []string) {
+								resource.CancelRequest(cmd)
+							},
+						}
+
+						if resource.CmdConfig.Options != nil {
+							AddOptions(cancel, resource.cmdConfig.Options)
+						}
+
+						if resource.CmdConfig.Subcommands != nil {
+							resource.AddSubcommands(cancel, resource.CmdConfig.Subcommands)
+						}
+
+						parent.AddCommand(cancel)
 
 					default:
 						fmt.Printf("Unknown operation '%s' in resource configuration", parent.Name())
@@ -144,9 +297,13 @@ func AddCommands(parent *cobra.Command) {
 	}
 }
 
+func AddSubcommands(parent *cobra.Command, subcommands []*cobra.Command) {
+	// TODO: implement this
+}
+
 func buildResourceClientList() []ResourceClient {
-	var r []ResourceClient
-	opts = append(opts, grpc.WithInsecure())
+	var r []*ResourceCmd
+	opts = append(opts, grpc.WithInsecure())  // TODO: set appropriate options
 	clientConn, err := grpc.Dial("127.0.0.1:8080", opts...) // TODO: move server and port to config file
 	
 	if err != nil {
@@ -161,7 +318,7 @@ func buildResourceClientList() []ResourceClient {
 		os.Exit(1)
 	}
 
-	contents, err := ioutil.ReadFile(filepath.Join(u.HomeDir, ".leveler", "resources.json"))
+	contents, err := ioutil.ReadFile(filepath.Join(u.HomeDir, ".leveler", "resources.json"))  // TODO: read from centralized schema stored on the server
 	if err != nil {
 		fmt.Printf("Error reading resource configuration file: %v", err)
 		os.Exit(1)
@@ -180,7 +337,8 @@ func buildResourceClientList() []ResourceClient {
 	}
 
 	for _, res := range m.Resources {
-		r = append(r, ResourceClient{Client: resources.NewResourceEndpointClient(clientConn), CmdConfig: *res})
+		pb := proto.MessageType(res.CmdConfig.ProtobufType)
+		r = append(r, &ResourceCmd{Client: pb.GetClient(clientConn), CmdConfig: *res})
 	}
 
 	return r

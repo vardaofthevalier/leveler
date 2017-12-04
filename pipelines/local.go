@@ -213,7 +213,7 @@ func (j *LocalPipelineJob) SyncInputs(quit chan int8) error {
 				} else {
 					_, err := os.Stat(config.DestPath)
 					if err != nil {
-						fmt.Println("stat error! %s", err)
+						fmt.Printf("stat error! %v\n", err)
 					}
 					status.Status = SUCCEEDED 
 					done <- status

@@ -131,6 +131,15 @@ func (j *DockerPipelineJob) AddParent(parent *PipelineJob) {
 
 func (j *DockerPipelineJob) Init() error {
 	serverData := filepath.Join(j.ServerConfig.Datadir, "pipelines", "docker", j.PipelineId, j.Name)
+	for _, i := range j.Inputs {
+		// if input comes from a non-local source, create sync script 
+		// otherwise, if it comes from a local source, copy the file to the server data dir and bind mount it at runtime
+	}
+
+	for _, i := range j.Outputs {
+		// if output is going to a (non-local) integration destination, create sync script and empty volume
+		// otherwise create an empty file and bind mount at runtime
+	}
 	// generate input sync script
 	// - read template from file
 	// - evaluate template
