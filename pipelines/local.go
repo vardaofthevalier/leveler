@@ -13,11 +13,13 @@ import (
 	"encoding/json"
 	"path/filepath"
 	"leveler/config"
+	"leveler/resources"
 	uuid "github.com/satori/go.uuid"
 )
 
 type LocalPipelineJob struct {
 	Id string 										`json:"id" yaml:"id"`
+	PipelineId string 								`json:"pipeline_id" yaml:"pipeline_id"`
 	Name string 									`json:"name" yaml:"name"`
 	Datadir string 									`json:"data_directory" yaml:"data_directory"`
 	Workdir string 									`json:"working_directory" yaml:"working_directory"`
@@ -35,7 +37,7 @@ type LocalPipelineJob struct {
 	LogLock *sync.Mutex 							`json:"-" yaml:"-"`
 	Status *PipelineJobStatus 						`json:"status" yaml:"status"`
 	Color string  									`json:"-" yaml:"-"`
-	JobConfig *PipelineStep							`json:"-" yaml:"-"`
+	JobConfig *resources.Job 						`json:"-" yaml:"-"`
 	ServerConfig *config.ServerConfig 				`json:"-" yaml:"-"`
 } 
 
@@ -53,17 +55,17 @@ type ProcessStatus struct {
 }
 
 
-func NewLocalPipelineJob(serverConfig *config.ServerConfig, pipelineId string, jobName string, jobConfig *PipelineStep, pipelineInputs []*PipelineInput, pipelineOutputs []*PipelineOutput) (LocalPipelineJob, error) {
+func NewLocalPipelineJob(serverConfig *config.ServerConfig, pipelineId string, jobName string, jobConfig *resources.Job, pipelineInputs map[string]*resources.PipelineInput, pipelineOutputs map[string]*resources.PipelineOutput) (LocalPipelineJob, error) {
 	jobDataDir := filepath.Join(serverConfig.Datadir, "pipelines", "local", pipelineId, jobName)
 
-	inputs, err := GenerateInputMapping(jobDataDir, jobSpec, pipelineInputs, pipelineOutputs)
+	inputs, err := GenerateInputMappings(jobDataDir, jobConfig, pipelineId, pipelineInputs, pipelineOutputs)
 	if err != nil {
-		return err, nil
+		return LocalPipelineJob{}, err
 	}
 
-	outputs, err := GenerateOutputMapping(jobDataDir, jobSpec, pipelineOutputs)
+	outputs, err := GenerateOutputMappings(jobDataDir, jobConfig, pipelineId, pipelineOutputs)
 	if err != nil {
-		return err, nil
+		return LocalPipelineJob{}, err
 	}
 
 	k := LocalPipelineJob{
@@ -415,16 +417,19 @@ func (j *LocalPipelineJob) Watch(wg *sync.WaitGroup) {
     }
 }
 
-// func (j *LocalPipelineJob) Logs(stream *io.Pipe) error {
+func (j *LocalPipelineJob) Logs(follow, stdout, stderr bool) (io.ReadCloser, error) {
 	
-// 		// TODO:
-// 		// - check if logfile still exists; 
-// 		//   - if not, stream from Fluentd (or error if fluentd isn't integrated yet)
-// 		//   - otherwise grab the mutex lock; tail log file; lock file again
-// 		//   - need to have a reasonable timeout for this
+		// TODO:
+		// - check if logfile still exists; 
+		//   - if not, stream from Fluentd (or error if fluentd isn't integrated yet)
+		//   - otherwise grab the mutex lock; tail log file; lock file again
+		//   - need to have a reasonable timeout for this
+
+	// just sending an empty open file for now
+	var log *os.File
 	
-// 	return nil
-// }
+	return log, nil
+}
 
 func (j *LocalPipelineJob) Cleanup() error {
 	

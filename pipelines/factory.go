@@ -5,6 +5,7 @@ import (
 	"errors"
 	"path/filepath"
 	"leveler/config"
+	"leveler/resources"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -26,7 +27,7 @@ type PipelineOutputMapping struct {
 	Integration string
 }
 
-func GenerateInputMappings(datadir string, jobSpec *PipelineStep, inputs map[string]*PipelineInput, outputs map[string]*PipelineOutput) (map[string]*PipelineInputMapping, error) {
+func GenerateInputMappings(datadir string, jobSpec *resources.Job, pipelineId string, inputs map[string]*resources.PipelineInput, outputs map[string]*resources.PipelineOutput) (map[string]*PipelineInputMapping, error) {
 	var mappings = make(map[string]*PipelineInputMapping)
 
 	for _, name := range jobSpec.Inputs {
@@ -69,15 +70,15 @@ func GenerateInputMappings(datadir string, jobSpec *PipelineStep, inputs map[str
 	return mappings, nil
 }
 
-func GenerateInputSyncScript(datadir string, integration *PipelineIntegration, input *PipelineInputMapping) (string, error) {
-
+func GenerateInputSyncScript(datadir string, integration *resources.PipelineIntegration, input *PipelineInputMapping) (string, error) {
+	return "", nil
 }
 
-func GenerateOutputSyncScript(datadir string, integration *PipelineIntegration, output *PipelineInputMapping) (string, error) {
-
+func GenerateOutputSyncScript(datadir string, integration *resources.PipelineIntegration, output *PipelineInputMapping) (string, error) {
+	return "", nil
 }
 
-func GenerateOutputMappings(datadir string, jobSpec *PipelineStep, outputs map[string]*PipelineOutput) (map[string]*PipelineOutputMapping, error) {
+func GenerateOutputMappings(datadir string, jobSpec *resources.Job, pipelineId string, outputs map[string]*resources.PipelineOutput) (map[string]*PipelineOutputMapping, error) {
 	var mappings = make(map[string]*PipelineOutputMapping)
 
 	for _, name := range jobSpec.Outputs {
@@ -104,14 +105,13 @@ func GenerateOutputMappings(datadir string, jobSpec *PipelineStep, outputs map[s
 	return mappings, nil
 }
 
-func createJobsMap(serverConfig *config.ServerConfig, pipelineId string, pipelineConfig *BasicPipeline) (map[string]PipelineJob, error) {
-	var p = &Pipeline{}
+func createJobsMap(serverConfig *config.ServerConfig, pipelineId string, pipelineConfig *resources.Pipeline) (map[string]PipelineJob, error) {
 	var allJobs = make(map[string]PipelineJob)
 
 	// process jobs into a map for O(1) lookup later on, and also to verify that no duplicate names are found
 	for name, s := range pipelineConfig.Steps {
 		if _, ok := allJobs[name]; ok {
-			return allJobs, p, errors.New("Duplicate job names found in pipeline!")
+			return allJobs, errors.New("Duplicate job names found in pipeline!")
 		} else {
 			switch serverConfig.Platform.Name {
 			// case "kubernetes":
@@ -123,27 +123,22 @@ func createJobsMap(serverConfig *config.ServerConfig, pipelineId string, pipelin
 			// 	allJobs[name] = &j
 
 			case "docker":
-				client, err := docker.NewEnvClient()
+				j, err := NewDockerPipelineJob(serverConfig, pipelineId, name, s, pipelineConfig.Inputs, pipelineConfig.Outputs)
 				if err != nil {
-					return k, err
-				}
-
-				j, err := NewDockerPipelineJob(serverConfig, pipelineId, name, s, pipelineConfig.Inputs, pipelineConfig.Outputs, client)
-				if err != nil {
-					return allJobs, p, err
+					return allJobs, err
 				}
 				allJobs[name] = &j
 
 			case "local":
 				j, err := NewLocalPipelineJob(serverConfig, pipelineId, name, s, pipelineConfig.Inputs, pipelineConfig.Outputs)
 				if err != nil {
-					return allJobs, p, err
+					return allJobs, err
 				}
 
 				allJobs[name] = &j
 
 			default:
-				return allJobs, p, errors.New(fmt.Sprintf("Unknown platform '%s'", serverConfig.Platform.Name))
+				return allJobs, errors.New(fmt.Sprintf("Unknown platform '%s'", serverConfig.Platform.Name))
 			}
 		}
 	}
@@ -151,7 +146,7 @@ func createJobsMap(serverConfig *config.ServerConfig, pipelineId string, pipelin
 	return allJobs, nil
 }
 
-func NewBasicPipeline(serverConfig *config.ServerConfig, pipelineConfig *BasicPipeline) (*Pipeline, error) {
+func NewPipeline(serverConfig *config.ServerConfig, pipelineConfig *resources.Pipeline) (*Pipeline, error) {
 	pipelineId := uuid.NewV4().String()
 	p := &Pipeline{}
 	
@@ -160,8 +155,8 @@ func NewBasicPipeline(serverConfig *config.ServerConfig, pipelineConfig *BasicPi
 		return p, err
 	}
 
-	pipeline.Id = pipelineId
-	pipeline.JobsMap = allJobs
+	p.Id = pipelineId
+	p.JobsMap = allJobs
  
 	for name, s := range pipelineConfig.Steps {
 		child := allJobs[name]

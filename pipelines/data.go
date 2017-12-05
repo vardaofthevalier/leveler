@@ -1,16 +1,17 @@
 package pipelines
 
 type RequiredFile struct {
-	Path string,
-	Mode string,
-	IsDir bool,
+	Path string
+	Mode string
+	IsDir bool
 }
 
 type IntegrationCmdConfig struct {
-	Executable string,
-	Args []string,
-	RequiredVariables []string,
-	RequiredFiles []*RequiredFile,
+	Executable string
+	Args []string
+	Init string
+	RequiredVariables []string
+	RequiredFiles []*RequiredFile
 }
 
 var LocalIntegrationCmdConfig = &IntegrationCmdConfig{
@@ -44,7 +45,7 @@ chmod 0600 "${HOME}/.ssh/authorized_keys"
 var GitIntegrationCmdConfig = &IntegrationCmdConfig{
 	RequiredVariables: []string{
 		"HOME",
-		"VAULT_TOKEN"
+		"VAULT_TOKEN",
 	},
 	Init: gitCredentialsInit,
 	Executable: "git",
@@ -53,7 +54,7 @@ var GitIntegrationCmdConfig = &IntegrationCmdConfig{
 		"--init",
 		"--recursive",
 		"{{.Integration.SrcPath}}",
-		"{{.Integration.DestPath}}"
+		"{{.Integration.DestPath}}",
 	},
 }
 
@@ -96,7 +97,7 @@ var dockerRegistryCredentialsInit = `
 
 var DockerRegistryIntegrationCmdConfig = &IntegrationCmdConfig{
 	RequiredVariables: []string{
-		"VAULT_TOKEN"
+		"VAULT_TOKEN",
 	},
 	Init: dockerRegistryCredentialsInit,
 	Executable: "docker",

@@ -1,6 +1,7 @@
 package pipelines
 
 import (
+	"io"
 	"fmt"
 	"sync"
 	"github.com/golang-collections/collections/stack"
@@ -20,7 +21,7 @@ const (
 type Pipeline struct {
 	Id string
 	RootJobs []*PipelineJob
-	JobsMap map[string]*PipelineJob
+	JobsMap map[string]PipelineJob
 }
 
 type PipelineJob interface {
@@ -40,7 +41,7 @@ type PipelineJob interface {
 	Run(chan int8)
 	Watch(*sync.WaitGroup)
 	Cleanup() error
-	Logs(*io.ReadWriter)
+	Logs(bool, bool, bool) (io.ReadCloser, error)
 }
 
 type PipelineJobStatus struct {
@@ -83,7 +84,7 @@ func (p *Pipeline) Run(quit chan int8) {
 
 	// IDEA: to make this work in a distributed system, use central message queues instead of channels to coordinate waiting (?)
 	scheduler := make(chan *PipelineJob)
-	broadcaster := map[string]*chan int8
+	broadcaster := make(map[string]chan int8)
 
 	var leaves sync.WaitGroup
 	
@@ -100,7 +101,7 @@ func (p *Pipeline) Run(quit chan int8) {
 			
 			if _, ok := scheduled[(*current).GetId()]; !ok {
 				ch := make(chan int8)
-				broadcaster[(*current).GetId()] = &ch
+				broadcaster[(*current).GetId()] = ch
 
 				scheduler <- current
 				scheduled[(*current).GetId()] = ""	

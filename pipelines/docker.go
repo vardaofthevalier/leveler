@@ -2,33 +2,38 @@ package pipelines
 
 import (
 	"io"
-	"os"
+	// "os"
 	"fmt"
 	"log"
 	"sync"
 	"context"
+	"path/filepath"
+	"encoding/json"
 	"leveler/config"
+	"leveler/resources"
 	uuid "github.com/satori/go.uuid"
 	docker "github.com/docker/docker/client"
 	types "github.com/docker/docker/api/types"
-	volume "github.com/docker/docker/api/types/volume"
+	//volume "github.com/docker/docker/api/types/volume"
 	network "github.com/docker/docker/api/types/network"
 	container "github.com/docker/docker/api/types/container"
 )
 
 type DockerPipelineJob struct {
+	PipelineId string 							`json:"pipeline_id" yaml:"pipeline_id"`
 	Id string 									`json:"id" yaml:"id"`
 	Name string 								`json:"name" yaml:"name"`
+	Datadir string 								`json:"datadir" yaml:"datadir"`
 	Parents []*PipelineJob 						`json:"-" yaml:"-"`
 	ParentsList []string 						`json:"dependencies" yaml:"dependencies"`
 	Children []*PipelineJob 					`json:"-" yaml:"-"`
 	ChildrenList []string						`json:"dependents" yaml:"dependents"`
-	Inputs []*PipelineInputMapping				`json:"inputs" yaml:"inputs"`
-	Outputs []*PipelineOutputMapping			`json:"outputs" yaml:"outputs"`
+	Inputs map[string]*PipelineInputMapping		`json:"inputs" yaml:"inputs"`
+	Outputs map[string]*PipelineOutputMapping	`json:"outputs" yaml:"outputs"`
 	DockerContext context.Context 				`json:"-" yaml:"-"`
 	DockerClient *docker.Client  				`json:"-" yaml:"-"`
-	ContainerId string 							`json:"containerId" yaml:"containerId"`
-	JobConfig *PipelineStep 					`json:"-" yaml:"-"`
+	ContainerId string 							`json:"container_id" yaml:"container_id"`
+	JobConfig *resources.Job 		 			`json:"-" yaml:"-"`
 	ServerConfig *config.ServerConfig 			`json:"-" yaml:"-"`
 	Notifications chan *PipelineJobStatus 		`json:"-" yaml:"-"`
 	Logger *log.Logger 							`json:"-" yaml:"-"`
@@ -37,32 +42,38 @@ type DockerPipelineJob struct {
 	Color string  								`json:"-" yaml:"-"`
 }
 
-func NewDockerPipelineJob(serverConfig *config.ServerConfig, pipelineId string, jobName string, jobConfig *PipelineStep, pipelineInputs []*PipelineInput, pipelineOutputs []*PipelineOutput, dockerClient *docker.Client) (DockerPipelineJob, error) {
+func NewDockerPipelineJob(serverConfig *config.ServerConfig, pipelineId string, jobName string, jobConfig *resources.Job, pipelineInputs map[string]*resources.PipelineInput, pipelineOutputs map[string]*resources.PipelineOutput) (DockerPipelineJob, error) {
 	jobDataDir := filepath.Join("/data", jobName)
 
-	inputs, err := GenerateInputMapping(jobDataDir, jobSpec, pipelineInputs, pipelineOutputs)
+	inputs, err := GenerateInputMappings(jobDataDir, jobConfig, pipelineId, pipelineInputs, pipelineOutputs)
 	if err != nil {
-		return err, nil
+		return DockerPipelineJob{}, err
 	}
 
-	outputs, err := GenerateOutputMapping(jobDataDir, jobSpec, pipelineOutputs)
+	outputs, err := GenerateOutputMappings(jobDataDir, jobConfig, pipelineId, pipelineOutputs)
 	if err != nil {
-		return err, nil
+		return DockerPipelineJob{}, nil
+	}
+
+	client, err := docker.NewEnvClient()
+	if err != nil {
+		return DockerPipelineJob{}, err
 	}
 
 	k := DockerPipelineJob{
 		Id: uuid.NewV4().String(),
 		PipelineId: pipelineId,
 		Name: jobName,
+		Datadir: jobDataDir,
 		ServerConfig: serverConfig,
 		JobConfig: jobConfig,
 		Inputs: inputs,
 		Outputs: outputs,
 		Children: []*PipelineJob{},
 		Parents: []*PipelineJob{},
-		DockerClient: dockerClient,
+		DockerClient: client,
 		DockerContext: context.Background(),
-		Volumes: []*types.Volume{},
+		//Volumes: []*types.Volume{},
 		Notifications: make(chan *PipelineJobStatus),
 		Status: &PipelineJobStatus{},
 		LogLock: &sync.Mutex{},
@@ -108,7 +119,7 @@ func (j *DockerPipelineJob) GetOutputs() map[string]*PipelineOutputMapping {
 	return j.Outputs
 }
 
-func (j *LocalPipelineJob) GetJson() (string, error) {
+func (j *DockerPipelineJob) GetJson() (string, error) {
 	js, err := json.MarshalIndent(j, "", "	")
 	if err != nil {
 		return fmt.Sprintf("%s", js), err
@@ -117,7 +128,7 @@ func (j *LocalPipelineJob) GetJson() (string, error) {
 	return fmt.Sprintf("%s", js), nil
 }
 
-func (j *LocalPipelineJob) GetStatus() *PipelineJobStatus {
+func (j *DockerPipelineJob) GetStatus() *PipelineJobStatus {
 	return j.Status
 }
 
@@ -130,16 +141,16 @@ func (j *DockerPipelineJob) AddParent(parent *PipelineJob) {
 }
 
 func (j *DockerPipelineJob) Init() error {
-	serverData := filepath.Join(j.ServerConfig.Datadir, "pipelines", "docker", j.PipelineId, j.Name)
-	for _, i := range j.Inputs {
+	//serverData := filepath.Join(j.ServerConfig.Datadir, "pipelines", "docker", j.PipelineId, j.Name)
+	//for _, i := range j.Inputs {
 		// if input comes from a non-local source, create sync script 
 		// otherwise, if it comes from a local source, copy the file to the server data dir and bind mount it at runtime
-	}
+	//}
 
-	for _, i := range j.Outputs {
+	//for _, i := range j.Outputs {
 		// if output is going to a (non-local) integration destination, create sync script and empty volume
 		// otherwise create an empty file and bind mount at runtime
-	}
+	//}
 	// generate input sync script
 	// - read template from file
 	// - evaluate template
@@ -157,8 +168,8 @@ func (j *DockerPipelineJob) Init() error {
 	// create an empty volume for outputs if necessary and add to volumes list
 	// render env map into a slice of "<KEY>=<VALUE> strings"
 
-	var volumes string // TODO
-	var script string // TODO
+	//var volumes string // TODO
+	//var script string // TODO
 
 	// generate env strings
 	var env = []string{} // TODO
@@ -166,10 +177,14 @@ func (j *DockerPipelineJob) Init() error {
 	// create configuration
 	containerConfig := &container.Config{
 		Env: env,
-		Cmd: (*j.Config).Command,
-		Image: (*j.Config).Image,
-		Volumes: "", // TODO
-		WorkingDir: "", // TODO
+		Cmd: []string{
+			"bash",
+			"-c",
+			(*j.JobConfig).Command,
+		},
+		Image: (*j.JobConfig).Image,
+		//Volumes: , // TODO
+		WorkingDir: j.Datadir,
 	}
 
 	hostConfig := &container.HostConfig{
@@ -196,7 +211,7 @@ func (j *DockerPipelineJob) Run(quit chan int8) {
 		return
 	}
 
-	err = j.DockerClient.ContainerStart(j.DockerContext, j.ContainerId, &types.ContainerStartOptions{})
+	err = j.DockerClient.ContainerStart(j.DockerContext, j.ContainerId, types.ContainerStartOptions{})
 
 	if err != nil {
 		j.Quit(FAILED, fmt.Sprintf("[runner] Error starting container: %v", err))
@@ -214,7 +229,7 @@ func (j *DockerPipelineJob) Run(quit chan int8) {
 			return
         case result := <-resultC:
         	if result.Error != nil {
-        		j.Quit(FAILED, "[runner] Job failed: %v", result.Error.Message)
+        		j.Quit(FAILED, fmt.Sprintf("[runner] Job failed: %v", result.Error.Message))
         	} else {
         		j.Quit(SUCCEEDED, "[runner] OK")
         	}
@@ -234,42 +249,42 @@ func (j *DockerPipelineJob) Run(quit chan int8) {
 	}
 }
 
-func (j *DockerPipelineJob) Watch(report chan *PipelineJobStatus, wg *sync.WaitGroup) {
+func (j *DockerPipelineJob) Watch(wg *sync.WaitGroup) {
 	defer wg.Done()
 	defer close(j.Notifications)
 
 	// watch for the job to complete
-	var status *PipelineJobStatus
 	for {
         select {
-        case j.Notifications <- n:
-        	report <- n
+        case <-j.Notifications:
         	return
         }
     }
 }
 
-// func (j *DockerPipelineJob) Logs(stream *io.Pipe) error {
+func (j *DockerPipelineJob) Logs(follow, stdout, stderr bool) (io.ReadCloser, error) {
 	
-// 		// TODO:
-// 		// - check if logfile still exists; 
-// 		//   - if not, stream from Fluentd (or error if fluentd isn't integrated yet)
-// 		//   - otherwise grab the mutex lock; tail log file; lock file again
-// 		//   - need to have a reasonable timeout for this
-	
-// 	return nil
-// }
+		// TODO:
+		// - check if logfile still exists; 
+		//   - if not, return an error -- the caller will be responsible for any next steps, ie, looking up logs in the log collector
+		//   - timeout?
+	logs, err := j.DockerClient.ContainerLogs(j.DockerContext, j.ContainerId, types.ContainerLogsOptions{Follow: follow, ShowStdout: stdout, ShowStderr: stderr,})
+	if err != nil {
+		return logs, err
+	}
+	return logs, nil
+}
 
 func (j *DockerPipelineJob) Cleanup() error {
-	j.LogfileLock.Lock()
-	removeOpts := &types.ContainerRemoveOptions{
+	j.LogLock.Lock()
+	removeOpts := types.ContainerRemoveOptions{
 		RemoveVolumes: false,
 		RemoveLinks: false,
 		Force: false,
 	}
 
    	err := j.DockerClient.ContainerRemove(j.DockerContext, j.ContainerId, removeOpts)
-   	j.LogfileLock.Unlock()
+   	j.LogLock.Unlock()
 
    	if err != nil {
    		return err
