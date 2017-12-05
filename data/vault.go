@@ -1,12 +1,12 @@
-package pipelines
+package data
 
 import (
-	"fmt"
+	//"fmt"
 	vault "github.com/hashicorp/vault/api"
 )
 
 type Vault struct {
-	Client *vault.Logical,
+	Client *vault.Logical
 }
 
 func NewVault() (*Vault, error) {
@@ -17,7 +17,7 @@ func NewVault() (*Vault, error) {
 	*/
 
 	var vault *Vault 
-	return vault nil
+	return vault, nil
 }
 
 func (v *Vault) Create(path string, data map[string]interface{}) error {
@@ -30,11 +30,11 @@ func (v *Vault) Create(path string, data map[string]interface{}) error {
 
 func (v *Vault) Get(path string) (map[string]interface{}, error) {
 	var data map[string]interface{}
-	s, err := v.Client.Get(path)
+	s, err := v.Client.Read(path)
 	if err != nil {
 		return data, err
 	}
-	return s.Data
+	return s.Data, nil
 }
 
 func (v *Vault) List(path string) (map[string]interface{}, error) {
@@ -43,7 +43,7 @@ func (v *Vault) List(path string) (map[string]interface{}, error) {
 	if err != nil {
 		return data, err
 	}
-	return l.Data
+	return l.Data, nil
 } 
 
 func (v *Vault) Update(path string, data map[string]interface{}) error {
@@ -54,7 +54,7 @@ func (v *Vault) Update(path string, data map[string]interface{}) error {
 	return nil
 }
 
-func (v *Vault) Delete(path string) () {
+func (v *Vault) Delete(path string) error {
 	_, err := v.Client.Delete(path)
 	if err != nil {
 		return err

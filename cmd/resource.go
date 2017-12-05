@@ -24,22 +24,9 @@ import (
 // 	DeleteRequest(cmd *cobra.Command)
 // }
 
-type Resource interface {
-	Create(*resources.ResourcesClient) (string, error)
-	Get(*resources.ResourcesClient) (string, error)
-	List(string, *resources.ResourcesClient) (string, error)
-	Update(*resources.ResourcesClient) error
-	Patch(*resources.ResourcesClient) error
-	Delete(*resources.ResourcesClient) error
-	Add(*resources.ResourcesClient) error
-	Remove(*resources.ResourcesClient) error
-	Run(*resources.ResourcesClient) (string, error)
-	Cancel(*resources.ResourcesClient) error
-}
-
 type ResourceCommander struct {
 	CmdConfig resources.CmdConfig
-	Client interface{}
+	Client *resources.ResourcesClient
 }
 
 func (r ResourceCommander) Usage() string {
@@ -58,7 +45,7 @@ func (r ResourceCommander) getId(cmd *cobra.Command) string {
 	return cmd.Flags().Arg(0)
 }
 
-func (r ResourceCommander) processFlags(cmd *cobra.Command) (*proto.Message, error) {
+func (r ResourceCommander) processFlags(cmd *cobra.Command) (reflect.Type, string, error) {
 	// create protobuf type
 	pb := proto.MessageType(*r.CmdConfig.ProtobufType)
 
@@ -207,18 +194,17 @@ func (r ResourceCommander) processFlags(cmd *cobra.Command) (*proto.Message, err
 		}
 	}
 
-	concretePb := reflect.ValueOf(pb).Interface().(proto.Message)
-	return &concretePb, nil
+	return pb, *r.CmdConfig.ProtobufType, nil
 }
 
 func (r ResourceCommander) AddRequest(cmd *cobra.Command) {
-	pb, err := r.processFlags(cmd)
+	pb, pbType, err := r.processFlags(cmd)
 	if err != nil {
 		fmt.Printf("Couldn't process args: %v", err)
 		os.Exit(1)
 	}
 
-	resp, err := pb.Add(r.Client)
+	err = resources.Add(pb, pbType, r.Client)
 
 	if err != nil {
 		fmt.Printf("Error adding resource: %s", err)
@@ -226,17 +212,17 @@ func (r ResourceCommander) AddRequest(cmd *cobra.Command) {
 	}
 
 	// TODO: return formatted response
-	fmt.Printf("%+v\n", resp)
+	fmt.Println("Successfully added resource!")
 }
 
 func (r ResourceCommander) CreateRequest(cmd *cobra.Command) {
-	pb, err := r.processFlags(cmd)
+	pb, pbType, err := r.processFlags(cmd)
 	if err != nil {
 		fmt.Printf("Couldn't process args: %v", err)
 		os.Exit(1)
 	}
 
-	resp, err := pb.Create(r.Client)
+	resp, err := resources.Create(pb, pbType, r.Client)
 
 	if err != nil {
 		fmt.Printf("Error creating resource: %s", err)
@@ -248,13 +234,13 @@ func (r ResourceCommander) CreateRequest(cmd *cobra.Command) {
 }
 
 func (r ResourceCommander) GetRequest(cmd *cobra.Command) {
-	pb, err := r.processFlags(cmd)
+	pb, pbType, err := r.processFlags(cmd)
 	if err != nil {
 		fmt.Printf("Couldn't process args: %v", err)
 		os.Exit(1)
 	}
 
-	resp, err := pb.Get(r.Client)
+	resp, err := resources.Get(pb, pbType, r.Client)
 
 	if err != nil {
 		fmt.Println("Error retrieving resource: %s", err)
@@ -266,15 +252,15 @@ func (r ResourceCommander) GetRequest(cmd *cobra.Command) {
 }
 
 func (r ResourceCommander) ListRequest(cmd *cobra.Command) {
-	q, _ := cmd.Flags().GetString("query") 
+	query, _ := cmd.Flags().GetString("query") 
 
-	pb, err := r.processFlags(cmd)
+	_, pbType, err := r.processFlags(cmd)
 	if err != nil {
 		fmt.Printf("Couldn't process args: %v", err)
 		os.Exit(1)
 	}
 
-	resp, err := pb.List(query, r.Client)
+	resp, err := resources.List(query, pbType, r.Client)
 
 	if err != nil {
 		fmt.Println("Error listing resources: %s", err)
@@ -286,13 +272,13 @@ func (r ResourceCommander) ListRequest(cmd *cobra.Command) {
 }	
 
 func (r ResourceCommander) UpdateRequest(cmd *cobra.Command) {
-	pb, err := r.processFlags(cmd)
+	pb, pbType, err := r.processFlags(cmd)
 	if err != nil {
 		fmt.Printf("Couldn't process args: %v", err)
 		os.Exit(1)
 	}
 
-	resp, err := pb.Update()
+	err = resources.Update(pb, pbType, r.Client)
 
 	if err != nil {
 		fmt.Printf("Error updating resource: %s", err)
@@ -300,35 +286,35 @@ func (r ResourceCommander) UpdateRequest(cmd *cobra.Command) {
 	}
 
 	// TODO: return formatted response
-	fmt.Printf("%+v\n", resp)
+	fmt.Println("Successfully updated resource!")
 }
 
 func (r ResourceCommander) PatchRequest(cmd *cobra.Command) {
-	pb, err := r.processFlags(cmd)
+	pb, pbType, err := r.processFlags(cmd)
 	if err != nil {
 		fmt.Printf("Couldn't process args: %v", err)
 		os.Exit(1)
 	}
 
-	resp, err := pb.Patch()
+	err = resources.Patch(pb, pbType, r.Client)
 
 	if err != nil {
-		fmt.Printf("Error patchingresource: %s", err)
+		fmt.Printf("Error patching resource: %s", err)
 		os.Exit(1)
 	}
 
 	// TODO: return formatted response
-	fmt.Printf("%+v\n", resp)
+	fmt.Println("Successfully patched resource!")
 }
 
 func (r ResourceCommander) RemoveRequest(cmd *cobra.Command) {
-	pb, err := r.processFlags(cmd)
+	pb, pbType, err := r.processFlags(cmd)
 	if err != nil {
 		fmt.Printf("Couldn't process args: %v", err)
 		os.Exit(1)
 	}
 
-	resp, err := pb.Remove()
+	err = resources.Remove(pb, pbType, r.Client)
 
 	if err != nil {
 		fmt.Printf("Error removing resource: %s", err)
@@ -336,17 +322,17 @@ func (r ResourceCommander) RemoveRequest(cmd *cobra.Command) {
 	}
 
 	// TODO: return formatted response
-	fmt.Printf("%+v\n", resp)
+	fmt.Println("Successfully removed resource!")
 }
 
 func (r ResourceCommander) DeleteRequest(cmd *cobra.Command) {
-	pb, err := r.processFlags(cmd)
+	pb, pbType, err := r.processFlags(cmd)
 	if err != nil {
 		fmt.Printf("Couldn't process args: %v", err)
 		os.Exit(1)
 	}
 
-	resp, err := pb.Delete()
+	err = resources.Delete(pb, pbType, r.Client)
 
 	if err != nil {
 		fmt.Printf("Error deleting resource: %s", err)
@@ -354,17 +340,17 @@ func (r ResourceCommander) DeleteRequest(cmd *cobra.Command) {
 	}
 
 	// TODO: return formatted response
-	fmt.Printf("%+v\n", resp)
+	fmt.Println("Successfully deleted resource!")
 } 
 
 func (r ResourceCommander) ApplyRequest(cmd *cobra.Command) {
-	pb, err := r.processFlags(cmd)
+	pb, pbType, err := r.processFlags(cmd)
 	if err != nil {
 		fmt.Printf("Couldn't process args: %v", err)
 		os.Exit(1)
 	}
 
-	resp, err := pb.Apply()
+	err = resources.Apply(pb, pbType, r.Client)
 
 	if err != nil {
 		fmt.Printf("Error applying resource: %s", err)
@@ -372,17 +358,17 @@ func (r ResourceCommander) ApplyRequest(cmd *cobra.Command) {
 	}
 
 	// TODO: return formatted response
-	fmt.Printf("%+v\n", resp)
+	fmt.Println("Successfully applied resource!")
 }
 
 func (r ResourceCommander) RunRequest(cmd *cobra.Command) {
-	pb, err := r.processFlags(cmd)
+	pb, pbType, err := r.processFlags(cmd)
 	if err != nil {
 		fmt.Printf("Couldn't process args: %v", err)
 		os.Exit(1)
 	}
 
-	resp, err := pb.Run()
+	resp, err := resources.Run(pb, pbType, r.Client)
 
 	if err != nil {
 		fmt.Printf("Error runnin resource: %s", err)
@@ -394,13 +380,13 @@ func (r ResourceCommander) RunRequest(cmd *cobra.Command) {
 }
 
 func (r ResourceCommander) CancelRequest(cmd *cobra.Command) {
-	pb, err := r.processFlags(cmd)
+	pb, pbType, err := r.processFlags(cmd)
 	if err != nil {
 		fmt.Printf("Couldn't process args: %v", err)
 		os.Exit(1)
 	}
 
-	resp, err := pb.Cancel()
+	err = resources.Cancel(pb, pbType, r.Client)
 
 	if err != nil {
 		fmt.Printf("Error cancelling resource: %s", err)
@@ -408,5 +394,5 @@ func (r ResourceCommander) CancelRequest(cmd *cobra.Command) {
 	}
 
 	// TODO: return formatted response
-	fmt.Printf("%+v\n", resp)
+	fmt.Println("Successfully cancelled resource!")
 }

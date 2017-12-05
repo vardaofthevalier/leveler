@@ -290,7 +290,8 @@ func buildResourceCommanderList() []ResourceCommander {
 	}
 
 	for _, res := range m.Resources {
-		r = append(r, ResourceCommander{Client: resources.NewResourcesClient(clientConn), CmdConfig: *res})
+		client := resources.NewResourcesClient(clientConn)
+		r = append(r, ResourceCommander{Client: &client, CmdConfig: *res})
 	}
 
 	return r
