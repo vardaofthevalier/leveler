@@ -10,40 +10,29 @@ import "repository.proto";
 import "google/protobuf/any.proto";
 import "google/protobuf/empty.proto";
 
-service Users {
+service Resources {
     rpc AddUser(User) returns (User) {}
 
-}
-
-service Integrations {
     rpc AddIntegration(Integration) returns (google.protobuf.Empty) {}
     rpc GetIntegration(Integration) returns (Integration) {}
     rpc ListIntegrations(Query) returns (IntegrationsList) {}
     rpc UpdateIntegration(Integration) returns (google.protobuf.Empty) {}
     rpc RemoveIntegration(Integration) returns (google.protobuf.Empty) {}
-}
 
-service Repositories {
     rpc AddRepository(Repository) returns (google.protobuf.Empty) {}
     rpc GetRepository(Repository) returns (Repository) {}
     rpc ListRepositories(Query) returns (RepositoriesList) {}
     rpc RemoveRepository(Repository) returns (google.protobuf.Empty) {}
-}
 
-service PipelinesEndpoint {
     rpc GetPipeline(Pipeline) returns (Pipeline) {}
     rpc ListPipelines(Query) returns (PipelinesList) {}
     rpc RunPipeline(Pipeline) returns (Pipeline) {}
     rpc CancelPipeline(Pipeline) returns (google.protobuf.Empty) {}
-}
 
-service JobsEndpoint {
     rpc GetJob(Job) returns (Job) {}
     rpc ListJobs(Query) returns (JobsList) {}
-}
 
-service LogsEndpoint {
-    rpc GetLogs(Loggable) returns (stream Log) {}
+    rpc GetLogs(Loggable) returns (stream Log) {}   
 }
 
 message Query {

@@ -3,13 +3,12 @@ package cmd
 import (
 	"os"
 	"fmt"
-	"context"
 	"reflect"
+	"io/ioutil"
 	"leveler/resources"
+	yaml "gopkg.in/yaml.v2"
 	"github.com/spf13/cobra"
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/any"
 )
 
 // type ResourceCommander interface {
@@ -25,85 +24,194 @@ import (
 // 	DeleteRequest(cmd *cobra.Command)
 // }
 
-type ResourceCmd struct {
+type Resource interface {
+	Create(*resources.ResourcesClient) (string, error)
+	Get(*resources.ResourcesClient) (string, error)
+	List(string, *resources.ResourcesClient) (string, error)
+	Update(*resources.ResourcesClient) error
+	Patch(*resources.ResourcesClient) error
+	Delete(*resources.ResourcesClient) error
+	Add(*resources.ResourcesClient) error
+	Remove(*resources.ResourcesClient) error
+	Run(*resources.ResourcesClient) (string, error)
+	Cancel(*resources.ResourcesClient) error
+}
+
+type ResourceCommander struct {
 	CmdConfig resources.CmdConfig
 	Client interface{}
 }
 
-func (r ResourceCmd) Usage() string {
+func (r ResourceCommander) Usage() string {
 	return *r.CmdConfig.Usage
 }
 
-func (r ResourceCmd) ShortDescription() string {
+func (r ResourceCommander) ShortDescription() string {
 	return *r.CmdConfig.ShortDescription
 }
 
-func (r ResourceCmd) LongDescription() string {
+func (r ResourceCommander) LongDescription() string {
 	return *r.CmdConfig.LongDescription
 }
 
-func (r ResourceCmd) getId(cmd *cobra.Command) string {
+func (r ResourceCommander) getId(cmd *cobra.Command) string {
 	return cmd.Flags().Arg(0)
 }
 
-func (r ResourceCmd) processFlags(cmd *cobra.Command) (*proto.Message, error) {
+func (r ResourceCommander) processFlags(cmd *cobra.Command) (*proto.Message, error) {
 	// create protobuf type
-	pb := proto.MessageType(r.CmdConfig.ProtobufType)
+	pb := proto.MessageType(*r.CmdConfig.ProtobufType)
 
 	// process options
-	for _, opt := range r.CmdConfig.Options {
-		if opt.Type == "string" {
-			k, err := cmd.Flags().GetString(opt.Name)
-			if err != nil && opt.Required {
-				fmt.Printf("'%s' is a required parameter!", opt.Name)
-		 		os.Exit(1)
+	if r.CmdConfig.GetFromOptions() != nil {
+		for _, opt := range r.CmdConfig.GetFromOptions().Options {
+			var required bool 
+			for _, r := range opt.Required {
+				if r == cmd.Name() {
+					required = true
+					break
+				}
 			}
 
-			reflect.ValueOf(pb).Elem().Field(opt.Name).SetString(k)
+			if *opt.Type == "string" {
+				k, err := cmd.Flags().GetString(*opt.Name)
+				if err != nil && required {
+					fmt.Printf("'%s' is a required parameter!", *opt.Name)
+			 		os.Exit(1)
+				}
 
-		} elif opt.Type == "bool" {
-			k, err := cmd.Flags().GetBool(opt.Name)
-			if err != nil && opt.Required {
-				fmt.Printf("'%s' is a required parameter!", opt.Name)
-		 		os.Exit(1)
+				reflect.ValueOf(pb).Elem().FieldByName(*opt.Name).SetString(k)
+
+			} else if *opt.Type == "bool" {
+				k, err := cmd.Flags().GetBool(*opt.Name)
+				if err != nil && required {
+					fmt.Printf("'%s' is a required parameter!", *opt.Name)
+			 		os.Exit(1)
+				}
+
+				reflect.ValueOf(pb).Elem().FieldByName(*opt.Name).SetBool(k)
+
+			} else if *opt.Type == "int64" {
+				k, err := cmd.Flags().GetInt64(*opt.Name)
+				if err != nil && required {
+					fmt.Printf("'%s' is a required parameter!", *opt.Name)
+			 		os.Exit(1)
+				}
+
+				reflect.ValueOf(pb).Elem().FieldByName(*opt.Name).SetInt(k)
+
+			} else {
+				// TODO: error and implement additional types
+			}
+		}
+
+		for _, sc := range r.CmdConfig.GetFromOptions().Subcommands {
+			child := proto.MessageType(*sc.ProtobufType)
+
+			for _, opt := range sc.Options {
+				var required bool 
+				for _, r := range opt.Required {
+					if r == cmd.Name() {
+						required = true
+						break
+					}
+				}
+				if *opt.Type == "string" {
+					k, err := cmd.Flags().GetString(*opt.Name)
+					if err != nil && required {
+						fmt.Printf("'%s' is a required parameter!", *opt.Name)
+				 		os.Exit(1)
+					}
+
+					reflect.ValueOf(child).Elem().FieldByName(*opt.Name).SetString(k)
+
+				} else if *opt.Type == "bool" {
+					k, err := cmd.Flags().GetBool(*opt.Name)
+					if err != nil && required {
+						fmt.Printf("'%s' is a required parameter!", opt.Name)
+				 		os.Exit(1)
+					}
+
+					reflect.ValueOf(child).Elem().FieldByName(*opt.Name).SetBool(k)
+
+				} else if *opt.Type == "int64" {
+					k, err := cmd.Flags().GetInt64(*opt.Name)
+					if err != nil &&required {
+						fmt.Printf("'%s' is a required parameter!", *opt.Name)
+				 		os.Exit(1)
+					}
+
+					reflect.ValueOf(child).Elem().FieldByName(*opt.Name).SetInt(k)
+
+				} else {
+					// TODO: error and implement additional types
+				}
 			}
 
-			reflect.ValueOf(pb).Elem().Field(opt.Name).SetBool(k)
+			reflect.ValueOf(pb).Elem().FieldByName(*sc.ParentField).Set(reflect.ValueOf(child))
+		}
+	} else if r.CmdConfig.GetFromFile() != nil {
+		filepath, err := cmd.Flags().GetString("file")
+		if err != nil {
+			fmt.Println("'file' is a required parameter!")
+		 	os.Exit(1)
+		}
 
-		} elif opt.Type == "int64" {
-			k, err := cmd.Flags().GetInt64(opt.Name)
-			if err != nil && opt.Required {
-				fmt.Printf("'%s' is a required parameter!", opt.Name)
-		 		os.Exit(1)
+		contents, err := ioutil.ReadFile(filepath)
+		if err != nil {
+			fmt.Printf("Error reading file: %v", err)
+			os.Exit(1)
+		}
+
+		err = yaml.Unmarshal(contents, pb)
+		if err != nil {
+			fmt.Printf("Error unmarshaling file contents: %v", err)
+			os.Exit(1)
+		}
+
+		for _, opt := range r.CmdConfig.GetFromFile().MergeOptions {
+			for _, r := range opt.Required {
+				if r == cmd.Name() {
+					if *opt.Type == "string" {
+						k, err := cmd.Flags().GetString(*opt.Name)
+						if err != nil {
+							fmt.Printf("'%s' is a required parameter!", *opt.Name)
+					 		os.Exit(1)
+						}
+
+						reflect.ValueOf(pb).Elem().FieldByName(*opt.Name).SetString(k)
+
+					} else if *opt.Type == "bool" {
+						k, err := cmd.Flags().GetBool(*opt.Name)
+						if err != nil {
+							fmt.Printf("'%s' is a required parameter!", *opt.Name)
+					 		os.Exit(1)
+						}
+
+						reflect.ValueOf(pb).Elem().FieldByName(*opt.Name).SetBool(k)
+
+					} else if *opt.Type == "int64" {
+						k, err := cmd.Flags().GetInt64(*opt.Name)
+						if err != nil {
+							fmt.Printf("'%s' is a required parameter!", *opt.Name)
+					 		os.Exit(1)
+						}
+
+						reflect.ValueOf(pb).Elem().FieldByName(*opt.Name).SetInt(k)
+
+					} else {
+						// TODO: error and implement additional types
+					}
+				}
 			}
-
-			reflect.ValueOf(pb).Elem().Field(opt.Name).SetInt(k)
-
-		} else {
-			// TODO: error and implement additional types
 		}
 	}
 
-	// process file options
-
-	for _, opt := range r.CmdConfig.FileOptions {
-		/*
-			TODO: 
-			- get file by opt name
-			- try to open file (fail if error)
-			- try to read contents of (yaml) file into pb message
-		*/
-	}
-
-	// process subcommands, if any
-	for _, sc := range r.CmdConfig.SubCommands {
-
-	}
-
-	return pb, nil
+	concretePb := reflect.ValueOf(pb).Interface().(proto.Message)
+	return &concretePb, nil
 }
 
-func (r ResourceCmd) AddRequest(cmd *cobra.Command) {
+func (r ResourceCommander) AddRequest(cmd *cobra.Command) {
 	pb, err := r.processFlags(cmd)
 	if err != nil {
 		fmt.Printf("Couldn't process args: %v", err)
@@ -121,7 +229,7 @@ func (r ResourceCmd) AddRequest(cmd *cobra.Command) {
 	fmt.Printf("%+v\n", resp)
 }
 
-func (r ResourceCmd) CreateRequest(cmd *cobra.Command) {
+func (r ResourceCommander) CreateRequest(cmd *cobra.Command) {
 	pb, err := r.processFlags(cmd)
 	if err != nil {
 		fmt.Printf("Couldn't process args: %v", err)
@@ -139,7 +247,7 @@ func (r ResourceCmd) CreateRequest(cmd *cobra.Command) {
 	fmt.Printf("%+v\n", resp)
 }
 
-func (r ResourceCmd) GetRequest(cmd *cobra.Command) {
+func (r ResourceCommander) GetRequest(cmd *cobra.Command) {
 	pb, err := r.processFlags(cmd)
 	if err != nil {
 		fmt.Printf("Couldn't process args: %v", err)
@@ -157,7 +265,7 @@ func (r ResourceCmd) GetRequest(cmd *cobra.Command) {
 	fmt.Printf("%+v\n", resp)
 }
 
-func (r ResourceCmd) ListRequest(cmd *cobra.Command) {
+func (r ResourceCommander) ListRequest(cmd *cobra.Command) {
 	q, _ := cmd.Flags().GetString("query") 
 
 	pb, err := r.processFlags(cmd)
@@ -177,7 +285,7 @@ func (r ResourceCmd) ListRequest(cmd *cobra.Command) {
 	fmt.Printf("%+v\n", resp)
 }	
 
-func (r ResourceCmd) UpdateRequest(cmd *cobra.Command) {
+func (r ResourceCommander) UpdateRequest(cmd *cobra.Command) {
 	pb, err := r.processFlags(cmd)
 	if err != nil {
 		fmt.Printf("Couldn't process args: %v", err)
@@ -195,7 +303,7 @@ func (r ResourceCmd) UpdateRequest(cmd *cobra.Command) {
 	fmt.Printf("%+v\n", resp)
 }
 
-func (r ResourceCmd) PatchRequest(cmd *cobra.Command) {
+func (r ResourceCommander) PatchRequest(cmd *cobra.Command) {
 	pb, err := r.processFlags(cmd)
 	if err != nil {
 		fmt.Printf("Couldn't process args: %v", err)
@@ -213,7 +321,7 @@ func (r ResourceCmd) PatchRequest(cmd *cobra.Command) {
 	fmt.Printf("%+v\n", resp)
 }
 
-func (r ResourceCmd) RemoveRequest(cmd *cobra.Command) {
+func (r ResourceCommander) RemoveRequest(cmd *cobra.Command) {
 	pb, err := r.processFlags(cmd)
 	if err != nil {
 		fmt.Printf("Couldn't process args: %v", err)
@@ -231,7 +339,7 @@ func (r ResourceCmd) RemoveRequest(cmd *cobra.Command) {
 	fmt.Printf("%+v\n", resp)
 }
 
-func (r ResourceCmd) DeleteRequest(cmd *cobra.Command) {
+func (r ResourceCommander) DeleteRequest(cmd *cobra.Command) {
 	pb, err := r.processFlags(cmd)
 	if err != nil {
 		fmt.Printf("Couldn't process args: %v", err)
@@ -249,7 +357,7 @@ func (r ResourceCmd) DeleteRequest(cmd *cobra.Command) {
 	fmt.Printf("%+v\n", resp)
 } 
 
-func (r ResourceCmd) ApplyRequest(cmd *cobra.Command) {
+func (r ResourceCommander) ApplyRequest(cmd *cobra.Command) {
 	pb, err := r.processFlags(cmd)
 	if err != nil {
 		fmt.Printf("Couldn't process args: %v", err)
@@ -267,7 +375,7 @@ func (r ResourceCmd) ApplyRequest(cmd *cobra.Command) {
 	fmt.Printf("%+v\n", resp)
 }
 
-func (r ResourceCmd) RunRequest(cmd *cobra.Command) {
+func (r ResourceCommander) RunRequest(cmd *cobra.Command) {
 	pb, err := r.processFlags(cmd)
 	if err != nil {
 		fmt.Printf("Couldn't process args: %v", err)
@@ -285,7 +393,7 @@ func (r ResourceCmd) RunRequest(cmd *cobra.Command) {
 	fmt.Printf("%+v\n", resp)
 }
 
-func (r ResourceCmd) CancelRequest(cmd *cobra.Command) {
+func (r ResourceCommander) CancelRequest(cmd *cobra.Command) {
 	pb, err := r.processFlags(cmd)
 	if err != nil {
 		fmt.Printf("Couldn't process args: %v", err)

@@ -34,7 +34,7 @@ var Language_value = map[string]int32{
 func (x Language) String() string {
 	return proto.EnumName(Language_name, int32(x))
 }
-func (Language) EnumDescriptor() ([]byte, []int) { return fileDescriptor2, []int{0} }
+func (Language) EnumDescriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
 
 type BuildTool int32
 
@@ -55,7 +55,7 @@ var BuildTool_value = map[string]int32{
 func (x BuildTool) String() string {
 	return proto.EnumName(BuildTool_name, int32(x))
 }
-func (BuildTool) EnumDescriptor() ([]byte, []int) { return fileDescriptor2, []int{1} }
+func (BuildTool) EnumDescriptor() ([]byte, []int) { return fileDescriptor1, []int{1} }
 
 type Integration struct {
 	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
@@ -71,7 +71,7 @@ type Integration struct {
 func (m *Integration) Reset()                    { *m = Integration{} }
 func (m *Integration) String() string            { return proto.CompactTextString(m) }
 func (*Integration) ProtoMessage()               {}
-func (*Integration) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{0} }
+func (*Integration) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
 
 type isIntegration_Config interface {
 	isIntegration_Config()
@@ -286,7 +286,7 @@ type IntegrationsList struct {
 func (m *IntegrationsList) Reset()                    { *m = IntegrationsList{} }
 func (m *IntegrationsList) String() string            { return proto.CompactTextString(m) }
 func (*IntegrationsList) ProtoMessage()               {}
-func (*IntegrationsList) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{1} }
+func (*IntegrationsList) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{1} }
 
 func (m *IntegrationsList) GetResults() []*Integration {
 	if m != nil {
@@ -302,7 +302,7 @@ type BitbucketAccessConfig struct {
 func (m *BitbucketAccessConfig) Reset()                    { *m = BitbucketAccessConfig{} }
 func (m *BitbucketAccessConfig) String() string            { return proto.CompactTextString(m) }
 func (*BitbucketAccessConfig) ProtoMessage()               {}
-func (*BitbucketAccessConfig) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{2} }
+func (*BitbucketAccessConfig) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{2} }
 
 func (m *BitbucketAccessConfig) GetStuff() string {
 	if m != nil {
@@ -318,7 +318,7 @@ type GithubAccessConfig struct {
 func (m *GithubAccessConfig) Reset()                    { *m = GithubAccessConfig{} }
 func (m *GithubAccessConfig) String() string            { return proto.CompactTextString(m) }
 func (*GithubAccessConfig) ProtoMessage()               {}
-func (*GithubAccessConfig) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{3} }
+func (*GithubAccessConfig) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{3} }
 
 func (m *GithubAccessConfig) GetStuff() string {
 	if m != nil {
@@ -335,7 +335,7 @@ type AWSAccessConfig struct {
 func (m *AWSAccessConfig) Reset()                    { *m = AWSAccessConfig{} }
 func (m *AWSAccessConfig) String() string            { return proto.CompactTextString(m) }
 func (*AWSAccessConfig) ProtoMessage()               {}
-func (*AWSAccessConfig) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{4} }
+func (*AWSAccessConfig) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{4} }
 
 func (m *AWSAccessConfig) GetAwsSecretKey() string {
 	if m != nil {
@@ -359,7 +359,7 @@ type BuildEnvironmentConfig struct {
 func (m *BuildEnvironmentConfig) Reset()                    { *m = BuildEnvironmentConfig{} }
 func (m *BuildEnvironmentConfig) String() string            { return proto.CompactTextString(m) }
 func (*BuildEnvironmentConfig) ProtoMessage()               {}
-func (*BuildEnvironmentConfig) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{5} }
+func (*BuildEnvironmentConfig) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{5} }
 
 func (m *BuildEnvironmentConfig) GetLanguage() Language {
 	if m != nil {
@@ -386,7 +386,7 @@ type NexusAccessConfig struct {
 func (m *NexusAccessConfig) Reset()                    { *m = NexusAccessConfig{} }
 func (m *NexusAccessConfig) String() string            { return proto.CompactTextString(m) }
 func (*NexusAccessConfig) ProtoMessage()               {}
-func (*NexusAccessConfig) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{6} }
+func (*NexusAccessConfig) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{6} }
 
 func (m *NexusAccessConfig) GetNexusUsername() string {
 	if m != nil {
@@ -430,7 +430,7 @@ type SlackAccessConfig struct {
 func (m *SlackAccessConfig) Reset()                    { *m = SlackAccessConfig{} }
 func (m *SlackAccessConfig) String() string            { return proto.CompactTextString(m) }
 func (*SlackAccessConfig) ProtoMessage()               {}
-func (*SlackAccessConfig) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{7} }
+func (*SlackAccessConfig) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{7} }
 
 func (m *SlackAccessConfig) GetStuff() string {
 	if m != nil {
@@ -452,9 +452,9 @@ func init() {
 	proto.RegisterEnum("resources.BuildTool", BuildTool_name, BuildTool_value)
 }
 
-func init() { proto.RegisterFile("integration.proto", fileDescriptor2) }
+func init() { proto.RegisterFile("integration.proto", fileDescriptor1) }
 
-var fileDescriptor2 = []byte{
+var fileDescriptor1 = []byte{
 	// 531 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x94, 0xdf, 0x6e, 0xd3, 0x30,
 	0x14, 0xc6, 0x97, 0xfe, 0xcf, 0x29, 0x94, 0xd6, 0x8c, 0x29, 0x42, 0x4c, 0x2a, 0x11, 0x48, 0x5d,

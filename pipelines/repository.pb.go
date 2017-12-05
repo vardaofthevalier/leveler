@@ -19,7 +19,7 @@ type Repository struct {
 func (m *Repository) Reset()                    { *m = Repository{} }
 func (m *Repository) String() string            { return proto.CompactTextString(m) }
 func (*Repository) ProtoMessage()               {}
-func (*Repository) Descriptor() ([]byte, []int) { return fileDescriptor5, []int{0} }
+func (*Repository) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{0} }
 
 func (m *Repository) GetUrl() string {
 	if m != nil {
@@ -35,7 +35,7 @@ type RepositoriesList struct {
 func (m *RepositoriesList) Reset()                    { *m = RepositoriesList{} }
 func (m *RepositoriesList) String() string            { return proto.CompactTextString(m) }
 func (*RepositoriesList) ProtoMessage()               {}
-func (*RepositoriesList) Descriptor() ([]byte, []int) { return fileDescriptor5, []int{1} }
+func (*RepositoriesList) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{1} }
 
 func (m *RepositoriesList) GetResults() []*Repository {
 	if m != nil {
@@ -49,9 +49,9 @@ func init() {
 	proto.RegisterType((*RepositoriesList)(nil), "resources.RepositoriesList")
 }
 
-func init() { proto.RegisterFile("repository.proto", fileDescriptor5) }
+func init() { proto.RegisterFile("repository.proto", fileDescriptor4) }
 
-var fileDescriptor5 = []byte{
+var fileDescriptor4 = []byte{
 	// 122 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0x28, 0x4a, 0x2d, 0xc8,
 	0x2f, 0xce, 0x2c, 0xc9, 0x2f, 0xaa, 0xd4, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0xe2, 0x2c, 0x4a,

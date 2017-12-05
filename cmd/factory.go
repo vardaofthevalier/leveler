@@ -5,33 +5,73 @@ import (
 	"os/user"
 	"fmt"
 	"bytes"
+	"strconv"
 	"io/ioutil"
 	"path/filepath"
 	"leveler/resources"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
 )
 
 var opts []grpc.DialOption
-var resourceList = buildResourceClientList()
+var resourceList = buildResourceCommanderList()
 
+type runFn func(*cobra.Command) 
 
-func AddOptions(options []*resources.Option, cmd *cobra.Command) {
+func PrepareCmd(c *cobra.Command, resource ResourceCommander, run runFn) {
+	if resource.CmdConfig.GetFromOptions() != nil {
+		AddOptions(c, resource.CmdConfig.GetFromOptions().Options)
+
+		if resource.CmdConfig.GetFromOptions().Subcommands != nil {
+			AddSubcommands(c, resource.CmdConfig.GetFromOptions().Subcommands, run)
+
+		} else {
+			c.Run = func(cmd *cobra.Command, args []string) {
+				run(cmd)  
+			}
+		}
+	} else if resource.CmdConfig.GetFromFile() != nil {
+		AddFileOption(c, resource.CmdConfig.GetFromFile().MergeOptions)
+		c.Run = func(cmd *cobra.Command, args []string) {
+			run(cmd)  
+		}
+	} else {
+		// TODO: error
+	}
+}
+
+func AddOptions(cmd *cobra.Command, options []*resources.Option) {
 	// process string options
 	for _, f := range options {
-		if f.Type == "string" {
-			cmd.PersistentFlags().StringVarP(new(string), f.Name, string(f.Name[0]), string(f.Default), f.Description)
-		} else if f.Type == "bool" {
-			cmd.PersistentFlags().BoolVarP(new(bool), f.Name, string(f.Name[0]), bool(f.Default), f.Description)
-		} else if f.Type == "int64" {
-			cmd.PersistentFlags().Int64VarP(new(int64), f.Name, string(f.Name[0]), int64(f.Default), f.Description)
-		} else {
-			// TODO: handle error situation (unimplemented type)
-			// also... implement more types!
+		for _, n := range f.Required {
+			if cmd.Name() == n {
+				if *f.Type == "string" {
+					cmd.PersistentFlags().StringVarP(new(string), *f.Name, string((*f.Name)[0]), *f.Default, *f.Description)
+				} else if *f.Type == "bool" {
+					d, err := strconv.ParseBool(*f.Default)
+					if err != nil {
+						// TODO: handle error
+					}
+					cmd.PersistentFlags().BoolVarP(new(bool), *f.Name, string((*f.Name)[0]), d, *f.Description)
+				} else if *f.Type == "int64" {
+					d, err := strconv.ParseInt(*f.Default, 10, 64)
+					if err != nil {
+						// TODO: handle error
+					}
+					cmd.PersistentFlags().Int64VarP(new(int64), *f.Name, string((*f.Name)[0]), d, *f.Description)
+				} else {
+					// TODO: handle error situation (unimplemented type)
+					// also... implement more types!
+				}
+			}
 		}
 	}
+}
+
+func AddFileOption(cmd *cobra.Command, options []*resources.Option) {
+	AddOptions(cmd, options)
+	cmd.PersistentFlags().StringVarP(new(string), "file", "f", "", "Resource configuration file")
 }
 
 func AddCommands(parent *cobra.Command) {
@@ -58,19 +98,10 @@ func AddCommands(parent *cobra.Command) {
 							Use:   resource.Usage(),
 							Short: resource.ShortDescription(),
 							Long: resource.LongDescription(),
-							Run: func(cmd *cobra.Command, args []string) {
-								resource.CreateRequest(cmd)  // TODO: when subcommands are present, need to move this to the innermost command
-							},
+							Run: func(cmd *cobra.Command, args []string) {},
 						}
 
-						if resource.CmdConfig.Options != nil {
-							AddOptions(create, resource.cmdConfig.Options)
-						}
-
-						if resource.CmdConfig.Subcommands != nil {
-							resource.AddSubcommands(create, resource.CmdConfig.Subcommands)
-						}
-
+						PrepareCmd(create, resource, resource.CreateRequest)
 						parent.AddCommand(create)
 
 					case "add":
@@ -78,19 +109,10 @@ func AddCommands(parent *cobra.Command) {
 							Use:   resource.Usage(),
 							Short: resource.ShortDescription(),
 							Long: resource.LongDescription(),
-							Run: func(cmd *cobra.Command, args []string) {
-								resource.AddRequest(cmd)
-							},
+							Run: func(cmd *cobra.Command, args []string) {},
 						}
 
-						if resource.CmdConfig.Options != nil {
-							AddOptions(add, resource.cmdConfig.Options)
-						}
-
-						if resource.CmdConfig.Subcommands != nil {
-							resource.AddSubcommands(add, resource.CmdConfig.Subcommands)
-						}
-
+						PrepareCmd(add, resource, resource.AddRequest)
 						parent.AddCommand(add)
 
 					case "get": 
@@ -98,19 +120,10 @@ func AddCommands(parent *cobra.Command) {
 							Use:   resource.Usage(),
 							Short: resource.ShortDescription(),
 							Long: resource.LongDescription(),
-							Run: func(cmd *cobra.Command, args []string) {
-								resource.GetRequest(cmd)
-							},
+							Run: func(cmd *cobra.Command, args []string) {},
 						}
 
-						if resource.CmdConfig.Options != nil {
-							AddOptions(get, resource.cmdConfig.Options)
-						}
-
-						if resource.CmdConfig.Subcommands != nil {
-							resource.AddSubcommands(get, resource.CmdConfig.Subcommands)
-						}
-
+						PrepareCmd(get, resource, resource.GetRequest)
 						parent.AddCommand(get)
 
 					case "list":
@@ -118,22 +131,12 @@ func AddCommands(parent *cobra.Command) {
 							Use:   resource.Usage(),
 							Short: resource.ShortDescription(),
 							Long: resource.LongDescription(),
-							Run: func(cmd *cobra.Command, args []string) {
-								resource.ListRequest(cmd)
-							},
+							Run: func(cmd *cobra.Command, args []string) {},
 						}
 
 						// SPECIAL CASE: the list operation is implemented to take in a query for all types
 						list.PersistentFlags().StringVarP(new(string), "query", "q", "", "A query for filtering list results")
-
-						if resource.CmdConfig.Options != nil {
-							AddOptions(list, resource.cmdConfig.Options)
-						}
-
-						if resource.CmdConfig.Subcommands != nil {
-							resource.AddSubcommands(list, resource.CmdConfig.Subcommands)
-						}
-
+						PrepareCmd(list, resource, resource.ListRequest)
 						parent.AddCommand(list)
 
 					case "update":
@@ -141,40 +144,21 @@ func AddCommands(parent *cobra.Command) {
 							Use:   resource.Usage(),
 							Short: resource.ShortDescription(),
 							Long: resource.LongDescription(),
-							Run: func(cmd *cobra.Command, args []string) {
-								resource.UpdateRequest(cmd)
-							},
+							Run: func(cmd *cobra.Command, args []string) {},
 						}
 
-						if resource.CmdConfig.Options != nil {
-							AddOptions(update, resource.cmdConfig.Options)
-						}
-
-						if resource.CmdConfig.Subcommands != nil {
-							resource.AddSubcommands(update, resource.CmdConfig.Subcommands)
-						}
-
+						PrepareCmd(update, resource, resource.UpdateRequest)
 						parent.AddCommand(update)
 
-					case "patch":  // TODO: fully implement the patch operation
+					case "patch": 
 						var patch = &cobra.Command{
 							Use:   resource.Usage(),
 							Short: resource.ShortDescription(),
 							Long: resource.LongDescription(),
-							Run: func(cmd *cobra.Command, args []string) {
-								fmt.Println("'patch' operation not yet implemented!")
-								os.Exit(1)
-							},
+							Run: func(cmd *cobra.Command, args []string) {},
 						}
 
-						if resource.CmdConfig.Options != nil {
-							AddOptions(patch, resource.cmdConfig.Options)
-						}
-
-						if resource.CmdConfig.Subcommands != nil {
-							resource.AddSubcommands(patch, resource.CmdConfig.Subcommands)
-						}
-
+						PrepareCmd(patch, resource, resource.PatchRequest)
 						parent.AddCommand(patch)
 
 					case "remove": 
@@ -182,19 +166,10 @@ func AddCommands(parent *cobra.Command) {
 							Use:   resource.Usage(),
 							Short: resource.ShortDescription(),
 							Long: resource.LongDescription(),
-							Run: func(cmd *cobra.Command, args []string) {
-								resource.RemoveRequest(cmd)
-							},
+							Run: func(cmd *cobra.Command, args []string) {},
 						}
 
-						if resource.CmdConfig.Options != nil {
-							AddOptions(remove, resource.cmdConfig.Options)
-						}
-
-						if resource.CmdConfig.Subcommands != nil {
-							resource.AddSubcommands(remove, resource.CmdConfig.Subcommands)
-						}
-
+						PrepareCmd(remove, resource, resource.RemoveRequest)
 						parent.AddCommand(remove)
 
 					case "delete":
@@ -202,19 +177,10 @@ func AddCommands(parent *cobra.Command) {
 							Use:   resource.Usage(),
 							Short: resource.ShortDescription(),
 							Long: resource.LongDescription(),
-							Run: func(cmd *cobra.Command, args []string) {
-								resource.DeleteRequest(cmd)
-							},
+							Run: func(cmd *cobra.Command, args []string) {},
 						}
 
-						if resource.CmdConfig.Options != nil {
-							AddOptions(delete, resource.cmdConfig.Options)
-						}
-
-						if resource.CmdConfig.Subcommands != nil {
-							resource.AddSubcommands(delete, resource.CmdConfig.Subcommands)
-						}
-
+						PrepareCmd(delete, resource, resource.DeleteRequest)
 						parent.AddCommand(delete)
 
 					case "apply":
@@ -222,20 +188,10 @@ func AddCommands(parent *cobra.Command) {
 							Use:   resource.Usage(),
 							Short: resource.ShortDescription(),
 							Long: resource.LongDescription(),
-							Run: func(cmd *cobra.Command, args []string) {
-								fmt.Println("'apply' operation not yet implemented!")
-								os.Exit(1)
-							},
+							Run: func(cmd *cobra.Command, args []string) {},
 						}
 
-						if resource.CmdConfig.Options != nil {
-							AddOptions(apply, resource.cmdConfig.Options)
-						}
-
-						if resource.CmdConfig.Subcommands != nil {
-							resource.AddSubcommands(apply, resource.CmdConfig.Subcommands)
-						}
-
+						PrepareCmd(apply, resource, resource.ApplyRequest)
 						parent.AddCommand(apply)
 
 					case "run": 
@@ -243,19 +199,10 @@ func AddCommands(parent *cobra.Command) {
 							Use:   resource.Usage(),
 							Short: resource.ShortDescription(),
 							Long: resource.LongDescription(),
-							Run: func(cmd *cobra.Command, args []string) {
-								resource.RunRequest(cmd)
-							},
+							Run: func(cmd *cobra.Command, args []string) {},
 						}
 
-						if resource.CmdConfig.Options != nil {
-							AddOptions(run, resource.cmdConfig.Options)
-						}
-
-						if resource.CmdConfig.Subcommands != nil {
-							resource.AddSubcommands(run, resource.CmdConfig.Subcommands)
-						}
-
+						PrepareCmd(run, resource, resource.RunRequest)
 						parent.AddCommand(run)
 
 					case "cancel":
@@ -263,19 +210,10 @@ func AddCommands(parent *cobra.Command) {
 							Use:   resource.Usage(),
 							Short: resource.ShortDescription(),
 							Long: resource.LongDescription(),
-							Run: func(cmd *cobra.Command, args []string) {
-								resource.CancelRequest(cmd)
-							},
+							Run: func(cmd *cobra.Command, args []string) {},
 						}
 
-						if resource.CmdConfig.Options != nil {
-							AddOptions(cancel, resource.cmdConfig.Options)
-						}
-
-						if resource.CmdConfig.Subcommands != nil {
-							resource.AddSubcommands(cancel, resource.CmdConfig.Subcommands)
-						}
-
+						PrepareCmd(cancel, resource, resource.CancelRequest)
 						parent.AddCommand(cancel)
 
 					default:
@@ -297,12 +235,27 @@ func AddCommands(parent *cobra.Command) {
 	}
 }
 
-func AddSubcommands(parent *cobra.Command, subcommands []*cobra.Command) {
-	// TODO: implement this
+func AddSubcommands(parent *cobra.Command, subcommands []*resources.SubCmdConfig, run runFn) {
+	for _, s := range subcommands {
+		sub := &cobra.Command{
+			Use:   *s.Usage,
+			Short: *s.ShortDescription,
+			Long: *s.LongDescription,
+			Run: func(cmd *cobra.Command, args []string) {
+				run(cmd)
+			},
+		}
+
+		if s.Options != nil {
+			AddOptions(sub, s.Options)
+		}
+		
+		parent.AddCommand(sub)
+	}
 }
 
-func buildResourceClientList() []ResourceClient {
-	var r []*ResourceCmd
+func buildResourceCommanderList() []ResourceCommander {
+	var r []ResourceCommander
 	opts = append(opts, grpc.WithInsecure())  // TODO: set appropriate options
 	clientConn, err := grpc.Dial("127.0.0.1:8080", opts...) // TODO: move server and port to config file
 	
@@ -337,8 +290,7 @@ func buildResourceClientList() []ResourceClient {
 	}
 
 	for _, res := range m.Resources {
-		pb := proto.MessageType(res.CmdConfig.ProtobufType)
-		r = append(r, &ResourceCmd{Client: pb.GetClient(clientConn), CmdConfig: *res})
+		r = append(r, ResourceCommander{Client: resources.NewResourcesClient(clientConn), CmdConfig: *res})
 	}
 
 	return r

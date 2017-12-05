@@ -43,15 +43,15 @@ var DataIntegration_value = map[string]int32{
 func (x DataIntegration) String() string {
 	return proto.EnumName(DataIntegration_name, int32(x))
 }
-func (DataIntegration) EnumDescriptor() ([]byte, []int) { return fileDescriptor3, []int{0} }
+func (DataIntegration) EnumDescriptor() ([]byte, []int) { return fileDescriptor2, []int{0} }
 
 func init() {
 	proto.RegisterEnum("resources.DataIntegration", DataIntegration_name, DataIntegration_value)
 }
 
-func init() { proto.RegisterFile("data.proto", fileDescriptor3) }
+func init() { proto.RegisterFile("data.proto", fileDescriptor2) }
 
-var fileDescriptor3 = []byte{
+var fileDescriptor2 = []byte{
 	// 132 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x1c, 0xcd, 0x41, 0x0a, 0xc2, 0x40,
 	0x0c, 0x40, 0x51, 0xb5, 0xb6, 0xd2, 0x80, 0x18, 0x72, 0x0c, 0x17, 0x6e, 0xbc, 0x82, 0x1b, 0x4f,

@@ -21,15 +21,26 @@ message ResourceCmdConfig {
 	repeated CmdConfig Resources = 2;
 }
 
+message FileSource {
+	repeated Option MergeOptions = 1;
+	repeated string Required = 2;
+}
+
+message OptionsSource {
+	repeated Option Options = 1;
+	repeated SubCmdConfig Subcommands = 2;
+}
+
 message CmdConfig {
 	required string Name = 1;
 	required string Usage = 2;
 	required string ShortDescription = 3;
 	required string LongDescription = 4;
 	repeated Operation SupportedOperations = 5;
-	repeated Option Options = 6;
-	repeated FileOption FileOptions = 7;
-	repeated SubCmdConfig Subcommands = 8;
+	oneof source {
+		FileSource FromFile = 6;
+		OptionsSource FromOptions = 7;
+	}
 	required string ProtobufType = 9;
 }
 
@@ -39,8 +50,8 @@ message SubCmdConfig {
 	required string ShortDescription = 3;
 	required string LongDescription = 4;
 	repeated Option Options = 5;
-	repeated FileOption FileOptions = 6;
-	required string ProtobufType = 7;
+	required string ProtobufType = 6;
+	required string ParentField = 7;
 }
 
 message Option {
@@ -49,11 +60,4 @@ message Option {
 	required string Description = 3;
 	required string Type = 4;
 	optional string Default = 5;
-}
-
-message FileOption {
-	required string name = 1;
-	required string Required = 2;
-	required string Description = 3;
-	required string ProtobufType = 4;
 }

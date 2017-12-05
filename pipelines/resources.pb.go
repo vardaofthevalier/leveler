@@ -38,7 +38,7 @@ var LogProducer_value = map[string]int32{
 func (x LogProducer) String() string {
 	return proto.EnumName(LogProducer_name, int32(x))
 }
-func (LogProducer) EnumDescriptor() ([]byte, []int) { return fileDescriptor6, []int{0} }
+func (LogProducer) EnumDescriptor() ([]byte, []int) { return fileDescriptor5, []int{0} }
 
 type Query struct {
 	Query string `protobuf:"bytes,1,opt,name=Query" json:"Query,omitempty"`
@@ -48,7 +48,7 @@ type Query struct {
 func (m *Query) Reset()                    { *m = Query{} }
 func (m *Query) String() string            { return proto.CompactTextString(m) }
 func (*Query) ProtoMessage()               {}
-func (*Query) Descriptor() ([]byte, []int) { return fileDescriptor6, []int{0} }
+func (*Query) Descriptor() ([]byte, []int) { return fileDescriptor5, []int{0} }
 
 func (m *Query) GetQuery() string {
 	if m != nil {
@@ -72,7 +72,7 @@ type Loggable struct {
 func (m *Loggable) Reset()                    { *m = Loggable{} }
 func (m *Loggable) String() string            { return proto.CompactTextString(m) }
 func (*Loggable) ProtoMessage()               {}
-func (*Loggable) Descriptor() ([]byte, []int) { return fileDescriptor6, []int{1} }
+func (*Loggable) Descriptor() ([]byte, []int) { return fileDescriptor5, []int{1} }
 
 func (m *Loggable) GetKind() LogProducer {
 	if m != nil {
@@ -95,7 +95,7 @@ type Log struct {
 func (m *Log) Reset()                    { *m = Log{} }
 func (m *Log) String() string            { return proto.CompactTextString(m) }
 func (*Log) ProtoMessage()               {}
-func (*Log) Descriptor() ([]byte, []int) { return fileDescriptor6, []int{2} }
+func (*Log) Descriptor() ([]byte, []int) { return fileDescriptor5, []int{2} }
 
 func (m *Log) GetMessage() string {
 	if m != nil {
@@ -739,9 +739,9 @@ var _Resources_serviceDesc = grpc.ServiceDesc{
 	Metadata: "resources.proto",
 }
 
-func init() { proto.RegisterFile("resources.proto", fileDescriptor6) }
+func init() { proto.RegisterFile("resources.proto", fileDescriptor5) }
 
-var fileDescriptor6 = []byte{
+var fileDescriptor5 = []byte{
 	// 503 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x94, 0xc1, 0x6e, 0xda, 0x40,
 	0x10, 0x86, 0x4d, 0x92, 0x06, 0x18, 0x8a, 0x63, 0x26, 0x6d, 0x44, 0x9d, 0x43, 0x2b, 0xab, 0x87,
