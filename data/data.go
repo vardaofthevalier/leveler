@@ -16,3 +16,12 @@ type SecretStore interface {
 	Update(string, map[string]interface{}) error
 	Delete(string) error
 }
+
+type LogCollector interface {
+	GetLogs(string) error
+}
+
+type StorageDriver interface {
+	Allocate() error 
+	Deallocate() error
+}

@@ -249,7 +249,7 @@ func (j *DockerPipelineJob) Watch(report chan *PipelineJobStatus, wg *sync.WaitG
     }
 }
 
-// func (j *LocalPipelineJob) Logs(stream *io.Pipe) error {
+// func (j *DockerPipelineJob) Logs(stream *io.Pipe) error {
 	
 // 		// TODO:
 // 		// - check if logfile still exists; 
