@@ -261,20 +261,20 @@ func buildResourceCommanderList() []ResourceCommander {
 	clientConn, err := grpc.Dial("127.0.0.1:8080", opts...) // TODO: move server and port to config file
 	
 	if err != nil {
-		fmt.Printf("Couldn't connect to server: %s", err)
+		fmt.Printf("Couldn't connect to server: %s\n", err)
 		os.Exit(1)
 	}
 
 	// read the resources definition file to get a list of resources -- TODO: move this filename to the config file
 	u, err := user.Current() 
 	if err != nil {
-		fmt.Printf("Error getting user home directory: %v", err)
+		fmt.Printf("Error getting user home directory: %v\n", err)
 		os.Exit(1)
 	}
 
-	contents, err := ioutil.ReadFile(filepath.Join(u.HomeDir, ".leveler", "resources.json"))  // TODO: read from centralized schema stored on the server
+	contents, err := ioutil.ReadFile(filepath.Join(u.HomeDir, ".leveler", "resources.json"))  // TODO: read from centralized schema stored on the server -- maybe implement a GetSchema endpoint that just sends the message directly
 	if err != nil {
-		fmt.Printf("Error reading resource configuration file: %v", err)
+		fmt.Printf("Error reading resource configuration file: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -286,7 +286,7 @@ func buildResourceCommanderList() []ResourceCommander {
 	reader := bytes.NewReader(contents)
 	err = jsonUnmarshaler.Unmarshal(reader, &m)
 	if err != nil {
-		fmt.Printf("Error processing resource configuration file: %v", err)
+		fmt.Printf("Error processing resource configuration file: %v\n", err)
 		os.Exit(1)
 	}
 

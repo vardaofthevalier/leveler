@@ -13,7 +13,7 @@
                   "Name": "name",
                   "Required": ["add", "get", "remove", "update"],
                   "Description": "A descriptive name for the integration"
-               },
+               }
             ],
             "Subcommands": [
                {
@@ -104,8 +104,8 @@
                   "ProtobufType": "SlackAccessConfig",
                   "ParentField": "slack"
                }
-            ],
-         }, 
+            ]
+         },
          "ProtobufType": "Integration"
       },
       {
@@ -117,7 +117,7 @@
          "Options": [
             // TODO: more here!
          ],
-         "ProtobufType": "Repository",
+         "ProtobufType": "Repository"
       },
       {
          "Name": "pipeline",
@@ -136,7 +136,7 @@
             ],
             "Required": ["run"]
          },
-         "ProtobufType": "Pipeline",
+         "ProtobufType": "Pipeline"
       },
       {
          "Name": "job",
@@ -154,7 +154,7 @@
                },
             ]
          },
-         "ProtobufType": "none",
+         "ProtobufType": "none"
       },
       {
          "Name": "logs",
