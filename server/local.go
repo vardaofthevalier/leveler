@@ -1,4 +1,4 @@
-package pipelines
+package server
 
 import (
 	"io"
@@ -12,8 +12,6 @@ import (
 	"io/ioutil"
 	"encoding/json"
 	"path/filepath"
-	"leveler/config"
-	"leveler/resources"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -37,8 +35,8 @@ type LocalPipelineJob struct {
 	LogLock *sync.Mutex 							`json:"-" yaml:"-"`
 	Status *PipelineJobStatus 						`json:"status" yaml:"status"`
 	Color string  									`json:"-" yaml:"-"`
-	JobConfig *resources.Job 						`json:"-" yaml:"-"`
-	ServerConfig *config.ServerConfig 				`json:"-" yaml:"-"`
+	JobConfig *JobConfig 	 						`json:"-" yaml:"-"`
+	ServerConfig *ServerConfig 						`json:"-" yaml:"-"`
 } 
 
 type SyncStatus struct {
@@ -55,7 +53,7 @@ type ProcessStatus struct {
 }
 
 
-func NewLocalPipelineJob(serverConfig *config.ServerConfig, pipelineId string, jobName string, jobConfig *resources.Job, pipelineInputs map[string]*resources.PipelineInput, pipelineOutputs map[string]*resources.PipelineOutput) (LocalPipelineJob, error) {
+func NewLocalPipelineJob(serverConfig *ServerConfig, pipelineId string, jobName string, jobConfig *JobConfig, pipelineInputs map[string]*PipelineInputConfig, pipelineOutputs map[string]*PipelineOutputConfig) (LocalPipelineJob, error) {
 	jobDataDir := filepath.Join(serverConfig.Datadir, "pipelines", "local", pipelineId, jobName)
 
 	inputs, err := GenerateInputMappings(jobDataDir, jobConfig, pipelineId, pipelineInputs, pipelineOutputs)

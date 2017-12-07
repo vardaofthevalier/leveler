@@ -3,6 +3,7 @@ package data
 import (
 	"fmt"
 	"log"
+	"errors"
 	"regexp"
 	"strings"
 	config "leveler/config"
@@ -383,7 +384,10 @@ func (db *RedisDatabase) executeQuery(q string, kind string, conn *redis.Client)
 	return final, nil
 }
 
-func (db RedisDatabase) Create(kind string, keys map[string]interface{}, data string) (string, error) {
+func (db RedisDatabase) Create(kind string, data ...interface{}) (string, error) {
+	// NOTE: data contains the following parameters: 
+	// - secondary keys (map[string]interface{}, pos 0)
+	// - serialized data string (string, pos 1)
 	conn, err := db.selectDatabase(kind)
 	if err != nil {
 		return "", err
@@ -395,7 +399,13 @@ func (db RedisDatabase) Create(kind string, keys map[string]interface{}, data st
 	id := uuid.NewV4().String()
 
 	// create a new key in the database
-	_, err = conn.Cmd("SET", fmt.Sprintf("%s:%s", kind, id), data).Str()
+	// NOTE: only expect one piece of data here
+	if len(data) == 0 {
+		return "", errors.New("Empty data string!")
+	}
+
+	keys := data[0].(map[string]interface{})
+	_, err = conn.Cmd("SET", fmt.Sprintf("%s:%s", kind, id), data[1].(string)).Str()
 	if err != nil {
 		return "", err
 	}
@@ -449,7 +459,8 @@ func (db RedisDatabase) Get(kind string, id string) (string, error) {
 	return result, nil
 }
 
-func (db RedisDatabase) List(kind string, query string) ([]string, error) {
+func (db RedisDatabase) List(kind string, query ...interface{}) ([]string, error) {
+	// NOTE: query type is implementation dependent
 	conn, err := db.selectDatabase(kind)
 	if err != nil {
 		return []string{}, err
@@ -460,7 +471,7 @@ func (db RedisDatabase) List(kind string, query string) ([]string, error) {
 	var result []string
 	var keys []string 
 	if len(query) > 0 {
-		result, err = db.executeQuery(query, kind, conn)
+		result, err = db.executeQuery(query[0].(string), kind, conn)
 	} else {
 		keys, err = conn.Cmd("KEYS", fmt.Sprintf("%s:*", kind)).List()
 		if err != nil {
@@ -483,7 +494,9 @@ func (db RedisDatabase) List(kind string, query string) ([]string, error) {
 	return result, nil
 }
 
-func (db RedisDatabase) Update(kind string, id string, data string) error {
+func (db RedisDatabase) Update(kind string, id string, data ...interface{}) error {
+	// NOTE: data contains the following parameters:
+	// - serialized data string (string, pos 0)
 	conn, err := db.selectDatabase(kind)
 	if err != nil {
 		return err
@@ -491,8 +504,13 @@ func (db RedisDatabase) Update(kind string, id string, data string) error {
 
 	defer db.DatabaseConnectionPool.Put(conn)
 
+	if len(data) == 0 {
+		return errors.New("No data passed to UPDATE... nothing to do")
+	}
+
+
 	// full replace update on obj
-	_, err = conn.Cmd("SET", fmt.Sprintf("%s:%s", kind, id), data).Str()
+	_, err = conn.Cmd("SET", fmt.Sprintf("%s:%s", kind, id), data[0].(string)).Str()
 
 	return err
 }

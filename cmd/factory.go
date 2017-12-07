@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"io/ioutil"
 	"path/filepath"
-	"leveler/resources"
+	"leveler/server"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"github.com/golang/protobuf/jsonpb"
@@ -41,7 +41,7 @@ func PrepareCmd(c *cobra.Command, resource ResourceCommander, run runFn) {
 	}
 }
 
-func AddOptions(cmd *cobra.Command, options []*resources.Option) {
+func AddOptions(cmd *cobra.Command, options []*Option) {
 	// process string options
 	for _, f := range options {
 		for _, n := range f.Required {
@@ -69,7 +69,7 @@ func AddOptions(cmd *cobra.Command, options []*resources.Option) {
 	}
 }
 
-func AddFileOption(cmd *cobra.Command, options []*resources.Option) {
+func AddFileOption(cmd *cobra.Command, options []*Option) {
 	AddOptions(cmd, options)
 	cmd.PersistentFlags().StringVarP(new(string), "file", "f", "", "Resource configuration file")
 }
@@ -82,8 +82,9 @@ func AddCommands(parent *cobra.Command) {
 		os.Exit(1)
 	}
 
+	// TODO: make this block more sensible -- I think the complexity of this may be able to be reduced. 
 	for _, resource := range resourceList {  
-		for o, _ := range resources.Operation_value {
+		for o, _ := range Operation_value {
 			for _, s := range resource.CmdConfig.SupportedOperations {
 				supported = false
 
@@ -235,7 +236,7 @@ func AddCommands(parent *cobra.Command) {
 	}
 }
 
-func AddSubcommands(parent *cobra.Command, subcommands []*resources.SubCmdConfig, run runFn) {
+func AddSubcommands(parent *cobra.Command, subcommands []*SubCmdConfig, run runFn) {
 	for _, s := range subcommands {
 		sub := &cobra.Command{
 			Use:   *s.Usage,
@@ -277,7 +278,7 @@ func buildResourceCommanderList() []ResourceCommander {
 		os.Exit(1)
 	}
 
-	var m = resources.ResourceCmdConfig{}
+	var m = ResourceCmdConfig{}
 	var jsonUnmarshaler = jsonpb.Unmarshaler{
 		AllowUnknownFields: false,
 	}
@@ -290,8 +291,8 @@ func buildResourceCommanderList() []ResourceCommander {
 	}
 
 	for _, res := range m.Resources {
-		client := resources.NewResourcesClient(clientConn)
-		r = append(r, ResourceCommander{Client: &client, CmdConfig: *res})
+		client := server.NewResourcesClient(clientConn)
+		r = append(r, ResourceCommander{Client: client, CmdConfig: *res})
 	}
 
 	return r

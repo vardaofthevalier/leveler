@@ -1,4 +1,4 @@
-package pipelines
+package server
 
 type RequiredFile struct {
 	Path string

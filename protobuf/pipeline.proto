@@ -1,10 +1,10 @@
 syntax = "proto3";
 
-package resources;
+package server;
 
 import "integration.proto";
 
-message PipelineIntegration {
+message PipelineIntegrationConfig {
 	string name = 1;
 	oneof config {
 		BitbucketAccessConfig bitbucket = 4;
@@ -14,19 +14,19 @@ message PipelineIntegration {
 	}
 }
 
-message PipelineInput {
+message PipelineInputConfig {
 	string from = 1;
 	string integration = 2;
 	bool link = 3;
 }
 
-message PipelineOutput {
+message PipelineOutputConfig {
 	string to = 1;
 	string from = 2;
 	string integration = 3;
 }
 
-message Job {
+message JobConfig {
 	string id = 1;
 	string pipeline_id = 2;
     string workdir = 3;
@@ -37,20 +37,20 @@ message Job {
     repeated string outputs = 8;
 }
 
-message JobsList {
-	repeated Job results = 1;
+message JobConfigList {
+	repeated JobConfig results = 1;
 }
 
-message Pipeline {
+message PipelineConfig {
 	string id = 1;
-	map<string,PipelineInput> inputs = 2;
-	map<string,PipelineOutput> outputs = 3;
-	map<string,Job> steps = 4;
+	map<string,PipelineInputConfig> inputs = 2;
+	map<string,PipelineOutputConfig> outputs = 3;
+	map<string,JobConfig> steps = 4;
 	map<string,string> global_env = 5;
-	map<string,PipelineIntegration> integrations = 6;
+	map<string,PipelineIntegrationConfig> integrations = 6;
 }
 
-message PipelinesList {
-	repeated Pipeline results = 1;
+message PipelineConfigList {
+	repeated PipelineConfig results = 1;
 }
 

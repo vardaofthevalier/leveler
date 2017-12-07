@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package resources;
+package server;
 
 message User {
 	string email = 1;
@@ -8,5 +8,5 @@ message User {
 }
 
 message UserCredentials {
-	string stuff = 1;
+	string data = 1;
 }

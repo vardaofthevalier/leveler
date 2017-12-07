@@ -4,11 +4,13 @@ import (
 	"os"
 	"fmt"
 	"reflect"
+	"context"
 	"io/ioutil"
-	"leveler/resources"
+	"leveler/server"
 	yaml "gopkg.in/yaml.v2"
 	"github.com/spf13/cobra"
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
 )
 
 // type ResourceCommander interface {
@@ -25,8 +27,8 @@ import (
 // }
 
 type ResourceCommander struct {
-	CmdConfig resources.CmdConfig
-	Client *resources.ResourcesClient
+	CmdConfig CmdConfig
+	Client server.ResourcesClient
 }
 
 func (r ResourceCommander) Usage() string {
@@ -204,7 +206,18 @@ func (r ResourceCommander) AddRequest(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 
-	err = resources.Add(pb, pbType, r.Client)
+	m, err := ptypes.MarshalAny(pb.(proto.Message))
+	if err != nil {
+		fmt.Printf("Couldn't marshal protobuf message: %v", err)
+		os.Exit(1)
+	}
+
+	resource := &server.Resource{
+		Type: pbType,
+		Message: m,
+	}
+
+	_, err = r.Client.Add(context.Background(), resource)
 
 	if err != nil {
 		fmt.Printf("Error adding resource: %s", err)
@@ -222,7 +235,18 @@ func (r ResourceCommander) CreateRequest(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 
-	resp, err := resources.Create(pb, pbType, r.Client)
+	m, err := ptypes.MarshalAny(pb.(proto.Message))
+	if err != nil {
+		fmt.Printf("Couldn't marshal protobuf message: %v", err)
+		os.Exit(1)
+	}
+
+	resource := &server.Resource{
+		Type: pbType,
+		Message: m,
+	}
+
+	resp, err := r.Client.Create(context.Background(), resource)
 
 	if err != nil {
 		fmt.Printf("Error creating resource: %s", err)
@@ -240,10 +264,21 @@ func (r ResourceCommander) GetRequest(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 
-	resp, err := resources.Get(pb, pbType, r.Client)
+	m, err := ptypes.MarshalAny(pb.(proto.Message))
+	if err != nil {
+		fmt.Printf("Couldn't marshal protobuf message: %v", err)
+		os.Exit(1)
+	}
+
+	resource := &server.Resource{
+		Type: pbType,
+		Message: m,
+	}
+
+	resp, err := r.Client.Get(context.Background(), resource)
 
 	if err != nil {
-		fmt.Println("Error retrieving resource: %s", err)
+		fmt.Printf("Error getting resource: %s", err)
 		os.Exit(1)
 	}
 
@@ -260,7 +295,12 @@ func (r ResourceCommander) ListRequest(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 
-	resp, err := resources.List(query, pbType, r.Client)
+	q := &server.Query{
+		Type: pbType,
+		Query: query,
+	}
+
+	resp, err := r.Client.List(context.Background(), q)
 
 	if err != nil {
 		fmt.Println("Error listing resources: %s", err)
@@ -278,10 +318,20 @@ func (r ResourceCommander) UpdateRequest(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 
-	err = resources.Update(pb, pbType, r.Client)
-
+	m, err := ptypes.MarshalAny(pb.(proto.Message))
 	if err != nil {
-		fmt.Printf("Error updating resource: %s", err)
+		fmt.Printf("Couldn't marshal protobuf message: %v", err)
+		os.Exit(1)
+	}
+
+	resource := &server.Resource{
+		Type: pbType,
+		Message: m,
+	}
+
+	_, err = r.Client.Update(context.Background(), resource)
+	if err != nil {
+		fmt.Println("Error updating resource: %s", err)
 		os.Exit(1)
 	}
 
@@ -296,10 +346,20 @@ func (r ResourceCommander) PatchRequest(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 
-	err = resources.Patch(pb, pbType, r.Client)
-
+	m, err := ptypes.MarshalAny(pb.(proto.Message))
 	if err != nil {
-		fmt.Printf("Error patching resource: %s", err)
+		fmt.Printf("Couldn't marshal protobuf message: %v", err)
+		os.Exit(1)
+	}
+
+	resource := &server.Resource{
+		Type: pbType,
+		Message: m,
+	}
+
+	_, err = r.Client.Patch(context.Background(), resource)
+	if err != nil {
+		fmt.Println("Error patching resource: %s", err)
 		os.Exit(1)
 	}
 
@@ -314,10 +374,20 @@ func (r ResourceCommander) RemoveRequest(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 
-	err = resources.Remove(pb, pbType, r.Client)
-
+	m, err := ptypes.MarshalAny(pb.(proto.Message))
 	if err != nil {
-		fmt.Printf("Error removing resource: %s", err)
+		fmt.Printf("Couldn't marshal protobuf message: %v", err)
+		os.Exit(1)
+	}
+
+	resource := &server.Resource{
+		Type: pbType,
+		Message: m,
+	}
+
+	_, err = r.Client.Remove(context.Background(), resource)
+	if err != nil {
+		fmt.Println("Error removing resource: %s", err)
 		os.Exit(1)
 	}
 
@@ -332,10 +402,20 @@ func (r ResourceCommander) DeleteRequest(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 
-	err = resources.Delete(pb, pbType, r.Client)
-
+	m, err := ptypes.MarshalAny(pb.(proto.Message))
 	if err != nil {
-		fmt.Printf("Error deleting resource: %s", err)
+		fmt.Printf("Couldn't marshal protobuf message: %v", err)
+		os.Exit(1)
+	}
+
+	resource := &server.Resource{
+		Type: pbType,
+		Message: m,
+	}
+
+	_, err = r.Client.Delete(context.Background(), resource)
+	if err != nil {
+		fmt.Println("Error deleting resource: %s", err)
 		os.Exit(1)
 	}
 
@@ -350,10 +430,20 @@ func (r ResourceCommander) ApplyRequest(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 
-	err = resources.Apply(pb, pbType, r.Client)
-
+	m, err := ptypes.MarshalAny(pb.(proto.Message))
 	if err != nil {
-		fmt.Printf("Error applying resource: %s", err)
+		fmt.Printf("Couldn't marshal protobuf message: %v", err)
+		os.Exit(1)
+	}
+
+	resource := &server.Resource{
+		Type: pbType,
+		Message: m,
+	}
+
+	_, err = r.Client.Apply(context.Background(), resource)
+	if err != nil {
+		fmt.Println("Error applying resource: %s", err)
 		os.Exit(1)
 	}
 
@@ -368,10 +458,21 @@ func (r ResourceCommander) RunRequest(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 
-	resp, err := resources.Run(pb, pbType, r.Client)
+	m, err := ptypes.MarshalAny(pb.(proto.Message))
+	if err != nil {
+		fmt.Printf("Couldn't marshal protobuf message: %v", err)
+		os.Exit(1)
+	}
+
+	resource := &server.Resource{
+		Type: pbType,
+		Message: m,
+	}
+
+	resp, err := r.Client.Run(context.Background(), resource)
 
 	if err != nil {
-		fmt.Printf("Error runnin resource: %s", err)
+		fmt.Printf("Error running resource: %s", err)
 		os.Exit(1)
 	}
 
@@ -386,10 +487,20 @@ func (r ResourceCommander) CancelRequest(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 
-	err = resources.Cancel(pb, pbType, r.Client)
-
+	m, err := ptypes.MarshalAny(pb.(proto.Message))
 	if err != nil {
-		fmt.Printf("Error cancelling resource: %s", err)
+		fmt.Printf("Couldn't marshal protobuf message: %v", err)
+		os.Exit(1)
+	}
+
+	resource := &server.Resource{
+		Type: pbType,
+		Message: m,
+	}
+
+	_, err = r.Client.Cancel(context.Background(), resource)
+	if err != nil {
+		fmt.Println("Error cancelling resource: %s", err)
 		os.Exit(1)
 	}
 

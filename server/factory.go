@@ -1,11 +1,9 @@
-package pipelines
+package server
 
 import (
 	"fmt"
 	"errors"
 	"path/filepath"
-	"leveler/config"
-	"leveler/resources"
 	uuid "github.com/satori/go.uuid"
 )
 
@@ -27,7 +25,7 @@ type PipelineOutputMapping struct {
 	Integration string
 }
 
-func GenerateInputMappings(datadir string, jobSpec *resources.Job, pipelineId string, inputs map[string]*resources.PipelineInput, outputs map[string]*resources.PipelineOutput) (map[string]*PipelineInputMapping, error) {
+func GenerateInputMappings(datadir string, jobSpec *JobConfig, pipelineId string, inputs map[string]*PipelineInputConfig, outputs map[string]*PipelineOutputConfig) (map[string]*PipelineInputMapping, error) {
 	var mappings = make(map[string]*PipelineInputMapping)
 
 	for _, name := range jobSpec.Inputs {
@@ -70,15 +68,15 @@ func GenerateInputMappings(datadir string, jobSpec *resources.Job, pipelineId st
 	return mappings, nil
 }
 
-func GenerateInputSyncScript(datadir string, integration *resources.PipelineIntegration, input *PipelineInputMapping) (string, error) {
+func GenerateInputSyncScript(datadir string, integration *PipelineIntegrationConfig, input *PipelineInputMapping) (string, error) {
 	return "", nil
 }
 
-func GenerateOutputSyncScript(datadir string, integration *resources.PipelineIntegration, output *PipelineInputMapping) (string, error) {
+func GenerateOutputSyncScript(datadir string, integration *PipelineIntegrationConfig, output *PipelineInputMapping) (string, error) {
 	return "", nil
 }
 
-func GenerateOutputMappings(datadir string, jobSpec *resources.Job, pipelineId string, outputs map[string]*resources.PipelineOutput) (map[string]*PipelineOutputMapping, error) {
+func GenerateOutputMappings(datadir string, jobSpec *JobConfig, pipelineId string, outputs map[string]*PipelineOutputConfig) (map[string]*PipelineOutputMapping, error) {
 	var mappings = make(map[string]*PipelineOutputMapping)
 
 	for _, name := range jobSpec.Outputs {
@@ -105,7 +103,7 @@ func GenerateOutputMappings(datadir string, jobSpec *resources.Job, pipelineId s
 	return mappings, nil
 }
 
-func createJobsMap(serverConfig *config.ServerConfig, pipelineId string, pipelineConfig *resources.Pipeline) (map[string]PipelineJob, error) {
+func createJobsMap(serverConfig *ServerConfig, pipelineId string, pipelineConfig *PipelineConfig) (map[string]PipelineJob, error) {
 	var allJobs = make(map[string]PipelineJob)
 
 	// process jobs into a map for O(1) lookup later on, and also to verify that no duplicate names are found
@@ -146,7 +144,7 @@ func createJobsMap(serverConfig *config.ServerConfig, pipelineId string, pipelin
 	return allJobs, nil
 }
 
-func NewPipeline(serverConfig *config.ServerConfig, pipelineConfig *resources.Pipeline) (*Pipeline, error) {
+func NewPipeline(serverConfig *ServerConfig, pipelineConfig *PipelineConfig) (*Pipeline, error) {
 	pipelineId := uuid.NewV4().String()
 	p := &Pipeline{}
 	

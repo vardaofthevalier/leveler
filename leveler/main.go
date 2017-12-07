@@ -15,7 +15,7 @@
 package main
 
 import (
-	_ "leveler/resources"
+	_ "leveler/server"
 	"leveler/cmd"
 )
 

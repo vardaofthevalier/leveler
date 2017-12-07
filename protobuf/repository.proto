@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package resources;
+package server;
 
 message Repository {
 	string url = 1;

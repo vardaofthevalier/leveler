@@ -1,4 +1,4 @@
-package pipelines
+package server
 
 import (
 	"io"
@@ -79,7 +79,7 @@ func (p *Pipeline) hasCycle() bool {
 	return false
 }
 
-func (p *Pipeline) Run(quit chan int8) {
+func (p *Pipeline) Run(quit <-chan int8, done chan<- int8) {
 	// IDEA:  quit will be a channel stored in a map, which can be accessed by ID in order to cancel a pipeline from the server API
 
 	// IDEA: to make this work in a distributed system, use central message queues instead of channels to coordinate waiting (?)
@@ -164,6 +164,7 @@ func (p *Pipeline) Run(quit chan int8) {
 	}
 
 	leaves.Wait()
+	done <- 0
 }
 
 func (p *Pipeline) Status() ([]string, error) {	

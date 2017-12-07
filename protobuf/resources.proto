@@ -1,57 +1,37 @@
 syntax = "proto3";
 
-package resources;
-
-import "user.proto";
-import "integration.proto";
-import "pipeline.proto";
-import "repository.proto";
+package server;
 
 import "google/protobuf/any.proto";
 import "google/protobuf/empty.proto";
 
 service Resources {
-    rpc AddUser(User) returns (User) {}
+    rpc Add(Resource) returns (google.protobuf.Empty) {}
+    rpc Remove(Resource) returns (google.protobuf.Empty) {}
+    rpc Create(Resource) returns (Resource) {}
+    rpc Get(Resource) returns (Resource) {}
+    rpc List(Query) returns (ResourceList) {}
+    rpc Update(Resource) returns (google.protobuf.Empty) {}
+    rpc Patch(Resource) returns (google.protobuf.Empty) {}
+    rpc Delete(Resource) returns (google.protobuf.Empty) {}
+    rpc Apply(Resource) returns (google.protobuf.Empty) {}
+    rpc Run(Resource) returns (Resource) {}
+    rpc Cancel(Resource) returns (google.protobuf.Empty) {}
+}
 
-    rpc AddIntegration(Integration) returns (google.protobuf.Empty) {}
-    rpc GetIntegration(Integration) returns (Integration) {}
-    rpc ListIntegrations(Query) returns (IntegrationsList) {}
-    rpc UpdateIntegration(Integration) returns (google.protobuf.Empty) {}
-    rpc RemoveIntegration(Integration) returns (google.protobuf.Empty) {}
+message Resource {
+    string type = 1;
+    google.protobuf.Any message = 2;
+}
 
-    rpc AddRepository(Repository) returns (google.protobuf.Empty) {}
-    rpc GetRepository(Repository) returns (Repository) {}
-    rpc ListRepositories(Query) returns (RepositoriesList) {}
-    rpc RemoveRepository(Repository) returns (google.protobuf.Empty) {}
-
-    rpc GetPipeline(Pipeline) returns (Pipeline) {}
-    rpc ListPipelines(Query) returns (PipelinesList) {}
-    rpc RunPipeline(Pipeline) returns (Pipeline) {}
-    rpc CancelPipeline(Pipeline) returns (google.protobuf.Empty) {}
-
-    rpc GetJob(Job) returns (Job) {}
-    rpc ListJobs(Query) returns (JobsList) {}
-
-    rpc GetLogs(Loggable) returns (stream Log) {}   
+message ResourceList {
+    string type = 1;
+    repeated google.protobuf.Any messages = 2;
 }
 
 message Query {
     string Query = 1;
     string Type = 2;
-}
-
-enum LogProducer {
-    pipeline = 0;
-    job = 1;
-}
-
-message Loggable {
-    LogProducer kind = 1;
-    string id = 2;
-}
-
-message Log {
-    string message = 1;
 }
 
 

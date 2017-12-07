@@ -1,4 +1,4 @@
-package pipelines
+package server
 
 import (
 	"io"
@@ -9,8 +9,6 @@ import (
 	"context"
 	"path/filepath"
 	"encoding/json"
-	"leveler/config"
-	"leveler/resources"
 	uuid "github.com/satori/go.uuid"
 	docker "github.com/docker/docker/client"
 	types "github.com/docker/docker/api/types"
@@ -33,8 +31,8 @@ type DockerPipelineJob struct {
 	DockerContext context.Context 				`json:"-" yaml:"-"`
 	DockerClient *docker.Client  				`json:"-" yaml:"-"`
 	ContainerId string 							`json:"container_id" yaml:"container_id"`
-	JobConfig *resources.Job 		 			`json:"-" yaml:"-"`
-	ServerConfig *config.ServerConfig 			`json:"-" yaml:"-"`
+	JobConfig *JobConfig 			 			`json:"-" yaml:"-"`
+	ServerConfig *ServerConfig 		 			`json:"-" yaml:"-"`
 	Notifications chan *PipelineJobStatus 		`json:"-" yaml:"-"`
 	Logger *log.Logger 							`json:"-" yaml:"-"`
 	LogLock *sync.Mutex 						`json:"-" yaml:"-"`
@@ -42,7 +40,7 @@ type DockerPipelineJob struct {
 	Color string  								`json:"-" yaml:"-"`
 }
 
-func NewDockerPipelineJob(serverConfig *config.ServerConfig, pipelineId string, jobName string, jobConfig *resources.Job, pipelineInputs map[string]*resources.PipelineInput, pipelineOutputs map[string]*resources.PipelineOutput) (DockerPipelineJob, error) {
+func NewDockerPipelineJob(serverConfig *ServerConfig, pipelineId string, jobName string, jobConfig *JobConfig, pipelineInputs map[string]*PipelineInputConfig, pipelineOutputs map[string]*PipelineOutputConfig) (DockerPipelineJob, error) {
 	jobDataDir := filepath.Join("/data", jobName)
 
 	inputs, err := GenerateInputMappings(jobDataDir, jobConfig, pipelineId, pipelineInputs, pipelineOutputs)

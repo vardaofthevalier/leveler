@@ -1,12 +1,12 @@
 package data
 
 type Database interface {
-	Create(string, map[string]interface{}, string) (string, error)
-	Get(string, string) (string, error)
-	List(string, string) ([]string, error)
-	Update(string, string, string) error
-	Delete(string, string) error
-	Flush(string) error
+	Create(string, ...interface{}) (string, error) // params: table, data (implementation dependent); returns primary key, error
+	Get(string, string) (map[string]interface{}, error)  // params: table, key; returns data, error
+	List(string, ...interface{}) ([]map[string]interface{}, error) // params: table, filters (implementation dependent); returns a list of data, error
+	Update(string, string, ...interface{}) error // params: table, primary key, data (implementation dependent); returns error
+	Delete(string, string) error // params: table, key; returns error 
+	Flush(string) error // params: table; returns error
 }
 
 type SecretStore interface {

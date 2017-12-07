@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"log"
 	"net"
-	data "leveler/data"
-	server "leveler/grpc"
-	config "leveler/config"
-	grpc "google.golang.org/grpc"
-	resources "leveler/resources"
+	//"leveler/data"
+	"leveler/config"
+	"leveler/server"
+	"google.golang.org/grpc"
 )
 
 func main() {
@@ -16,7 +15,7 @@ func main() {
 	var opts []grpc.ServerOption
 
 	// read the configuration (default file if not overridden on the command line)
-	var c = &config.Config{}
+	var c = &server.ServerConfig{}
 	var err error
 
 	err = config.Read("", "server", c)
@@ -32,25 +31,26 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	var db data.RedisDatabase 
+	//var db data.RedisDatabase 
 
 	fmt.Println(c)
 
 	if c.Database.Type == "redis" {
 		// create a Redis db object
-		db = data.NewRedisDatabase(c.Database.Protocol, c.Database.Host, c.Database.Port, c.Database.GetOptions().GetPoolSize()) 
+		// db = data.NewRedisDatabase(c.Database.Protocol, c.Database.Host, c.Database.Port, c.Database.GetOptions().GetPoolSize()) 
 	} else if c.Database.Type == "sql" {
 		// create a MySql db object
-		db = data.NewSqlDatabase(protocol, )
-		defer db.Close()
+		// db = data.NewSqlDatabase(protocol, )
+		// defer db.Close()
 	} else {
 		log.Fatalf("Unknown database type '%s'", c.Database.Type)
 	}
 	
 	// register endpoints
 	grpcServer := grpc.NewServer(opts...)
-	s := &server.EndpointServer{db}
-	resources.RegisterResourceEndpointServer(grpcServer, s)
+	//s := &server.EndpointServer{db}
+	s := &server.EndpointServer{}
+	server.RegisterResourcesServer(grpcServer, s)
 
 	// start the server
 	grpcServer.Serve(lis)

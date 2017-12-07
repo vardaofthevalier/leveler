@@ -1,4 +1,4 @@
-package pipelines
+package server
 
 // import (
 // 	//"fmt"

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package config;
+package server;
 
 message ContainerPlatform {
 	string name = 1;

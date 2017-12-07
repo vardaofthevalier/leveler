@@ -1,6 +1,6 @@
 syntax = "proto2";
 
-package resources;
+package cmd;
 
 enum Operation {
 	create = 0;

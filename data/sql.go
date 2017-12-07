@@ -1,46 +1,47 @@
 package data
 
-// import (
-// 	"fmt"
-// 	"log"
-// 	"database/sql"
-// 	_ "github.com/go-sql-driver/mysql"
-// )
+import (
+	"fmt"
+	"log"
+	"database/sql"
+	_ "github.com/go-sql-driver/mysql"
+)
 
-// type SqlDatabase struct {
-// 	User string
-// 	Password string
-// 	Protocol string
-// 	Host string
-// 	Port int
-// 	Database string
-// }
+type SqlDatabase struct {
+	DB *sql.DB
+}
 
-// func (db *SqlDatabase) Create(kind string, keys map[string]interface, data string) (string, error) {
-// 	// insert 
-// }
+func (db *SqlDatabase) Create(kind string, data ...interface{}) (string, error) {
+	// TODO: INSERT
 
-// func (db *SqlDatabase) Get(kind string, id string) (string, error) {
-// 	// select 
-// }
+	return "", nil
+}
 
-// func (db *SqlDatabase) List(kind string, query string) ([]string, error) {
-// 	// select with
-// }
+func (db *SqlDatabase) Get(kind string, id string) (string, error) {
+	// TODO: SELECT
+	return "", nil
+}
 
-// func (db *SqlDatabase) Update(kind string, id string, data string) {
-// 	// update
-// }
+func (db *SqlDatabase) List(kind string, query ...interface{}) ([]string, error) {
+	// TODO: SELECT
+	return []string{}, nil
+}
 
-// func (db *SqlDatabase) Delete(kind string, id string) error {
-// 	// delete
-// }
+func (db *SqlDatabase) Update(kind string, id string, data ...interface{}) error {
+	// TODO: UPDATE
+	return nil
+}
 
-// func NewSqlDatabase(protocol string, user string, password string, host string, port int, database string) SqlDatabase {
-// 	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@%s(%s:%d)/%s", user, password, protocol, host, port, database))
-// 	if err != nil {
-// 		log.Fatalf("Couldn't connect to MySQL database: %v", err)
-// 	}
+func (db *SqlDatabase) Delete(kind string, id string) error {
+	// TODO: DELETE
+	return nil
+}
 
-// 	return db
-// }
+func NewSqlDatabase(protocol string, user string, password string, host string, port int, database string) SqlDatabase {
+	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@%s(%s:%d)/%s", user, password, protocol, host, port, database))
+	if err != nil {
+		log.Fatalf("Couldn't connect to MySQL database: %v", err)
+	}
+
+	return SqlDatabase{DB: db,}
+}
