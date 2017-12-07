@@ -27,7 +27,7 @@ import (
 // }
 
 type ResourceCommander struct {
-	CmdConfig CmdConfig
+	CmdConfig server.CmdConfig
 	Client server.ResourcesClient
 }
 
@@ -56,7 +56,7 @@ func (r ResourceCommander) processFlags(cmd *cobra.Command) (reflect.Type, strin
 		for _, opt := range r.CmdConfig.GetFromOptions().Options {
 			var required bool 
 			for _, r := range opt.Required {
-				if r == cmd.Name() {
+				if r.String() == cmd.Name() {
 					required = true
 					break
 				}
@@ -100,7 +100,7 @@ func (r ResourceCommander) processFlags(cmd *cobra.Command) (reflect.Type, strin
 			for _, opt := range sc.Options {
 				var required bool 
 				for _, r := range opt.Required {
-					if r == cmd.Name() {
+					if r.String() == cmd.Name() {
 						required = true
 						break
 					}
@@ -160,7 +160,7 @@ func (r ResourceCommander) processFlags(cmd *cobra.Command) (reflect.Type, strin
 
 		for _, opt := range r.CmdConfig.GetFromFile().MergeOptions {
 			for _, r := range opt.Required {
-				if r == cmd.Name() {
+				if r.String() == cmd.Name() {
 					if *opt.Type == "string" {
 						k, err := cmd.Flags().GetString(*opt.Name)
 						if err != nil {

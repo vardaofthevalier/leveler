@@ -76,9 +76,6 @@
                   "Usage": "bitbucket",
                   "ShortDescription": "An integration with Bitbucket",
                   "LongDescription": "An integration with Bitbucket",
-                  "Options": [
-                     // TODO: add more here!  All data should map to BitbucketAccessConfig in integration.proto
-                  ],
                   "ProtobufType": "BitbucketAccessConfig",
                   "ParentField": "bitbucket"
                },
@@ -87,9 +84,6 @@
                   "Usage": "github",
                   "ShortDescription": "An integration with Github",
                   "LongDescription": "An integration with Github",
-                  "Options": [
-                     // TODO: add more here! All data should map to GithubAccessConfig in integration.proto
-                  ],
                   "ProtobufType": "GithubAccessConfig",
                   "ParentField": "github"
                },
@@ -98,9 +92,6 @@
                   "Usage": "slack",
                   "ShortDescription": "An integration with Slack",
                   "LongDescription": "An integration with Slack",
-                  "Options": [
-                     // TODO: add more here! All data should map to SlackAccessConfig in integration.proto
-                  ],
                   "ProtobufType": "SlackAccessConfig",
                   "ParentField": "slack"
                }
@@ -114,9 +105,6 @@
          "ShortDescription": "An SCM repository",
          "LongDescription": "An SCM repository",
          "SupportedOperations": ["add", "get", "list", "remove"],
-         "Options": [
-            // TODO: more here!
-         ],
          "ProtobufType": "Repository"
       },
       {
@@ -134,7 +122,7 @@
                   "Type": "string"
                }
             ],
-            "Required": ["run"]
+            "Required": ["get", "run"]
          },
          "ProtobufType": "Pipeline"
       },
@@ -151,7 +139,7 @@
                   "Required": ["get"],
                   "Description": "The ID of the job of interest",
                   "Type": "string"
-               },
+               }
             ]
          },
          "ProtobufType": "none"

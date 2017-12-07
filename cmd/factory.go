@@ -15,7 +15,7 @@ import (
 )
 
 var opts []grpc.DialOption
-var resourceList = buildResourceCommanderList()
+var resourceList = BuildResourceCommanderList()
 
 type runFn func(*cobra.Command) 
 
@@ -41,23 +41,25 @@ func PrepareCmd(c *cobra.Command, resource ResourceCommander, run runFn) {
 	}
 }
 
-func AddOptions(cmd *cobra.Command, options []*Option) {
+func AddOptions(cmd *cobra.Command, options []*server.Option) {
 	// process string options
 	for _, f := range options {
 		for _, n := range f.Required {
-			if cmd.Name() == n {
+			if cmd.Name() == n.String() {
 				if *f.Type == "string" {
 					cmd.PersistentFlags().StringVarP(new(string), *f.Name, string((*f.Name)[0]), *f.Default, *f.Description)
 				} else if *f.Type == "bool" {
 					d, err := strconv.ParseBool(*f.Default)
 					if err != nil {
-						// TODO: handle error
+						fmt.Printf("Error parsing boolean value: %v\n", err)
+						os.Exit(1)
 					}
 					cmd.PersistentFlags().BoolVarP(new(bool), *f.Name, string((*f.Name)[0]), d, *f.Description)
 				} else if *f.Type == "int64" {
 					d, err := strconv.ParseInt(*f.Default, 10, 64)
 					if err != nil {
-						// TODO: handle error
+						fmt.Printf("Error parsing int64 value: %v\n", err)
+						os.Exit(1)
 					}
 					cmd.PersistentFlags().Int64VarP(new(int64), *f.Name, string((*f.Name)[0]), d, *f.Description)
 				} else {
@@ -69,27 +71,34 @@ func AddOptions(cmd *cobra.Command, options []*Option) {
 	}
 }
 
-func AddFileOption(cmd *cobra.Command, options []*Option) {
+func AddFileOption(cmd *cobra.Command, options []*server.Option) {
 	AddOptions(cmd, options)
 	cmd.PersistentFlags().StringVarP(new(string), "file", "f", "", "Resource configuration file")
 }
 
 func AddCommands(parent *cobra.Command) {
-	var supported bool
 	var unsupportedFn = func(cmd *cobra.Command, args []string) {
 		fmt.Printf("Unsupported operation '%s' for the specified resource!\n", cmd.Use)
-		fmt.Println(cmd.UsageString())
 		os.Exit(1)
 	}
 
 	// TODO: make this block more sensible -- I think the complexity of this may be able to be reduced. 
-	for _, resource := range resourceList {  
-		for o, _ := range Operation_value {
+	var supported bool
+	for _, resource := range resourceList { 
+		for o, _ := range server.Operation_value {
 			for _, s := range resource.CmdConfig.SupportedOperations {
-				supported = false
-
 				if o == s.String() {
 					supported = true
+				} else {
+					var unsupported = &cobra.Command{
+						Use: parent.Use,
+						Short: parent.Short,
+						Long: parent.Long,
+						Run: unsupportedFn,
+					}
+
+					*parent = *unsupported
+					continue
 				}
 
 				if supported && s.String() == parent.Name() {
@@ -133,6 +142,7 @@ func AddCommands(parent *cobra.Command) {
 							Short: resource.ShortDescription(),
 							Long: resource.LongDescription(),
 							Run: func(cmd *cobra.Command, args []string) {},
+							TraverseChildren: true,
 						}
 
 						// SPECIAL CASE: the list operation is implemented to take in a query for all types
@@ -221,22 +231,13 @@ func AddCommands(parent *cobra.Command) {
 						fmt.Printf("Unknown operation '%s' in resource configuration", parent.Name())
 						os.Exit(1)
 					}
-				} else if !supported {
-					var unsupported = &cobra.Command{
-						Use: parent.Use,
-						Short: parent.Short,
-						Long: parent.Long,
-						Run: unsupportedFn,
-					}
-
-					*parent = *unsupported
-				}
-			} 
-		}
+				} 
+			}
+		} 
 	}
 }
 
-func AddSubcommands(parent *cobra.Command, subcommands []*SubCmdConfig, run runFn) {
+func AddSubcommands(parent *cobra.Command, subcommands []*server.SubCmdConfig, run runFn) {
 	for _, s := range subcommands {
 		sub := &cobra.Command{
 			Use:   *s.Usage,
@@ -255,7 +256,7 @@ func AddSubcommands(parent *cobra.Command, subcommands []*SubCmdConfig, run runF
 	}
 }
 
-func buildResourceCommanderList() []ResourceCommander {
+func BuildResourceCommanderList() []ResourceCommander {
 	var r []ResourceCommander
 	opts = append(opts, grpc.WithInsecure())  // TODO: set appropriate options
 	clientConn, err := grpc.Dial("127.0.0.1:8080", opts...) // TODO: move server and port to config file
@@ -278,7 +279,7 @@ func buildResourceCommanderList() []ResourceCommander {
 		os.Exit(1)
 	}
 
-	var m = ResourceCmdConfig{}
+	var m = server.ResourceCmdConfig{}
 	var jsonUnmarshaler = jsonpb.Unmarshaler{
 		AllowUnknownFields: false,
 	}

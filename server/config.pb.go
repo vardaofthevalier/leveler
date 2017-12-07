@@ -11,6 +11,7 @@ It is generated from these files:
 	data.proto
 	user.proto
 	resources.proto
+	cmd.proto
 
 It has these top-level messages:
 	ContainerPlatform
@@ -40,6 +41,12 @@ It has these top-level messages:
 	Resource
 	ResourceList
 	Query
+	ResourceCmdConfig
+	FileSource
+	OptionsSource
+	CmdConfig
+	SubCmdConfig
+	Option
 */
 package server
 
