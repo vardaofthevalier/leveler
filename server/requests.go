@@ -3,14 +3,37 @@ package server
 import (
 	"fmt"
 	"errors"
-	"reflect"
 	"context"
-	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/any"
 )
 
 func (s *EndpointServer) MakeAddRequest(ctx context.Context, resource *Resource) error {
-	return errors.New("Not yet implemented!")
+	switch resource.Kind {
+	case "Integration":
+		m := &Integration{}
+		err := ptypes.UnmarshalAny(resource.Message, m)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+
+		fmt.Printf("Received integration: %+v\n", m)
+		// p, err := s.RunPipeline(ctx, pb.(*PipelineConfig))
+		// if err != nil {
+		// 	return &Resource{}, err
+		// }
+
+		_, err = ptypes.MarshalAny(m)
+		if err != nil {
+			return err
+		} 
+
+	default:
+		return errors.New(fmt.Sprintf("Unsupported type '%s' for 'run' operation!", resource.Kind))
+	}
+
+	return nil
 }
 
 func (s *EndpointServer) MakeRemoveRequest(ctx context.Context, resource *Resource) error {
@@ -46,28 +69,32 @@ func (s *EndpointServer) MakeApplyRequest(ctx context.Context, resource *Resourc
 }
 
 func (s *EndpointServer) MakeRunRequest(ctx context.Context, resource *Resource) (*Resource, error) {
-	pb := reflect.ValueOf(proto.MessageType(resource.Type)).Interface()
-
-	switch resource.Type {
+	var a *any.Any
+	switch resource.Kind {
 	case "PipelineConfig":
-		err := ptypes.UnmarshalAny(resource.Message, pb.(*PipelineConfig))
+		m := &PipelineConfig{}
+		err := ptypes.UnmarshalAny(resource.Message, m)
 		if err != nil {
-			return &Resource{}, err
-		}
-		p, err := s.RunPipeline(ctx, pb.(*PipelineConfig))
-		if err != nil {
+			fmt.Println(err)
 			return &Resource{}, err
 		}
 
-		a, err := ptypes.MarshalAny(p)
+		fmt.Printf("Received pipeline: %+v\n", m)
+		// p, err := s.RunPipeline(ctx, pb.(*PipelineConfig))
+		// if err != nil {
+		// 	return &Resource{}, err
+		// }
+
+		a, err = ptypes.MarshalAny(m)
 		if err != nil {
-			return &Resource{}, err
+			return &Resource{Kind: "PipelineConfig", Message: a,}, err
 		} 
 
-		return &Resource{Type: "PipelineConfig", Message: a}, nil
 	default:
-		return &Resource{}, errors.New(fmt.Sprintf("Unsupported type '%s' for 'run' operation!", resource.Type))
+		return &Resource{Kind: resource.Kind, Message: a,}, errors.New(fmt.Sprintf("Unsupported type '%s' for 'run' operation!", resource.Kind))
 	}
+
+	return &Resource{Kind: resource.Kind, Message: a}, nil
 }
 
 func (s *EndpointServer) MakeCancelRequest(ctx context.Context, resource *Resource) error {

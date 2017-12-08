@@ -20,18 +20,18 @@ service Resources {
 }
 
 message Resource {
-    string type = 1;
+    string kind = 1;
     google.protobuf.Any message = 2;
 }
 
 message ResourceList {
-    string type = 1;
+    string kind = 1;
     repeated google.protobuf.Any messages = 2;
 }
 
 message Query {
     string Query = 1;
-    string Type = 2;
+    string Kind = 2;
 }
 
 

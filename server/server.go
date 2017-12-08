@@ -1,8 +1,6 @@
 package server
 
 import (
-	//"log"
-	//"errors"
 	"context"
 	"leveler/data"
 	"github.com/golang/protobuf/ptypes/empty"

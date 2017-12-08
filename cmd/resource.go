@@ -3,28 +3,16 @@ package cmd
 import (
 	"os"
 	"fmt"
+	"bytes"
 	"reflect"
 	"context"
 	"io/ioutil"
 	"leveler/server"
-	yaml "gopkg.in/yaml.v2"
 	"github.com/spf13/cobra"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/jsonpb"
 )
-
-// type ResourceCommander interface {
-// 	Usage() string
-// 	ShortDescription() string
-// 	LongDescription() string
-// 	AddOptions(cmd *cobra.Command)
-	
-// 	CreateRequest(cmd *cobra.Command) 
-// 	GetRequest(cmd *cobra.Command)
-// 	ListRequest(cmd *cobra.Command) 
-// 	UpdateRequest(cmd *cobra.Command) 
-// 	DeleteRequest(cmd *cobra.Command)
-// }
 
 type ResourceCommander struct {
 	CmdConfig server.CmdConfig
@@ -47,10 +35,13 @@ func (r ResourceCommander) getId(cmd *cobra.Command) string {
 	return cmd.Flags().Arg(0)
 }
 
-func (r ResourceCommander) processFlags(cmd *cobra.Command) (reflect.Type, string, error) {
+func (r ResourceCommander) processFlags(cmd *cobra.Command) (proto.Message, string, error) {
 	// create protobuf type
-	pb := proto.MessageType(*r.CmdConfig.ProtobufType)
+	pr := proto.MessageType(fmt.Sprintf("server.%s", *r.CmdConfig.ProtobufType))
+	pb := reflect.New(pr.Elem())
 
+
+	fmt.Println(pb)
 	// process options
 	if r.CmdConfig.GetFromOptions() != nil {
 		for _, opt := range r.CmdConfig.GetFromOptions().Options {
@@ -61,15 +52,21 @@ func (r ResourceCommander) processFlags(cmd *cobra.Command) (reflect.Type, strin
 					break
 				}
 			}
-
+	
 			if *opt.Type == "string" {
 				k, err := cmd.Flags().GetString(*opt.Name)
 				if err != nil && required {
 					fmt.Printf("'%s' is a required parameter!", *opt.Name)
 			 		os.Exit(1)
 				}
-
-				reflect.ValueOf(pb).Elem().FieldByName(*opt.Name).SetString(k)
+				fmt.Println(reflect.ValueOf(pr.Elem()))
+				fmt.Println(*opt.Name)
+				v := reflect.ValueOf(pr.Elem()).FieldByName(*opt.Name)
+				if v.IsNil() && v.CanSet() {
+					fmt.Println("setting")
+					v.Set(reflect.ValueOf(&k))
+				}
+				//reflect.ValueOf(pb).FieldByName(*opt.Name).SetString(k)
 
 			} else if *opt.Type == "bool" {
 				k, err := cmd.Flags().GetBool(*opt.Name)
@@ -94,7 +91,7 @@ func (r ResourceCommander) processFlags(cmd *cobra.Command) (reflect.Type, strin
 			}
 		}
 
-		for _, sc := range r.CmdConfig.GetFromOptions().Subcommands {
+		for _, sc := range r.CmdConfig.GetFromOptions().GetSubcommands() {
 			child := proto.MessageType(*sc.ProtobufType)
 
 			for _, opt := range sc.Options {
@@ -152,11 +149,9 @@ func (r ResourceCommander) processFlags(cmd *cobra.Command) (reflect.Type, strin
 			os.Exit(1)
 		}
 
-		err = yaml.Unmarshal(contents, pb)
-		if err != nil {
-			fmt.Printf("Error unmarshaling file contents: %v", err)
-			os.Exit(1)
-		}
+		unmarshaler := jsonpb.Unmarshaler{}
+		reader := bytes.NewReader(contents)
+		err = unmarshaler.Unmarshal(reader, pb.Interface().(proto.Message))
 
 		for _, opt := range r.CmdConfig.GetFromFile().MergeOptions {
 			for _, r := range opt.Required {
@@ -194,9 +189,8 @@ func (r ResourceCommander) processFlags(cmd *cobra.Command) (reflect.Type, strin
 				}
 			}
 		}
-	}
-
-	return pb, *r.CmdConfig.ProtobufType, nil
+	} 
+	return pb.Interface().(proto.Message), *r.CmdConfig.ProtobufType, nil
 }
 
 func (r ResourceCommander) AddRequest(cmd *cobra.Command) {
@@ -206,14 +200,14 @@ func (r ResourceCommander) AddRequest(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 
-	m, err := ptypes.MarshalAny(pb.(proto.Message))
+	m, err := ptypes.MarshalAny(pb)
 	if err != nil {
 		fmt.Printf("Couldn't marshal protobuf message: %v", err)
 		os.Exit(1)
 	}
 
 	resource := &server.Resource{
-		Type: pbType,
+		Kind: pbType,
 		Message: m,
 	}
 
@@ -235,14 +229,14 @@ func (r ResourceCommander) CreateRequest(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 
-	m, err := ptypes.MarshalAny(pb.(proto.Message))
+	m, err := ptypes.MarshalAny(pb)
 	if err != nil {
 		fmt.Printf("Couldn't marshal protobuf message: %v", err)
 		os.Exit(1)
 	}
 
 	resource := &server.Resource{
-		Type: pbType,
+		Kind: pbType,
 		Message: m,
 	}
 
@@ -264,14 +258,14 @@ func (r ResourceCommander) GetRequest(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 
-	m, err := ptypes.MarshalAny(pb.(proto.Message))
+	m, err := ptypes.MarshalAny(pb)
 	if err != nil {
 		fmt.Printf("Couldn't marshal protobuf message: %v", err)
 		os.Exit(1)
 	}
 
 	resource := &server.Resource{
-		Type: pbType,
+		Kind: pbType,
 		Message: m,
 	}
 
@@ -296,7 +290,7 @@ func (r ResourceCommander) ListRequest(cmd *cobra.Command) {
 	}
 
 	q := &server.Query{
-		Type: pbType,
+		Kind: pbType,
 		Query: query,
 	}
 
@@ -318,14 +312,14 @@ func (r ResourceCommander) UpdateRequest(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 
-	m, err := ptypes.MarshalAny(pb.(proto.Message))
+	m, err := ptypes.MarshalAny(pb)
 	if err != nil {
 		fmt.Printf("Couldn't marshal protobuf message: %v", err)
 		os.Exit(1)
 	}
 
 	resource := &server.Resource{
-		Type: pbType,
+		Kind: pbType,
 		Message: m,
 	}
 
@@ -346,14 +340,14 @@ func (r ResourceCommander) PatchRequest(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 
-	m, err := ptypes.MarshalAny(pb.(proto.Message))
+	m, err := ptypes.MarshalAny(pb)
 	if err != nil {
 		fmt.Printf("Couldn't marshal protobuf message: %v", err)
 		os.Exit(1)
 	}
 
 	resource := &server.Resource{
-		Type: pbType,
+		Kind: pbType,
 		Message: m,
 	}
 
@@ -374,14 +368,14 @@ func (r ResourceCommander) RemoveRequest(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 
-	m, err := ptypes.MarshalAny(pb.(proto.Message))
+	m, err := ptypes.MarshalAny(pb)
 	if err != nil {
 		fmt.Printf("Couldn't marshal protobuf message: %v", err)
 		os.Exit(1)
 	}
 
 	resource := &server.Resource{
-		Type: pbType,
+		Kind: pbType,
 		Message: m,
 	}
 
@@ -402,14 +396,14 @@ func (r ResourceCommander) DeleteRequest(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 
-	m, err := ptypes.MarshalAny(pb.(proto.Message))
+	m, err := ptypes.MarshalAny(pb)
 	if err != nil {
 		fmt.Printf("Couldn't marshal protobuf message: %v", err)
 		os.Exit(1)
 	}
 
 	resource := &server.Resource{
-		Type: pbType,
+		Kind: pbType,
 		Message: m,
 	}
 
@@ -430,14 +424,14 @@ func (r ResourceCommander) ApplyRequest(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 
-	m, err := ptypes.MarshalAny(pb.(proto.Message))
+	m, err := ptypes.MarshalAny(pb)
 	if err != nil {
 		fmt.Printf("Couldn't marshal protobuf message: %v", err)
 		os.Exit(1)
 	}
 
 	resource := &server.Resource{
-		Type: pbType,
+		Kind: pbType,
 		Message: m,
 	}
 
@@ -458,21 +452,20 @@ func (r ResourceCommander) RunRequest(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 
-	m, err := ptypes.MarshalAny(pb.(proto.Message))
+	m, err := ptypes.MarshalAny(pb)
 	if err != nil {
 		fmt.Printf("Couldn't marshal protobuf message: %v", err)
 		os.Exit(1)
 	}
 
 	resource := &server.Resource{
-		Type: pbType,
+		Kind: pbType,
 		Message: m,
 	}
 
 	resp, err := r.Client.Run(context.Background(), resource)
-
 	if err != nil {
-		fmt.Printf("Error running resource: %s", err)
+		fmt.Printf("Error running resource: %s\n", err)
 		os.Exit(1)
 	}
 
@@ -487,14 +480,14 @@ func (r ResourceCommander) CancelRequest(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 
-	m, err := ptypes.MarshalAny(pb.(proto.Message))
+	m, err := ptypes.MarshalAny(pb)
 	if err != nil {
 		fmt.Printf("Couldn't marshal protobuf message: %v", err)
 		os.Exit(1)
 	}
 
 	resource := &server.Resource{
-		Type: pbType,
+		Kind: pbType,
 		Message: m,
 	}
 
