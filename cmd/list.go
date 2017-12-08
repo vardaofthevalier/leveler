@@ -29,6 +29,8 @@ var listCmd = &cobra.Command{
 }
 
 func init() {
-	AddCommands(listCmd)
+	for _, r := range GetResourceList() {
+		AddCommands(r, listCmd)
+	}
 	RootCmd.AddCommand(listCmd)
 }

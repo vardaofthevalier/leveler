@@ -29,6 +29,8 @@ var patchCmd = &cobra.Command{
 }
 
 func init() {
-	AddCommands(patchCmd)
+	for _, r := range GetResourceList() {
+		AddCommands(r, patchCmd)
+	}
 	RootCmd.AddCommand(patchCmd)
 }

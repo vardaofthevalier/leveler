@@ -29,6 +29,8 @@ var deleteCmd = &cobra.Command{
 }
 
 func init() {
-	AddCommands(deleteCmd)
+	for _, r := range GetResourceList() {
+		AddCommands(r, deleteCmd)
+	}
 	RootCmd.AddCommand(deleteCmd)
 }

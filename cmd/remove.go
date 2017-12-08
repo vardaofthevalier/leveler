@@ -29,6 +29,8 @@ var removeCmd = &cobra.Command{
 }
 
 func init() {
-	AddCommands(removeCmd)
+	for _, r := range GetResourceList() {
+		AddCommands(r, removeCmd)
+	}
 	RootCmd.AddCommand(removeCmd)
 }

@@ -19,6 +19,10 @@ var resourceList = BuildResourceCommanderList()
 
 type runFn func(*cobra.Command) 
 
+func GetResourceList() []ResourceCommander {
+	return resourceList
+}
+
 func PrepareCmd(c *cobra.Command, resource ResourceCommander, run runFn) {
 	if resource.CmdConfig.GetFromOptions() != nil {
 		AddOptions(c, resource.CmdConfig.GetFromOptions().Options)
@@ -76,162 +80,285 @@ func AddFileOption(cmd *cobra.Command, options []*server.Option) {
 	cmd.PersistentFlags().StringVarP(new(string), "file", "f", "", "Resource configuration file")
 }
 
-func AddCommands(parent *cobra.Command) {
-	var unsupportedFn = func(cmd *cobra.Command, args []string) {
+func AddCommands(resource ResourceCommander, parent *cobra.Command) {
+	// var onInit []func()
+	var unsupportedFn = func(cmd *cobra.Command) {
 		fmt.Printf("Unsupported operation '%s' for the specified resource!\n", cmd.Use)
 		os.Exit(1)
 	}
 
-	// TODO: make this block more sensible -- I think the complexity of this may be able to be reduced. 
-	var supported bool
-	for _, resource := range resourceList { 
-		for o, _ := range server.Operation_value {
-			for _, s := range resource.CmdConfig.SupportedOperations {
-				if o == s.String() {
-					supported = true
-				} else {
-					var unsupported = &cobra.Command{
-						Use: parent.Use,
-						Short: parent.Short,
-						Long: parent.Long,
-						Run: unsupportedFn,
-					}
+	supportMap := make(map[string]bool)
+	for o, _ := range server.Operation_value {
+		supportMap[o] = false
+	}
 
-					*parent = *unsupported
-					continue
+	for _, s := range resource.CmdConfig.SupportedOperations {
+		supportMap[s.String()] = true
+	}
+
+	for p, supported := range supportMap {
+		if p == parent.Name() {
+			switch parent.Name() {
+			case "create":
+				var create = &cobra.Command{
+					Use:   resource.Usage(),
+					Short: resource.ShortDescription(),
+					Long: resource.LongDescription(),
+					Run: func(cmd *cobra.Command, args []string) {},
 				}
 
-				if supported && s.String() == parent.Name() {
-					switch parent.Name() {
-					case "create":
-						var create = &cobra.Command{
-							Use:   resource.Usage(),
-							Short: resource.ShortDescription(),
-							Long: resource.LongDescription(),
-							Run: func(cmd *cobra.Command, args []string) {},
-						}
-
-						PrepareCmd(create, resource, resource.CreateRequest)
-						parent.AddCommand(create)
-
-					case "add":
-						var add = &cobra.Command{
-							Use:   resource.Usage(),
-							Short: resource.ShortDescription(),
-							Long: resource.LongDescription(),
-							Run: func(cmd *cobra.Command, args []string) {},
-						}
-
-						PrepareCmd(add, resource, resource.AddRequest)
-						parent.AddCommand(add)
-
-					case "get": 
-						var get = &cobra.Command{
-							Use:   resource.Usage(),
-							Short: resource.ShortDescription(),
-							Long: resource.LongDescription(),
-							Run: func(cmd *cobra.Command, args []string) {},
-						}
-
-						PrepareCmd(get, resource, resource.GetRequest)
-						parent.AddCommand(get)
-
-					case "list":
-						var list = &cobra.Command{
-							Use:   resource.Usage(),
-							Short: resource.ShortDescription(),
-							Long: resource.LongDescription(),
-							Run: func(cmd *cobra.Command, args []string) {},
-							TraverseChildren: true,
-						}
-
-						// SPECIAL CASE: the list operation is implemented to take in a query for all types
-						list.PersistentFlags().StringVarP(new(string), "query", "q", "", "A query for filtering list results")
-						PrepareCmd(list, resource, resource.ListRequest)
-						parent.AddCommand(list)
-
-					case "update":
-						var update = &cobra.Command{
-							Use:   resource.Usage(),
-							Short: resource.ShortDescription(),
-							Long: resource.LongDescription(),
-							Run: func(cmd *cobra.Command, args []string) {},
-						}
-
-						PrepareCmd(update, resource, resource.UpdateRequest)
-						parent.AddCommand(update)
-
-					case "patch": 
-						var patch = &cobra.Command{
-							Use:   resource.Usage(),
-							Short: resource.ShortDescription(),
-							Long: resource.LongDescription(),
-							Run: func(cmd *cobra.Command, args []string) {},
-						}
-
-						PrepareCmd(patch, resource, resource.PatchRequest)
-						parent.AddCommand(patch)
-
-					case "remove": 
-						var remove = &cobra.Command{
-							Use:   resource.Usage(),
-							Short: resource.ShortDescription(),
-							Long: resource.LongDescription(),
-							Run: func(cmd *cobra.Command, args []string) {},
-						}
-
-						PrepareCmd(remove, resource, resource.RemoveRequest)
-						parent.AddCommand(remove)
-
-					case "delete":
-						var delete = &cobra.Command{
-							Use:   resource.Usage(),
-							Short: resource.ShortDescription(),
-							Long: resource.LongDescription(),
-							Run: func(cmd *cobra.Command, args []string) {},
-						}
-
-						PrepareCmd(delete, resource, resource.DeleteRequest)
-						parent.AddCommand(delete)
-
-					case "apply":
-						var apply = &cobra.Command{
-							Use:   resource.Usage(),
-							Short: resource.ShortDescription(),
-							Long: resource.LongDescription(),
-							Run: func(cmd *cobra.Command, args []string) {},
-						}
-
-						PrepareCmd(apply, resource, resource.ApplyRequest)
-						parent.AddCommand(apply)
-
-					case "run": 
-						var run = &cobra.Command{
-							Use:   resource.Usage(),
-							Short: resource.ShortDescription(),
-							Long: resource.LongDescription(),
-							Run: func(cmd *cobra.Command, args []string) {},
-						}
-
-						PrepareCmd(run, resource, resource.RunRequest)
-						parent.AddCommand(run)
-
-					case "cancel":
-						var cancel = &cobra.Command{
-							Use:   resource.Usage(),
-							Short: resource.ShortDescription(),
-							Long: resource.LongDescription(),
-							Run: func(cmd *cobra.Command, args []string) {},
-						}
-
-						PrepareCmd(cancel, resource, resource.CancelRequest)
-						parent.AddCommand(cancel)
-
-					default:
-						fmt.Printf("Unknown operation '%s' in resource configuration", parent.Name())
-						os.Exit(1)
+				if supported {
+					PrepareCmd(create, resource, resource.CreateRequest)
+				} else {
+					help := func(cmd *cobra.Command, args []string) {
+						fmt.Printf("Unsupported operation 'create' for resource '%s'!\n\n", resource.Usage())
+						cmd.Parent().Help()
 					}
-				} 
+
+					PrepareCmd(create, ResourceCommander{}, unsupportedFn)
+					create.Hidden = true
+					create.SetHelpFunc(help)
+				}
+
+				parent.AddCommand(create)
+
+			case "add":
+				var add = &cobra.Command{
+					Use:   resource.Usage(),
+					Short: resource.ShortDescription(),
+					Long: resource.LongDescription(),
+					Run: func(cmd *cobra.Command, args []string) {},
+				}
+
+				if supported {
+					PrepareCmd(add, resource, resource.AddRequest)
+				} else {
+					help := func(cmd *cobra.Command, args []string) {
+						fmt.Printf("Unsupported operation 'add' for resource '%s'!\n\n", resource.Usage())
+						cmd.Parent().Help()
+					}
+
+					PrepareCmd(add, ResourceCommander{}, unsupportedFn)
+					add.Hidden = true
+					add.SetHelpFunc(help)
+				}
+
+				parent.AddCommand(add)
+
+			case "get": 
+				var get = &cobra.Command{
+					Use:   resource.Usage(),
+					Short: resource.ShortDescription(),
+					Long: resource.LongDescription(),
+					Run: func(cmd *cobra.Command, args []string) {},
+				}
+
+				if supported {
+					PrepareCmd(get, resource, resource.GetRequest)
+				} else {
+					help := func(cmd *cobra.Command, args []string) {
+						fmt.Printf("Unsupported operation 'get' for resource '%s'!\n\n", resource.Usage())
+						cmd.Parent().Help()
+					}
+
+					PrepareCmd(get, ResourceCommander{}, unsupportedFn)
+					get.Hidden = true
+					get.SetHelpFunc(help)
+				}
+
+				parent.AddCommand(get)
+
+			case "list":
+				var list = &cobra.Command{
+					Use:   resource.Usage(),
+					Short: resource.ShortDescription(),
+					Long: resource.LongDescription(),
+					Run: func(cmd *cobra.Command, args []string) {},
+					TraverseChildren: true,
+				}
+
+				// SPECIAL CASE: the list operation is implemented to take in a query for all types
+				list.PersistentFlags().StringVarP(new(string), "query", "q", "", "A query for filtering list results")
+
+				if supported {
+					PrepareCmd(list, resource, resource.ListRequest)
+				} else {
+					help := func(cmd *cobra.Command, args []string) {
+						fmt.Printf("Unsupported operation 'list' for resource '%s'!\n\n", resource.Usage())
+						cmd.Parent().Help()
+					}
+
+					PrepareCmd(list, ResourceCommander{}, unsupportedFn)
+					list.Hidden = true
+					list.SetHelpFunc(help)
+				}
+
+				parent.AddCommand(list)
+
+			case "update":
+				var update = &cobra.Command{
+					Use:   resource.Usage(),
+					Short: resource.ShortDescription(),
+					Long: resource.LongDescription(),
+					Run: func(cmd *cobra.Command, args []string) {},
+				}
+
+				if supported {
+					PrepareCmd(update, resource, resource.UpdateRequest)
+				} else {
+					help := func(cmd *cobra.Command, args []string) {
+						fmt.Printf("Unsupported operation 'update' for resource '%s'!\n\n", resource.Usage())
+						cmd.Parent().Help()
+					}
+
+					PrepareCmd(update, ResourceCommander{}, unsupportedFn)
+					update.Hidden = true
+					update.SetHelpFunc(help)
+				}
+
+				parent.AddCommand(update)
+
+			case "patch": 
+				var patch = &cobra.Command{
+					Use:   resource.Usage(),
+					Short: resource.ShortDescription(),
+					Long: resource.LongDescription(),
+					Run: func(cmd *cobra.Command, args []string) {},
+				}
+
+				if supported {
+					PrepareCmd(patch, resource, resource.PatchRequest)
+				} else {
+					help := func(cmd *cobra.Command, args []string) {
+						fmt.Printf("Unsupported operation 'patch' for resource '%s'!\n\n", resource.Usage())
+						cmd.Parent().Help()
+					}
+
+					PrepareCmd(patch, ResourceCommander{}, unsupportedFn)
+					patch.Hidden = true
+					patch.SetHelpFunc(help)
+				}
+
+				parent.AddCommand(patch)
+
+			case "remove": 
+				var remove = &cobra.Command{
+					Use:   resource.Usage(),
+					Short: resource.ShortDescription(),
+					Long: resource.LongDescription(),
+					Run: func(cmd *cobra.Command, args []string) {},
+				}
+
+				if supported {
+					PrepareCmd(remove, resource, resource.RemoveRequest)
+				} else {
+					help := func(cmd *cobra.Command, args []string) {
+						fmt.Printf("Unsupported operation 'remove' for resource '%s'!\n\n", resource.Usage())
+						cmd.Parent().Help()
+					}
+
+					PrepareCmd(remove, ResourceCommander{}, unsupportedFn)
+					remove.Hidden = true
+					remove.SetHelpFunc(help)
+				}	
+
+				parent.AddCommand(remove)
+
+			case "delete":
+				var delete = &cobra.Command{
+					Use:   resource.Usage(),
+					Short: resource.ShortDescription(),
+					Long: resource.LongDescription(),
+					Run: func(cmd *cobra.Command, args []string) {},
+				}
+
+				if supported {
+					PrepareCmd(delete, resource, resource.DeleteRequest)
+				} else {
+					help := func(cmd *cobra.Command, args []string) {
+						fmt.Printf("Unsupported operation 'delete' for resource '%s'!\n\n", resource.Usage())
+						cmd.Parent().Help()
+					}
+
+					PrepareCmd(delete, ResourceCommander{}, unsupportedFn)
+					delete.Hidden = true
+					delete.SetHelpFunc(help)
+				}
+
+				parent.AddCommand(delete)
+
+			case "apply":
+				var apply = &cobra.Command{
+					Use:   resource.Usage(),
+					Short: resource.ShortDescription(),
+					Long: resource.LongDescription(),
+					Run: func(cmd *cobra.Command, args []string) {},
+				}
+
+				if supported {
+					PrepareCmd(apply, resource, resource.ApplyRequest)
+				} else {
+					help := func(cmd *cobra.Command, args []string) {
+						fmt.Printf("Unsupported operation 'apply' for resource '%s'!\n\n", resource.Usage())
+						cmd.Parent().Help()
+					}
+
+					PrepareCmd(apply, ResourceCommander{}, unsupportedFn)
+					apply.Hidden = true
+					apply.SetHelpFunc(help)
+				}
+
+				parent.AddCommand(apply)
+
+			case "run": 
+				var run = &cobra.Command{
+					Use:   resource.Usage(),
+					Short: resource.ShortDescription(),
+					Long: resource.LongDescription(),
+					Run: func(cmd *cobra.Command, args []string) {},
+				}
+
+				if supported {
+					PrepareCmd(run, resource, resource.RunRequest)
+				} else {
+					help := func(cmd *cobra.Command, args []string) {
+						fmt.Printf("Unsupported operation 'run' for resource '%s'!\n\n", resource.Usage())
+						cmd.Parent().Help()
+					}
+
+					PrepareCmd(run, ResourceCommander{}, unsupportedFn)
+					run.Hidden = true
+					run.SetHelpFunc(help)
+				}
+
+				parent.AddCommand(run)
+
+			case "cancel":
+				var cancel = &cobra.Command{
+					Use:   resource.Usage(),
+					Short: resource.ShortDescription(),
+					Long: resource.LongDescription(),
+					Run: func(cmd *cobra.Command, args []string) {},
+				}
+
+				if supported {
+					PrepareCmd(cancel, resource, resource.CancelRequest)
+				} else {
+					help := func(cmd *cobra.Command, args []string) {
+						fmt.Printf("Unsupported operation 'cancel' for resource '%s'!\n\n", resource.Usage())
+						cmd.Parent().Help()
+					}
+
+					PrepareCmd(cancel, ResourceCommander{}, unsupportedFn)
+					cancel.Hidden = true
+					cancel.SetHelpFunc(help)
+				}
+
+				parent.AddCommand(cancel)
+
+			default:
+				fmt.Printf("Unknown operation '%s' in resource configuration", parent.Name())
+				os.Exit(1)
 			}
 		} 
 	}
